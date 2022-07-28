@@ -6,7 +6,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Write};
 
 fn main() {
-    let options = clap_app!(rodata =>
+    let options = clap_app!(hse =>
         (version: "0.1")
         (author: ":kelko:")
         (about: "Html Streaming Editor")
