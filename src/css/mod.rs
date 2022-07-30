@@ -126,6 +126,7 @@ pub struct CssSelector<'a> {
 }
 
 impl<'a> CssSelector<'a> {
+    #[cfg(test)]
     pub(crate) fn for_element(element: &'a str) -> Self {
         CssSelector {
             element: Some(element),
@@ -136,6 +137,7 @@ impl<'a> CssSelector<'a> {
         }
     }
 
+    #[cfg(test)]
     pub(crate) fn for_id(id: &'a str) -> Self {
         CssSelector {
             element: None,
@@ -146,6 +148,7 @@ impl<'a> CssSelector<'a> {
         }
     }
 
+    #[cfg(test)]
     pub(crate) fn for_class(class: &'a str) -> Self {
         CssSelector {
             element: None,
@@ -156,6 +159,7 @@ impl<'a> CssSelector<'a> {
         }
     }
 
+    #[cfg(test)]
     pub(crate) fn for_attribute(attribute: CssAttributeSelector<'a>) -> Self {
         CssSelector {
             element: None,
