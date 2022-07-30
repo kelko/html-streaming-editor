@@ -8,28 +8,57 @@ use std::fmt::{Debug, Formatter};
 use std::ops::Index;
 use tl::{Bytes, HTMLTag, NodeHandle};
 
+/// CSS [pseudo classes](https://developer.mozilla.org/en-US/docs/Web/CSS/Pseudo-classes) selector
 #[derive(Clone, Debug, PartialEq)]
 pub enum CssPseudoClass {
+    /// CSS [:first-child](https://developer.mozilla.org/en-US/docs/Web/CSS/:first-child) selector
     FirstChild,
+    /// CSS [:nth-child()](https://developer.mozilla.org/en-US/docs/Web/CSS/:nth-child) selector
     NthChild(usize),
+    /// CSS [:first-of-type](https://developer.mozilla.org/en-US/docs/Web/CSS/:first-of-type) selector
     FirstOfType,
+    /// CSS [:nth-of-type()](https://developer.mozilla.org/en-US/docs/Web/CSS/:nth-of-type) selector
     NthOfType(usize),
+    /// CSS [:last-child](https://developer.mozilla.org/en-US/docs/Web/CSS/:last-child) selector
+    LastChild,
+    /// CSS [:nth-last-child()](https://developer.mozilla.org/en-US/docs/Web/CSS/:nth-last-child) selector
+    NthLastChild(usize),
+    /// CSS [:last-of-type](https://developer.mozilla.org/en-US/docs/Web/CSS/:last-of-type) selector
+    LastOfType,
+    /// CSS [:nth-last-of-type()](https://developer.mozilla.org/en-US/docs/Web/CSS/:nth-last-of-type) selector
+    NthLastOfType(usize),
+    //more candidates:
+    //Not(??)
+    //Is(==)
+    //Where(==)
 }
 
+/// Operator for CSS [attribute](https://developer.mozilla.org/en-US/docs/Web/CSS/Attribute_selectors) selector
 #[derive(Clone, Debug, PartialEq)]
 pub enum CssAttributeComparison {
+    /// CSS \[attr\] attribute selector
     Exist,
+    /// CSS \[attr\^="value"] attribute selector
     Starts,
+    /// CSS \[attr\$="value"] attribute selector
     Ends,
+    /// CSS \[attr\*="value"] attribute selector
     CharacterContains,
+    /// CSS \[attr~="value"] attribute selector
     TermContains,
+    /// CSS \[attr="value"] attribute selector
     EqualsExact,
+    /// CSS \[attr|="value"] attribute selector
     EqualsTillHyphen,
 }
 
+/// CSS [attribute](https://developer.mozilla.org/en-US/docs/Web/CSS/Attribute_selectors) selector
 pub struct CssAttributeSelector<'a> {
+    /// the attribute name to match against
     pub(crate) attribute: &'a str,
+    /// operator to use for matching
     pub(crate) operator: CssAttributeComparison,
+    /// value the attribute has to match
     pub(crate) value: Option<&'a str>,
 }
 
@@ -82,11 +111,17 @@ impl<'a> PartialEq for CssAttributeSelector<'a> {
     }
 }
 
+/// model for [CSS selectors](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors)
 pub struct CssSelector<'a> {
+    /// selector on element name
     pub(crate) element: Option<&'a str>,
+    /// selector on element id
     pub(crate) id: Option<&'a str>,
+    /// selector(s) on elements classes
     pub(crate) classes: Vec<&'a str>,
+    /// selector(s) on elements pseudo-classes
     pub(crate) pseudo_classes: Vec<CssPseudoClass>,
+    /// selector(s) on elements attributes
     pub(crate) attributes: Vec<CssAttributeSelector<'a>>,
 }
 
@@ -219,14 +254,28 @@ impl<'a> Debug for CssSelector<'a> {
     }
 }
 
+/// Combining different "steps" of the CSS selector path
 #[derive(Clone, Debug, PartialEq)]
 pub enum CssSelectorCombinator {
+    /// used internally only, to indicate the beginning of the path
     Start,
+    /// CSS descendent combinator "a b"
     Descendent,
+    /// CSS direct child combinator "a > b"
     DirectChild,
-    Sibling,
+    /// CSS general sibling combinator "a ~ b"
+    GeneralSibling,
+    /// CSS adjacent sibling combinator "a + b"
+    AdjacentSibling,
 }
 
+/// Individual "step" of the CSS Selector path
+///
+/// # examples
+///
+/// `a > b` would be two steps:
+/// - start of a
+/// - direct-child of b
 pub struct CssSelectorStep<'a> {
     pub selector: CssSelector<'a>,
     pub combinator: CssSelectorCombinator,
@@ -253,10 +302,18 @@ impl<'a> CssSelectorStep<'a> {
             combinator: CssSelectorCombinator::Descendent,
         }
     }
-    pub fn sibling(selector: CssSelector<'a>) -> Self {
+
+    pub fn general_sibling(selector: CssSelector<'a>) -> Self {
         CssSelectorStep {
             selector,
-            combinator: CssSelectorCombinator::Sibling,
+            combinator: CssSelectorCombinator::GeneralSibling,
+        }
+    }
+
+    pub fn adjacent_sibling(selector: CssSelector<'a>) -> Self {
+        CssSelectorStep {
+            selector,
+            combinator: CssSelectorCombinator::AdjacentSibling,
         }
     }
 }
@@ -276,6 +333,7 @@ impl<'a> PartialEq for CssSelectorStep<'a> {
     }
 }
 
+/// a whole "path" of CSS selectors
 pub struct CssSelectorPath<'a>(Vec<CssSelectorStep<'a>>);
 
 impl<'a> CssSelectorPath<'a> {
@@ -314,7 +372,11 @@ impl<'a> CssSelectorPath<'a> {
         source: HashSet<NodeHandle>,
     ) -> HashSet<NodeHandle> {
         match combinator {
-            CssSelectorCombinator::Start => source,
+            CssSelectorCombinator::Start => source
+                .iter()
+                .flat_map(|n| index.get(n).unwrap().descendents.clone())
+                .chain(source.clone())
+                .collect::<HashSet<_>>(),
             CssSelectorCombinator::Descendent => source
                 .iter()
                 .flat_map(|n| index.get(n).unwrap().descendents.clone())
@@ -323,9 +385,13 @@ impl<'a> CssSelectorPath<'a> {
                 .iter()
                 .flat_map(|n| index.get(n).unwrap().children.clone())
                 .collect::<HashSet<_>>(),
-            CssSelectorCombinator::Sibling => source
+            CssSelectorCombinator::GeneralSibling => source
                 .iter()
                 .flat_map(|n| index.get(n).unwrap().siblings.clone())
+                .collect::<HashSet<_>>(),
+            CssSelectorCombinator::AdjacentSibling => source
+                .iter()
+                .filter_map(|n| index.get(n).unwrap().direct_sibling)
                 .collect::<HashSet<_>>(),
         }
     }
@@ -352,11 +418,13 @@ impl<'a> PartialEq for CssSelectorPath<'a> {
 }
 
 impl<'a> Debug for CssSelectorPath<'a> {
+    //TODO: Actually implement it
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str("booo")
+        f.write_str("TODO")
     }
 }
 
+/// the list of all (comma-seperated) CSS paths
 pub struct CssSelectorList<'a>(Vec<CssSelectorPath<'a>>);
 
 impl<'a> CssSelectorList<'a> {
@@ -387,7 +455,8 @@ impl<'a> PartialEq for CssSelectorList<'a> {
 }
 
 impl<'a> Debug for CssSelectorList<'a> {
+    //TODO: Actually implement it
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str("booo")
+        f.write_str("TODO")
     }
 }

@@ -100,25 +100,57 @@ fn parse_path_two_direct_child() {
 }
 
 #[test]
-fn parse_path_two_sibling() {
-    let parsed = crate::parsing::grammar::css_selector_path("a + b");
+fn parse_path_two_general_sibling() {
+    let parsed = crate::parsing::grammar::css_selector_path("a ~ b");
     assert_eq!(
         parsed,
         Ok(CssSelectorPath::new(
             CssSelector::for_element("a"),
-            vec![CssSelectorStep::sibling(CssSelector::for_element("b"))]
+            vec![CssSelectorStep::general_sibling(CssSelector::for_element(
+                "b"
+            ))]
         ))
     )
 }
 
 #[test]
-fn parse_path_two_spaceless() {
+fn parse_path_two_general_siblings_spaceless() {
+    let parsed = crate::parsing::grammar::css_selector_path("a~b");
+    assert_eq!(
+        parsed,
+        Ok(CssSelectorPath::new(
+            CssSelector::for_element("a"),
+            vec![CssSelectorStep::general_sibling(CssSelector::for_element(
+                "b"
+            ))]
+        ))
+    )
+}
+
+#[test]
+fn parse_path_two_adjacent_sibling() {
+    let parsed = crate::parsing::grammar::css_selector_path("a + b");
+    assert_eq!(
+        parsed,
+        Ok(CssSelectorPath::new(
+            CssSelector::for_element("a"),
+            vec![CssSelectorStep::adjacent_sibling(CssSelector::for_element(
+                "b"
+            ))]
+        ))
+    )
+}
+
+#[test]
+fn parse_path_two_adjacent_siblings_spaceless() {
     let parsed = crate::parsing::grammar::css_selector_path("a+b");
     assert_eq!(
         parsed,
         Ok(CssSelectorPath::new(
             CssSelector::for_element("a"),
-            vec![CssSelectorStep::sibling(CssSelector::for_element("b"))]
+            vec![CssSelectorStep::adjacent_sibling(CssSelector::for_element(
+                "b"
+            ))]
         ))
     )
 }

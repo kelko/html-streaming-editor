@@ -1,4 +1,4 @@
-use crate::{CssSelector, CssSelectorList, CssSelectorPath};
+use crate::{Command, CssSelector, CssSelectorList, CssSelectorPath, Pipeline};
 
 #[test]
 fn parse_value_simple_doublequotes() {
@@ -118,29 +118,48 @@ fn parse_selector_simple_doublequotes() {
         )]))
     )
 }
-/*
 #[test]
 fn parse_selector_simple_singlequotes() {
     let parsed = super::grammar::selector("'a'");
-    assert_eq!(parsed, Ok("a"))
+    assert_eq!(
+        parsed,
+        Ok(CssSelectorList::new(vec![CssSelectorPath::single(
+            CssSelector::for_element("a")
+        )]))
+    )
 }
 
 #[test]
 fn parse_selector_whitespaced_doublequotes() {
     let parsed = super::grammar::selector("\" a \"");
-    assert_eq!(parsed, Ok("a"))
+    assert_eq!(
+        parsed,
+        Ok(CssSelectorList::new(vec![CssSelectorPath::single(
+            CssSelector::for_element("a")
+        )]))
+    )
 }
 
 #[test]
 fn parse_selector_whitespaced_singlequotes() {
     let parsed = super::grammar::selector("' a '");
-    assert_eq!(parsed, Ok("a"))
+    assert_eq!(
+        parsed,
+        Ok(CssSelectorList::new(vec![CssSelectorPath::single(
+            CssSelector::for_element("a")
+        )]))
+    )
 }
 
 #[test]
 fn parse_selector_whitespaced_questionsmarks() {
     let parsed = super::grammar::selector("? a ?");
-    assert_eq!(parsed, Ok("a"))
+    assert_eq!(
+        parsed,
+        Ok(CssSelectorList::new(vec![CssSelectorPath::single(
+            CssSelector::for_element("a")
+        )]))
+    )
 }
 
 #[test]
@@ -150,27 +169,25 @@ fn parse_selector_doublequoted_cant_have_doublequotes() {
 }
 
 #[test]
-fn parse_selector_chained_singlequotes() {
-    let parsed = super::grammar::selector("'a.b c > d[data-test=\"foo\"]'");
-    assert_eq!(parsed, Ok("a.b c > d[data-test=\"foo\"]"))
-}
-
-#[test]
-fn parse_selector_chained_questionsmarks() {
-    let parsed = super::grammar::selector("?a.b c > d[data-test=\"foo\"]?");
-    assert_eq!(parsed, Ok("a.b c > d[data-test=\"foo\"]"))
-}
-
-#[test]
 fn parse_single_only() {
     let parsed = super::grammar::only_command("(ONLY 'a')");
-    assert_eq!(parsed, Ok(super::Command::Only(String::from("a"))));
+    assert_eq!(
+        parsed,
+        Ok(Command::Only(CssSelectorList::new(vec![
+            CssSelectorPath::single(CssSelector::for_element("a"))
+        ])))
+    );
 }
 
 #[test]
 fn parse_single_filter() {
     let parsed = super::grammar::filter_command("(FILTER 'a')");
-    assert_eq!(parsed, Ok(super::Command::Filter(String::from("a"))));
+    assert_eq!(
+        parsed,
+        Ok(Command::Filter(CssSelectorList::new(vec![
+            CssSelectorPath::single(CssSelector::for_element("a"))
+        ])))
+    );
 }
 
 #[test]
@@ -179,9 +196,12 @@ fn parse_two_grammar() {
     assert_eq!(
         parsed,
         Ok(Pipeline::new(vec![
-            super::Command::Only(String::from("a")),
-            super::Command::Filter(String::from("b")),
+            Command::Only(CssSelectorList::new(vec![CssSelectorPath::single(
+                CssSelector::for_element("a")
+            )])),
+            Command::Filter(CssSelectorList::new(vec![CssSelectorPath::single(
+                CssSelector::for_element("b")
+            )]))
         ]))
     );
 }
-*/
