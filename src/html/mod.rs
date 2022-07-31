@@ -18,7 +18,7 @@ pub(crate) struct HtmlNodeIndex {
 /// Iterates through the whole DOM and stores the related nodes for each node
 /// to quickly find children, descendents and siblings
 pub(crate) struct HtmlIndex<'a> {
-    inner: HashMap<NodeHandle, HtmlNodeIndex>,
+    pub(self) inner: HashMap<NodeHandle, HtmlNodeIndex>,
     pub(crate) dom: &'a VDom<'a>,
 }
 

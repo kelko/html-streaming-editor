@@ -52,6 +52,6 @@ fn main() {
     let editor = HtmlStreamingEditor::new(input_reader, output_writer);
     match editor.run(commands) {
         Ok(()) => (),
-        Err(e) => todo!(),
+        Err(_e) => todo!(),
     }
 }

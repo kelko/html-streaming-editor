@@ -1,22 +1,23 @@
 use crate::{
     CssAttributeComparison, CssAttributeSelector, CssSelector, CssSelectorList, CssSelectorPath,
-    CssSelectorStep,
+    CssSelectorStep, HtmlIndex,
 };
+use std::collections::HashSet;
 
 #[test]
-fn parse_selector_onlyelement() {
+fn parse_selector_only_element() {
     let parsed = crate::parsing::grammar::css_selector("a");
     assert_eq!(parsed, Ok(CssSelector::for_element("a")))
 }
 
 #[test]
-fn parse_selector_onlyid() {
+fn parse_selector_only_id() {
     let parsed = crate::parsing::grammar::css_selector("#a");
     assert_eq!(parsed, Ok(CssSelector::for_id("a")))
 }
 
 #[test]
-fn parse_selector_onlyclass() {
+fn parse_selector_only_class() {
     let parsed = crate::parsing::grammar::css_selector(".a");
     assert_eq!(parsed, Ok(CssSelector::for_class("a")))
 }
@@ -67,7 +68,7 @@ fn parse_selector_mix() {
 }
 
 #[test]
-fn parse_path_single() {
+fn parse_single_step_path() {
     let parsed = crate::parsing::grammar::css_selector_path("a");
     assert_eq!(
         parsed,
@@ -76,7 +77,7 @@ fn parse_path_single() {
 }
 
 #[test]
-fn parse_path_two_descendant() {
+fn parse_two_step_path_descendant() {
     let parsed = crate::parsing::grammar::css_selector_path("a b");
     assert_eq!(
         parsed,
@@ -88,7 +89,7 @@ fn parse_path_two_descendant() {
 }
 
 #[test]
-fn parse_path_two_direct_child() {
+fn parse_two_step_path_direct_children() {
     let parsed = crate::parsing::grammar::css_selector_path("a > b");
     assert_eq!(
         parsed,
@@ -100,7 +101,7 @@ fn parse_path_two_direct_child() {
 }
 
 #[test]
-fn parse_path_two_general_sibling() {
+fn parse_two_step_path_general_sibling() {
     let parsed = crate::parsing::grammar::css_selector_path("a ~ b");
     assert_eq!(
         parsed,
@@ -114,7 +115,7 @@ fn parse_path_two_general_sibling() {
 }
 
 #[test]
-fn parse_path_two_general_siblings_spaceless() {
+fn parse_two_step_path_general_siblings_spaceless() {
     let parsed = crate::parsing::grammar::css_selector_path("a~b");
     assert_eq!(
         parsed,
@@ -128,7 +129,7 @@ fn parse_path_two_general_siblings_spaceless() {
 }
 
 #[test]
-fn parse_path_two_adjacent_sibling() {
+fn parse_two_step_path_adjacent_sibling() {
     let parsed = crate::parsing::grammar::css_selector_path("a + b");
     assert_eq!(
         parsed,
@@ -142,7 +143,7 @@ fn parse_path_two_adjacent_sibling() {
 }
 
 #[test]
-fn parse_path_two_adjacent_siblings_spaceless() {
+fn parse_two_step_path_adjacent_siblings_spaceless() {
     let parsed = crate::parsing::grammar::css_selector_path("a+b");
     assert_eq!(
         parsed,
@@ -216,4 +217,70 @@ fn parse_list_complex() {
             ),
         ]))
     )
+}
+
+#[test]
+fn query_single_level_by_element_name() {
+    let dom = tl::parse(
+        "<html><head></head><body><header id=\"element-under-test\"><h1>Hallo</h1></header><main><p>Ups <em>I'm sorry</em></p><img src=\"\"></main><footer></footer><nav><ul><li>1</li><li>2</li></ul></nav></body></html>",
+        tl::ParserOptions::default(),
+    )
+        .unwrap();
+    let index = HtmlIndex::load(&dom);
+
+    let selector = CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_element(
+        "header",
+    ))]);
+
+    let starting_elements = HashSet::from_iter(dom.children().iter().cloned());
+    let result = selector.query(&index, &starting_elements);
+
+    let header_handle = dom.get_element_by_id("element-under-test").unwrap();
+
+    assert_eq!(result.len(), 1);
+    assert!(result.contains(&header_handle));
+}
+
+#[test]
+fn query_single_level_by_id() {
+    let dom = tl::parse(
+        "<html><head></head><body><header><h1>Hallo</h1></header><main><p>Ups <em id=\"element-under-test\">I'm sorry</em></p><img src=\"\"></main><footer></footer><nav><ul><li>1</li><li>2</li></ul></nav></body></html>",
+        tl::ParserOptions::default(),
+    )
+        .unwrap();
+    let index = HtmlIndex::load(&dom);
+
+    let selector = CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_id(
+        "element-under-test",
+    ))]);
+
+    let starting_elements = HashSet::from_iter(dom.children().iter().cloned());
+    let result = selector.query(&index, &starting_elements);
+
+    let element_handle = dom.get_element_by_id("element-under-test").unwrap();
+
+    assert_eq!(result.len(), 1);
+    assert!(result.contains(&element_handle));
+}
+
+#[test]
+fn query_single_level_by_single_class() {
+    let dom = tl::parse(
+        "<html><head></head><body><header><h1>Hallo</h1></header><main><p>Ups <em id=\"element-under-test\" class=\"single-class\">I'm sorry</em></p><img src=\"\"></main><footer></footer><nav><ul><li>1</li><li>2</li></ul></nav></body></html>",
+        tl::ParserOptions::default(),
+    )
+        .unwrap();
+    let index = HtmlIndex::load(&dom);
+
+    let selector = CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_class(
+        "single-class",
+    ))]);
+
+    let starting_elements = HashSet::from_iter(dom.children().iter().cloned());
+    let result = selector.query(&index, &starting_elements);
+
+    let element_handle = dom.get_element_by_id("element-under-test").unwrap();
+
+    assert_eq!(result.len(), 1);
+    assert!(result.contains(&element_handle));
 }
