@@ -284,3 +284,282 @@ fn query_single_level_by_single_class() {
     assert_eq!(result.len(), 1);
     assert!(result.contains(&element_handle));
 }
+
+#[test]
+fn query_single_level_by_multiple_classes() {
+    let dom = tl::parse(
+        "<html><head></head><body><header><h1 class=\"single-class\">Hallo</h1></header><main><p>Ups <em id=\"element-under-test\" class=\"single-class other-class\">I'm sorry</em></p><img src=\"\"></main><footer></footer><nav><ul><li>1</li><li>2</li></ul></nav></body></html>",
+        tl::ParserOptions::default(),
+    )
+        .unwrap();
+    let index = HtmlIndex::load(&dom);
+
+    let selector = CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_classes(
+        vec!["single-class", "other-class"],
+    ))]);
+
+    let starting_elements = HashSet::from_iter(dom.children().iter().cloned());
+    let result = selector.query(&index, &starting_elements);
+
+    let element_handle = dom.get_element_by_id("element-under-test").unwrap();
+
+    assert_eq!(result.len(), 1);
+    assert!(result.contains(&element_handle));
+}
+
+#[test]
+fn query_single_level_by_attribute_existence() {
+    let dom = tl::parse(
+        "<html><head></head><body><header><h1>Hallo</h1></header><main><p>Ups <em id=\"element-under-test\" data-test=\"its a me\">I'm sorry</em></p><img src=\"\"></main><footer></footer><nav><ul><li>1</li><li>2</li></ul></nav></body></html>",
+        tl::ParserOptions::default(),
+    )
+        .unwrap();
+    let index = HtmlIndex::load(&dom);
+
+    let selector = CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_attribute(
+        CssAttributeSelector {
+            attribute: "data-test",
+            operator: CssAttributeComparison::Exist,
+            value: None,
+        },
+    ))]);
+
+    let starting_elements = HashSet::from_iter(dom.children().iter().cloned());
+    let result = selector.query(&index, &starting_elements);
+
+    let element_handle = dom.get_element_by_id("element-under-test").unwrap();
+
+    assert_eq!(result.len(), 1);
+    assert!(result.contains(&element_handle));
+}
+
+#[test]
+fn query_single_level_by_attribute_contains_term() {
+    let dom = tl::parse(
+        "<html><head></head><body><header><h1 data-test=\"I am not it\">Hallo</h1></header><main><p>Ups <em id=\"element-under-test\" data-test=\"its a me\">I'm sorry</em></p><img src=\"\"></main><footer></footer><nav><ul><li>1</li><li>2</li></ul></nav></body></html>",
+        tl::ParserOptions::default(),
+    )
+        .unwrap();
+    let index = HtmlIndex::load(&dom);
+
+    let selector = CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_attribute(
+        CssAttributeSelector {
+            attribute: "data-test",
+            operator: CssAttributeComparison::TermContains,
+            value: Some("me"),
+        },
+    ))]);
+
+    let starting_elements = HashSet::from_iter(dom.children().iter().cloned());
+    let result = selector.query(&index, &starting_elements);
+
+    let element_handle = dom.get_element_by_id("element-under-test").unwrap();
+
+    assert_eq!(result.len(), 1);
+    assert!(result.contains(&element_handle));
+}
+
+#[test]
+fn query_single_level_by_attribute_contains_character() {
+    let dom = tl::parse(
+        "<html><head></head><body><header><h1 data-test=\"I am not it\">Hallo</h1></header><main><p>Ups <em id=\"element-under-test\" data-test=\"its a me\">I'm sorry</em></p><img src=\"\"></main><footer></footer><nav><ul><li>1</li><li>2</li></ul></nav></body></html>",
+        tl::ParserOptions::default(),
+    )
+        .unwrap();
+    let index = HtmlIndex::load(&dom);
+
+    let selector = CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_attribute(
+        CssAttributeSelector {
+            attribute: "data-test",
+            operator: CssAttributeComparison::CharacterContains,
+            value: Some("ts"),
+        },
+    ))]);
+
+    let starting_elements = HashSet::from_iter(dom.children().iter().cloned());
+    let result = selector.query(&index, &starting_elements);
+
+    let element_handle = dom.get_element_by_id("element-under-test").unwrap();
+
+    assert_eq!(result.len(), 1);
+    assert!(result.contains(&element_handle));
+}
+
+#[test]
+fn query_single_level_by_attribute_starts() {
+    let dom = tl::parse(
+        "<html><head></head><body><header><h1 data-test=\"I am not it\">Hallo</h1></header><main><p>Ups <em id=\"element-under-test\" data-test=\"its a me\">I'm sorry</em></p><img src=\"\"></main><footer></footer><nav><ul><li>1</li><li>2</li></ul></nav></body></html>",
+        tl::ParserOptions::default(),
+    )
+        .unwrap();
+    let index = HtmlIndex::load(&dom);
+
+    let selector = CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_attribute(
+        CssAttributeSelector {
+            attribute: "data-test",
+            operator: CssAttributeComparison::Starts,
+            value: Some("its"),
+        },
+    ))]);
+
+    let starting_elements = HashSet::from_iter(dom.children().iter().cloned());
+    let result = selector.query(&index, &starting_elements);
+
+    let element_handle = dom.get_element_by_id("element-under-test").unwrap();
+
+    assert_eq!(result.len(), 1);
+    assert!(result.contains(&element_handle));
+}
+
+#[test]
+fn query_single_level_by_attribute_ends() {
+    let dom = tl::parse(
+        "<html><head></head><body><header><h1 data-test=\"I am not it\">Hallo</h1></header><main><p>Ups <em id=\"element-under-test\" data-test=\"its a me\">I'm sorry</em></p><img src=\"\"></main><footer></footer><nav><ul><li>1</li><li>2</li></ul></nav></body></html>",
+        tl::ParserOptions::default(),
+    )
+        .unwrap();
+    let index = HtmlIndex::load(&dom);
+
+    let selector = CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_attribute(
+        CssAttributeSelector {
+            attribute: "data-test",
+            operator: CssAttributeComparison::Ends,
+            value: Some("me"),
+        },
+    ))]);
+
+    let starting_elements = HashSet::from_iter(dom.children().iter().cloned());
+    let result = selector.query(&index, &starting_elements);
+
+    let element_handle = dom.get_element_by_id("element-under-test").unwrap();
+
+    assert_eq!(result.len(), 1);
+    assert!(result.contains(&element_handle));
+}
+
+#[test]
+fn query_single_level_by_attribute_equals_exact() {
+    let dom = tl::parse(
+        "<html><head></head><body><header><h1 data-test=\"its not me\">Hallo</h1></header><main><p>Ups <em id=\"element-under-test\" data-test=\"its a me\">I'm sorry</em></p><img src=\"\"></main><footer></footer><nav><ul><li>1</li><li>2</li></ul></nav></body></html>",
+        tl::ParserOptions::default(),
+    )
+        .unwrap();
+    let index = HtmlIndex::load(&dom);
+
+    let selector = CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_attribute(
+        CssAttributeSelector {
+            attribute: "data-test",
+            operator: CssAttributeComparison::EqualsExact,
+            value: Some("its a me"),
+        },
+    ))]);
+
+    let starting_elements = HashSet::from_iter(dom.children().iter().cloned());
+    let result = selector.query(&index, &starting_elements);
+
+    let element_handle = dom.get_element_by_id("element-under-test").unwrap();
+
+    assert_eq!(result.len(), 1);
+    assert!(result.contains(&element_handle));
+}
+
+#[test]
+fn query_single_level_by_attribute_equals_till_hyphen() {
+    let dom = tl::parse(
+        "<html><head></head><body><header><h1 data-test=\"terminology\">Hallo</h1></header><main><p>Ups <em id=\"element-under-test\" data-test=\"term-a\">I'm sorry</em></p><img src=\"\"></main><footer></footer><nav><ul><li>1</li><li>2</li></ul></nav></body></html>",
+        tl::ParserOptions::default(),
+    )
+        .unwrap();
+    let index = HtmlIndex::load(&dom);
+
+    let selector = CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_attribute(
+        CssAttributeSelector {
+            attribute: "data-test",
+            operator: CssAttributeComparison::EqualsTillHyphen,
+            value: Some("term"),
+        },
+    ))]);
+
+    let starting_elements = HashSet::from_iter(dom.children().iter().cloned());
+    let result = selector.query(&index, &starting_elements);
+
+    let element_handle = dom.get_element_by_id("element-under-test").unwrap();
+
+    assert_eq!(result.len(), 1);
+    assert!(result.contains(&element_handle));
+}
+
+#[test]
+fn query_descendents() {
+    let dom = tl::parse(
+        "<html><head></head><body><header><h1>Hallo</h1></header><main><p>Ups<em id=\"element-under-test\" class=\"single-class\">I'm sorry</em></p><img src=\"\"></main><footer></footer><nav><ul><li>1</li><li>2</li></ul></nav></body></html>",
+        tl::ParserOptions::default(),
+    )
+        .unwrap();
+    let index = HtmlIndex::load(&dom);
+
+    let selector = CssSelectorList::new(vec![CssSelectorPath::new(
+        CssSelector::for_element("main"),
+        vec![CssSelectorStep::descendent(CssSelector::for_class(
+            "single-class",
+        ))],
+    )]);
+
+    let starting_elements = HashSet::from_iter(dom.children().iter().cloned());
+    let result = selector.query(&index, &starting_elements);
+
+    let element_handle = dom.get_element_by_id("element-under-test").unwrap();
+
+    assert_eq!(result.len(), 1);
+    assert!(result.contains(&element_handle));
+}
+
+#[test]
+fn query_direct_child() {
+    let dom = tl::parse(
+        "<html><head></head><body><header><h1>Hallo</h1></header><main><p>Ups<em class=\"single-class\">I'm sorry</em></p><img id=\"element-under-test\" class=\"single-class\" src=\"\"></main><footer></footer><nav><ul><li>1</li><li>2</li></ul></nav></body></html>",
+        tl::ParserOptions::default(),
+    )
+        .unwrap();
+    let index = HtmlIndex::load(&dom);
+
+    let selector = CssSelectorList::new(vec![CssSelectorPath::new(
+        CssSelector::for_element("main"),
+        vec![CssSelectorStep::direct_child(CssSelector::for_class(
+            "single-class",
+        ))],
+    )]);
+
+    let starting_elements = HashSet::from_iter(dom.children().iter().cloned());
+    let result = selector.query(&index, &starting_elements);
+
+    let element_handle = dom.get_element_by_id("element-under-test").unwrap();
+
+    assert_eq!(result.len(), 1);
+    assert!(result.contains(&element_handle));
+}
+
+#[test]
+fn query_adjacent_sibling() {
+    let dom = tl::parse(
+        "<html><head></head><body><header><h1>Hallo</h1></header><main><p>Ups<em class=\"single-class\">I'm sorry</em></p><img id=\"element-under-test\" class=\"single-class\" src=\"\"></main><footer></footer><nav><ul><li>1</li><li>2</li></ul></nav></body></html>",
+        tl::ParserOptions::default(),
+    )
+        .unwrap();
+    let index = HtmlIndex::load(&dom);
+
+    let selector = CssSelectorList::new(vec![CssSelectorPath::new(
+        CssSelector::for_element("p"),
+        vec![CssSelectorStep::adjacent_sibling(CssSelector::for_class(
+            "single-class",
+        ))],
+    )]);
+
+    let starting_elements = HashSet::from_iter(dom.children().iter().cloned());
+    let result = selector.query(&index, &starting_elements);
+
+    let element_handle = dom.get_element_by_id("element-under-test").unwrap();
+
+    assert_eq!(result.len(), 1);
+    assert!(result.contains(&element_handle));
+}

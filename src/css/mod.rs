@@ -65,12 +65,20 @@ pub struct CssAttributeSelector<'a> {
 impl<'a> CssAttributeSelector<'a> {
     fn matches(&self, attribute: &Bytes) -> bool {
         let given_value = attribute.as_utf8_str();
-        let expected_value = self.value.unwrap();
+
+        if self.operator == CssAttributeComparison::Exist {
+            // has to short-circuit as Exist does not have a self.value
+            return true;
+        }
+
+        let expected_value = self.value.expect(
+            "If operator is not Exist a value must be given or the parser works incorrectly",
+        );
 
         match self.operator {
-            CssAttributeComparison::Exist => true,
+            CssAttributeComparison::Exist => unreachable!(),
             CssAttributeComparison::Starts => given_value.starts_with(expected_value),
-            CssAttributeComparison::Ends => given_value.starts_with(expected_value),
+            CssAttributeComparison::Ends => given_value.ends_with(expected_value),
             CssAttributeComparison::CharacterContains => given_value.contains(expected_value),
             CssAttributeComparison::TermContains => {
                 given_value.split_whitespace().any(|x| x == expected_value)
@@ -86,7 +94,7 @@ impl<'a> CssAttributeSelector<'a> {
         match given_value.find('-') {
             None => given_value.eq(expected_value),
             Some(position) => {
-                let slice = &given_value[0..=position];
+                let slice = &given_value[0..position];
                 slice.eq(expected_value)
             }
         }
@@ -154,6 +162,17 @@ impl<'a> CssSelector<'a> {
             element: None,
             id: None,
             classes: vec![class],
+            pseudo_classes: vec![],
+            attributes: vec![],
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn for_classes(classes: Vec<&'a str>) -> Self {
+        CssSelector {
+            element: None,
+            id: None,
+            classes,
             pseudo_classes: vec![],
             attributes: vec![],
         }
