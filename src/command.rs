@@ -48,17 +48,12 @@ impl<'a> Command<'a> {
         index: &'a HtmlIndex<'a>,
         selector: &CssSelectorList<'a>,
     ) -> Result<HashSet<NodeHandle>, ()> {
-        //TODO: Fix. too many nodes returned
         let findings = selector.query(index, input);
 
         //TODO: code below seems to not change the actual nodes in the DOM. Needs different approach
         let parser = index.dom.parser();
         for node in findings.iter() {
-            node.get(parser)
-                .unwrap()
-                .inner_html(parser)
-                .to_mut()
-                .clear()
+            (*node.get(parser).unwrap().inner_html(parser).to_mut()).clear()
         }
 
         Ok(input.clone())
