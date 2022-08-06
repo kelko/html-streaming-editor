@@ -146,7 +146,7 @@ impl<'a> HtmlIndex<'a> {
 
             let mut children = parent.children_mut();
             let children = children.top_mut();
-            index = children
+            let index = children
                 .iter()
                 .position(|t| t == handle)
                 .expect("HtmlIndex cache must be broken. Please file bug report");
