@@ -28,7 +28,7 @@ impl<'a> Command<'a> {
     pub(crate) fn execute(
         &self,
         input: &HashSet<NodeHandle>,
-        index: &'a HtmlIndex<'a>,
+        index: &'_ HtmlIndex<'a>,
     ) -> Result<HashSet<NodeHandle>, ()> {
         match self {
             Command::Only(selector) => Self::only(input, index, selector),
@@ -37,7 +37,7 @@ impl<'a> Command<'a> {
     }
     fn only(
         input: &HashSet<NodeHandle>,
-        index: &'a HtmlIndex<'a>,
+        index: &'_ HtmlIndex<'a>,
         selector: &CssSelectorList<'a>,
     ) -> Result<HashSet<NodeHandle>, ()> {
         Ok(selector.query(index, input))
@@ -45,15 +45,13 @@ impl<'a> Command<'a> {
 
     fn filter(
         input: &HashSet<NodeHandle>,
-        index: &'a HtmlIndex<'a>,
+        index: &'_ HtmlIndex<'a>,
         selector: &CssSelectorList<'a>,
     ) -> Result<HashSet<NodeHandle>, ()> {
         let findings = selector.query(index, input);
 
-        //TODO: code below seems to not change the actual nodes in the DOM. Needs different approach
-        let parser = index.dom.parser();
         for node in findings.iter() {
-            (*node.get(parser).unwrap().inner_html(parser).to_mut()).clear()
+            index.remove(node)
         }
 
         Ok(input.clone())

@@ -7,7 +7,7 @@ use std::io::{BufRead, BufReader, BufWriter, Write};
 
 fn main() {
     let options = clap_app!(hse =>
-        (version: "0.1")
+        (version: "0.0.1")
         (author: ":kelko:")
         (about: "Html Streaming Editor")
         (@arg input: -i --input +takes_value "File name of the Input. `-` for stdin (default)")

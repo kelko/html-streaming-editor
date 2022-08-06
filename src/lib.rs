@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 use std::io::{BufRead, Read, Write};
 
 mod command;
@@ -34,13 +33,10 @@ impl HtmlStreamingEditor {
             }
 
             if let Ok(dom) = tl::parse(&string_content, tl::ParserOptions::default()) {
-                let parser = dom.parser();
-                let index = HtmlIndex::load(&dom);
-                if let Ok(result) =
-                    pipeline.run_on(HashSet::from_iter(dom.children().iter().cloned()), &index)
-                {
+                let index = HtmlIndex::load(dom);
+                if let Ok(result) = pipeline.run_on(index.root_elements(), &index) {
                     for node in result.iter() {
-                        let html = node.get(parser).unwrap().inner_html(parser);
+                        let html = index.render(node);
                         match self.output.write((*html).as_bytes()) {
                             Ok(_) => (),
                             Err(_) => todo!(),

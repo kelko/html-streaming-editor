@@ -8,20 +8,23 @@ fn fill_simplest_html() {
         tl::ParserOptions::default(),
     )
     .unwrap();
-    let index = HtmlIndex::load(&dom);
+    let index = HtmlIndex::load(dom);
 
     assert_eq!(index.inner.len(), 3);
     assert_eq!(
-        dom.children()
+        index
+            .dom
+            .borrow()
+            .children()
             .iter()
-            .filter_map(|n| index.get(n))
+            .filter_map(|n| index.relations_of(n))
             .collect::<Vec<_>>()
             .len(),
         1
     );
     assert_eq!(
         index
-            .get(dom.children().first().unwrap())
+            .relations_of(index.dom.borrow().children().first().unwrap())
             .unwrap()
             .children
             .len(),
@@ -36,10 +39,14 @@ fn fill_medium_html() {
         tl::ParserOptions::default(),
     )
         .unwrap();
-    let index = HtmlIndex::load(&dom);
+    let index = HtmlIndex::load(dom);
 
-    let body_handle = dom.get_element_by_id("element-under-test").unwrap();
-    let body_index = index.get(&body_handle).unwrap();
+    let body_handle = index
+        .dom
+        .borrow()
+        .get_element_by_id("element-under-test")
+        .unwrap();
+    let body_index = index.relations_of(&body_handle).unwrap();
 
     assert_eq!(index.inner.len(), 19);
     assert_eq!(body_index.children.len(), 4);
@@ -49,7 +56,7 @@ fn fill_medium_html() {
         //order is not preserved
         HashSet::from_iter(
             body_handle
-                .get(dom.parser())
+                .get(index.dom.borrow().parser())
                 .unwrap()
                 .children()
                 .unwrap()
@@ -67,12 +74,16 @@ fn fill_medium_html_siblings_of_main() {
         tl::ParserOptions::default(),
     )
         .unwrap();
-    let index = HtmlIndex::load(&dom);
+    let index = HtmlIndex::load(dom);
 
-    let main_handle = dom.get_element_by_id("element-under-test").unwrap();
-    let main_index = index.get(&main_handle).unwrap();
+    let main_handle = index
+        .dom
+        .borrow()
+        .get_element_by_id("element-under-test")
+        .unwrap();
+    let main_index = index.relations_of(&main_handle).unwrap();
 
-    let footer_handle = dom.get_element_by_id("sibling").unwrap();
+    let footer_handle = index.dom.borrow().get_element_by_id("sibling").unwrap();
 
     assert_eq!(main_index.siblings.len(), 2);
     assert_eq!(main_index.direct_sibling, Some(footer_handle));
@@ -85,12 +96,16 @@ fn fill_medium_html_siblings_of_header() {
         tl::ParserOptions::default(),
     )
         .unwrap();
-    let index = HtmlIndex::load(&dom);
+    let index = HtmlIndex::load(dom);
 
-    let header_handle = dom.get_element_by_id("element-under-test").unwrap();
-    let header_index = index.get(&header_handle).unwrap();
+    let header_handle = index
+        .dom
+        .borrow()
+        .get_element_by_id("element-under-test")
+        .unwrap();
+    let header_index = index.relations_of(&header_handle).unwrap();
 
-    let main_handle = dom.get_element_by_id("sibling").unwrap();
+    let main_handle = index.dom.borrow().get_element_by_id("sibling").unwrap();
 
     assert_eq!(header_index.siblings.len(), 3);
     assert_eq!(header_index.direct_sibling, Some(main_handle));

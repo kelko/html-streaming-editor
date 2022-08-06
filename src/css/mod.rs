@@ -197,7 +197,8 @@ impl<'a> CssSelector<'a> {
         let mut findings = HashSet::new();
 
         for node in nodes {
-            if let Some(tag) = node.get(index.dom.parser()).unwrap().as_tag() {
+            let dom = index.dom.borrow();
+            if let Some(tag) = node.get(dom.parser()).unwrap().as_tag() {
                 if self.matches(tag) {
                     findings.insert(node.clone());
                 }
@@ -397,24 +398,24 @@ impl<'a> CssSelectorPath<'a> {
         match combinator {
             CssSelectorCombinator::Start => source
                 .iter()
-                .flat_map(|n| index.get(n).unwrap().descendents.clone())
+                .flat_map(|n| index.relations_of(n).unwrap().descendents.clone())
                 .chain(source.clone())
                 .collect::<HashSet<_>>(),
             CssSelectorCombinator::Descendent => source
                 .iter()
-                .flat_map(|n| index.get(n).unwrap().descendents.clone())
+                .flat_map(|n| index.relations_of(n).unwrap().descendents.clone())
                 .collect::<HashSet<_>>(),
             CssSelectorCombinator::DirectChild => source
                 .iter()
-                .flat_map(|n| index.get(n).unwrap().children.clone())
+                .flat_map(|n| index.relations_of(n).unwrap().children.clone())
                 .collect::<HashSet<_>>(),
             CssSelectorCombinator::GeneralSibling => source
                 .iter()
-                .flat_map(|n| index.get(n).unwrap().siblings.clone())
+                .flat_map(|n| index.relations_of(n).unwrap().siblings.clone())
                 .collect::<HashSet<_>>(),
             CssSelectorCombinator::AdjacentSibling => source
                 .iter()
-                .filter_map(|n| index.get(n).unwrap().direct_sibling)
+                .filter_map(|n| index.relations_of(n).unwrap().direct_sibling)
                 .collect::<HashSet<_>>(),
         }
     }
@@ -461,7 +462,7 @@ impl<'a> CssSelectorList<'a> {
 
     pub(crate) fn query(
         &self,
-        index: &'a HtmlIndex<'a>,
+        index: &'_ HtmlIndex<'a>,
         start: &HashSet<NodeHandle>,
     ) -> HashSet<NodeHandle> {
         self.0

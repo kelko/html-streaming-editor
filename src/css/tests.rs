@@ -2,7 +2,6 @@ use crate::{
     CssAttributeComparison, CssAttributeSelector, CssSelector, CssSelectorList, CssSelectorPath,
     CssSelectorStep, HtmlIndex,
 };
-use std::collections::HashSet;
 
 #[test]
 fn parse_selector_only_element() {
@@ -226,16 +225,20 @@ fn query_single_level_by_element_name() {
         tl::ParserOptions::default(),
     )
         .unwrap();
-    let index = HtmlIndex::load(&dom);
+    let index = HtmlIndex::load(dom);
 
     let selector = CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_element(
         "header",
     ))]);
 
-    let starting_elements = HashSet::from_iter(dom.children().iter().cloned());
+    let starting_elements = index.root_elements();
     let result = selector.query(&index, &starting_elements);
 
-    let header_handle = dom.get_element_by_id("element-under-test").unwrap();
+    let header_handle = index
+        .dom
+        .borrow()
+        .get_element_by_id("element-under-test")
+        .unwrap();
 
     assert_eq!(result.len(), 1);
     assert!(result.contains(&header_handle));
@@ -248,16 +251,20 @@ fn query_single_level_by_id() {
         tl::ParserOptions::default(),
     )
         .unwrap();
-    let index = HtmlIndex::load(&dom);
+    let index = HtmlIndex::load(dom);
 
     let selector = CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_id(
         "element-under-test",
     ))]);
 
-    let starting_elements = HashSet::from_iter(dom.children().iter().cloned());
+    let starting_elements = index.root_elements();
     let result = selector.query(&index, &starting_elements);
 
-    let element_handle = dom.get_element_by_id("element-under-test").unwrap();
+    let element_handle = index
+        .dom
+        .borrow()
+        .get_element_by_id("element-under-test")
+        .unwrap();
 
     assert_eq!(result.len(), 1);
     assert!(result.contains(&element_handle));
@@ -270,16 +277,20 @@ fn query_single_level_by_single_class() {
         tl::ParserOptions::default(),
     )
         .unwrap();
-    let index = HtmlIndex::load(&dom);
+    let index = HtmlIndex::load(dom);
 
     let selector = CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_class(
         "single-class",
     ))]);
 
-    let starting_elements = HashSet::from_iter(dom.children().iter().cloned());
+    let starting_elements = index.root_elements();
     let result = selector.query(&index, &starting_elements);
 
-    let element_handle = dom.get_element_by_id("element-under-test").unwrap();
+    let element_handle = index
+        .dom
+        .borrow()
+        .get_element_by_id("element-under-test")
+        .unwrap();
 
     assert_eq!(result.len(), 1);
     assert!(result.contains(&element_handle));
@@ -292,16 +303,20 @@ fn query_single_level_by_multiple_classes() {
         tl::ParserOptions::default(),
     )
         .unwrap();
-    let index = HtmlIndex::load(&dom);
+    let index = HtmlIndex::load(dom);
 
     let selector = CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_classes(
         vec!["single-class", "other-class"],
     ))]);
 
-    let starting_elements = HashSet::from_iter(dom.children().iter().cloned());
+    let starting_elements = index.root_elements();
     let result = selector.query(&index, &starting_elements);
 
-    let element_handle = dom.get_element_by_id("element-under-test").unwrap();
+    let element_handle = index
+        .dom
+        .borrow()
+        .get_element_by_id("element-under-test")
+        .unwrap();
 
     assert_eq!(result.len(), 1);
     assert!(result.contains(&element_handle));
@@ -314,7 +329,7 @@ fn query_single_level_by_attribute_existence() {
         tl::ParserOptions::default(),
     )
         .unwrap();
-    let index = HtmlIndex::load(&dom);
+    let index = HtmlIndex::load(dom);
 
     let selector = CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_attribute(
         CssAttributeSelector {
@@ -324,10 +339,14 @@ fn query_single_level_by_attribute_existence() {
         },
     ))]);
 
-    let starting_elements = HashSet::from_iter(dom.children().iter().cloned());
+    let starting_elements = index.root_elements();
     let result = selector.query(&index, &starting_elements);
 
-    let element_handle = dom.get_element_by_id("element-under-test").unwrap();
+    let element_handle = index
+        .dom
+        .borrow()
+        .get_element_by_id("element-under-test")
+        .unwrap();
 
     assert_eq!(result.len(), 1);
     assert!(result.contains(&element_handle));
@@ -340,7 +359,7 @@ fn query_single_level_by_attribute_contains_term() {
         tl::ParserOptions::default(),
     )
         .unwrap();
-    let index = HtmlIndex::load(&dom);
+    let index = HtmlIndex::load(dom);
 
     let selector = CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_attribute(
         CssAttributeSelector {
@@ -350,10 +369,14 @@ fn query_single_level_by_attribute_contains_term() {
         },
     ))]);
 
-    let starting_elements = HashSet::from_iter(dom.children().iter().cloned());
+    let starting_elements = index.root_elements();
     let result = selector.query(&index, &starting_elements);
 
-    let element_handle = dom.get_element_by_id("element-under-test").unwrap();
+    let element_handle = index
+        .dom
+        .borrow()
+        .get_element_by_id("element-under-test")
+        .unwrap();
 
     assert_eq!(result.len(), 1);
     assert!(result.contains(&element_handle));
@@ -366,7 +389,7 @@ fn query_single_level_by_attribute_contains_character() {
         tl::ParserOptions::default(),
     )
         .unwrap();
-    let index = HtmlIndex::load(&dom);
+    let index = HtmlIndex::load(dom);
 
     let selector = CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_attribute(
         CssAttributeSelector {
@@ -376,10 +399,14 @@ fn query_single_level_by_attribute_contains_character() {
         },
     ))]);
 
-    let starting_elements = HashSet::from_iter(dom.children().iter().cloned());
+    let starting_elements = index.root_elements();
     let result = selector.query(&index, &starting_elements);
 
-    let element_handle = dom.get_element_by_id("element-under-test").unwrap();
+    let element_handle = index
+        .dom
+        .borrow()
+        .get_element_by_id("element-under-test")
+        .unwrap();
 
     assert_eq!(result.len(), 1);
     assert!(result.contains(&element_handle));
@@ -392,7 +419,7 @@ fn query_single_level_by_attribute_starts() {
         tl::ParserOptions::default(),
     )
         .unwrap();
-    let index = HtmlIndex::load(&dom);
+    let index = HtmlIndex::load(dom);
 
     let selector = CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_attribute(
         CssAttributeSelector {
@@ -402,10 +429,14 @@ fn query_single_level_by_attribute_starts() {
         },
     ))]);
 
-    let starting_elements = HashSet::from_iter(dom.children().iter().cloned());
+    let starting_elements = index.root_elements();
     let result = selector.query(&index, &starting_elements);
 
-    let element_handle = dom.get_element_by_id("element-under-test").unwrap();
+    let element_handle = index
+        .dom
+        .borrow()
+        .get_element_by_id("element-under-test")
+        .unwrap();
 
     assert_eq!(result.len(), 1);
     assert!(result.contains(&element_handle));
@@ -418,7 +449,7 @@ fn query_single_level_by_attribute_ends() {
         tl::ParserOptions::default(),
     )
         .unwrap();
-    let index = HtmlIndex::load(&dom);
+    let index = HtmlIndex::load(dom);
 
     let selector = CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_attribute(
         CssAttributeSelector {
@@ -428,10 +459,14 @@ fn query_single_level_by_attribute_ends() {
         },
     ))]);
 
-    let starting_elements = HashSet::from_iter(dom.children().iter().cloned());
+    let starting_elements = index.root_elements();
     let result = selector.query(&index, &starting_elements);
 
-    let element_handle = dom.get_element_by_id("element-under-test").unwrap();
+    let element_handle = index
+        .dom
+        .borrow()
+        .get_element_by_id("element-under-test")
+        .unwrap();
 
     assert_eq!(result.len(), 1);
     assert!(result.contains(&element_handle));
@@ -444,7 +479,7 @@ fn query_single_level_by_attribute_equals_exact() {
         tl::ParserOptions::default(),
     )
         .unwrap();
-    let index = HtmlIndex::load(&dom);
+    let index = HtmlIndex::load(dom);
 
     let selector = CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_attribute(
         CssAttributeSelector {
@@ -454,10 +489,14 @@ fn query_single_level_by_attribute_equals_exact() {
         },
     ))]);
 
-    let starting_elements = HashSet::from_iter(dom.children().iter().cloned());
+    let starting_elements = index.root_elements();
     let result = selector.query(&index, &starting_elements);
 
-    let element_handle = dom.get_element_by_id("element-under-test").unwrap();
+    let element_handle = index
+        .dom
+        .borrow()
+        .get_element_by_id("element-under-test")
+        .unwrap();
 
     assert_eq!(result.len(), 1);
     assert!(result.contains(&element_handle));
@@ -470,7 +509,7 @@ fn query_single_level_by_attribute_equals_till_hyphen() {
         tl::ParserOptions::default(),
     )
         .unwrap();
-    let index = HtmlIndex::load(&dom);
+    let index = HtmlIndex::load(dom);
 
     let selector = CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_attribute(
         CssAttributeSelector {
@@ -480,10 +519,14 @@ fn query_single_level_by_attribute_equals_till_hyphen() {
         },
     ))]);
 
-    let starting_elements = HashSet::from_iter(dom.children().iter().cloned());
+    let starting_elements = index.root_elements();
     let result = selector.query(&index, &starting_elements);
 
-    let element_handle = dom.get_element_by_id("element-under-test").unwrap();
+    let element_handle = index
+        .dom
+        .borrow()
+        .get_element_by_id("element-under-test")
+        .unwrap();
 
     assert_eq!(result.len(), 1);
     assert!(result.contains(&element_handle));
@@ -496,7 +539,7 @@ fn query_descendents() {
         tl::ParserOptions::default(),
     )
         .unwrap();
-    let index = HtmlIndex::load(&dom);
+    let index = HtmlIndex::load(dom);
 
     let selector = CssSelectorList::new(vec![CssSelectorPath::new(
         CssSelector::for_element("main"),
@@ -505,10 +548,14 @@ fn query_descendents() {
         ))],
     )]);
 
-    let starting_elements = HashSet::from_iter(dom.children().iter().cloned());
+    let starting_elements = index.root_elements();
     let result = selector.query(&index, &starting_elements);
 
-    let element_handle = dom.get_element_by_id("element-under-test").unwrap();
+    let element_handle = index
+        .dom
+        .borrow()
+        .get_element_by_id("element-under-test")
+        .unwrap();
 
     assert_eq!(result.len(), 1);
     assert!(result.contains(&element_handle));
@@ -521,7 +568,7 @@ fn query_direct_child() {
         tl::ParserOptions::default(),
     )
         .unwrap();
-    let index = HtmlIndex::load(&dom);
+    let index = HtmlIndex::load(dom);
 
     let selector = CssSelectorList::new(vec![CssSelectorPath::new(
         CssSelector::for_element("main"),
@@ -530,10 +577,14 @@ fn query_direct_child() {
         ))],
     )]);
 
-    let starting_elements = HashSet::from_iter(dom.children().iter().cloned());
+    let starting_elements = index.root_elements();
     let result = selector.query(&index, &starting_elements);
 
-    let element_handle = dom.get_element_by_id("element-under-test").unwrap();
+    let element_handle = index
+        .dom
+        .borrow()
+        .get_element_by_id("element-under-test")
+        .unwrap();
 
     assert_eq!(result.len(), 1);
     assert!(result.contains(&element_handle));
@@ -546,7 +597,7 @@ fn query_adjacent_sibling() {
         tl::ParserOptions::default(),
     )
         .unwrap();
-    let index = HtmlIndex::load(&dom);
+    let index = HtmlIndex::load(dom);
 
     let selector = CssSelectorList::new(vec![CssSelectorPath::new(
         CssSelector::for_element("p"),
@@ -555,10 +606,14 @@ fn query_adjacent_sibling() {
         ))],
     )]);
 
-    let starting_elements = HashSet::from_iter(dom.children().iter().cloned());
+    let starting_elements = index.root_elements();
     let result = selector.query(&index, &starting_elements);
 
-    let element_handle = dom.get_element_by_id("element-under-test").unwrap();
+    let element_handle = index
+        .dom
+        .borrow()
+        .get_element_by_id("element-under-test")
+        .unwrap();
 
     assert_eq!(result.len(), 1);
     assert!(result.contains(&element_handle));

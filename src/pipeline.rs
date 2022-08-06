@@ -20,7 +20,7 @@ impl<'a> Pipeline<'a> {
     pub(crate) fn run_on(
         &self,
         nodes: HashSet<NodeHandle>,
-        index: &'a HtmlIndex<'a>,
+        index: &'_ HtmlIndex<'a>,
     ) -> Result<HashSet<NodeHandle>, ()> {
         let mut intermediate = nodes;
         for command in self.0.iter() {

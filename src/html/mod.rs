@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::ops::Index;
 use tl::{NodeHandle, Parser, VDom};
@@ -19,22 +20,25 @@ pub(crate) struct HtmlNodeIndex {
 /// to quickly find children, descendents and siblings
 pub(crate) struct HtmlIndex<'a> {
     pub(self) inner: HashMap<NodeHandle, HtmlNodeIndex>,
-    pub(crate) dom: &'a VDom<'a>,
+    pub(crate) dom: RefCell<VDom<'a>>,
 }
 
 impl<'a> HtmlIndex<'a> {
     /// build a new Index for a given DOM
-    pub fn load(dom: &'a VDom<'a>) -> Self {
+    pub fn load(dom: VDom<'a>) -> Self {
         let mut index = HashMap::new();
         Self::fill(&mut index, &dom);
 
-        HtmlIndex { inner: index, dom }
+        HtmlIndex {
+            inner: index,
+            dom: RefCell::new(dom),
+        }
     }
 
     /// start on the top level elements of the DOM
     fn fill(
         index: &mut HashMap<NodeHandle, HtmlNodeIndex>,
-        dom: &'a VDom<'a>,
+        dom: &'_ VDom<'a>,
     ) -> HashSet<NodeHandle> {
         let parser = dom.parser();
         let mut descendents = HashSet::new();
@@ -67,7 +71,7 @@ impl<'a> HtmlIndex<'a> {
     fn fill_recursive(
         index: &mut HashMap<NodeHandle, HtmlNodeIndex>,
         node_handle: &NodeHandle,
-        parser: &'a Parser<'a>,
+        parser: &'_ Parser<'a>,
         sibling: &HashSet<NodeHandle>,
         direct_sibling: Option<NodeHandle>,
     ) -> HashSet<NodeHandle> {
@@ -112,8 +116,44 @@ impl<'a> HtmlIndex<'a> {
     }
 
     /// get the relations for a given node
-    pub(crate) fn get(&self, node: &NodeHandle) -> Option<&HtmlNodeIndex> {
+    pub(crate) fn relations_of(&self, node: &NodeHandle) -> Option<&HtmlNodeIndex> {
         self.inner.get(node)
+    }
+
+    pub(crate) fn find_parent(&self, child: &NodeHandle) -> Option<&NodeHandle> {
+        self.inner
+            .iter()
+            .find(|(_, relations)| relations.children.contains(child))
+            .map(|(parent, _)| parent)
+    }
+
+    pub(crate) fn root_elements(&self) -> HashSet<NodeHandle> {
+        HashSet::from_iter(self.dom.borrow().children().iter().cloned())
+    }
+
+    pub(crate) fn render(&self, handle: &NodeHandle) -> String {
+        let dom = self.dom.borrow();
+        let parser = dom.parser();
+        handle.get(parser).unwrap().outer_html(parser).into_owned()
+    }
+
+    pub(crate) fn remove(&self, handle: &NodeHandle) {
+        if let Some(parent) = self.find_parent(handle) {
+            let mut dom = self.dom.borrow_mut();
+            let mut_parser = dom.parser_mut();
+            let parent = parent.get_mut(mut_parser).unwrap();
+            let parent = parent.as_tag_mut().unwrap();
+
+            let mut children = parent.children_mut();
+            let children = children.top_mut();
+            index = children
+                .iter()
+                .position(|t| t == handle)
+                .expect("HtmlIndex cache must be broken. Please file bug report");
+            children.remove(index);
+
+            //TODO: remove from index?
+        }
     }
 }
 
