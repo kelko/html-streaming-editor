@@ -1,6 +1,6 @@
 [package]
 name = "html-streaming-editor"
-version = "0.0.1"
+version = "0.0.4"
 edition = "2021"
 authors = [":kelko: <kelko@me.com>"]
 repository = "https://github.com/kelko/html-streaming-editor"
@@ -16,6 +16,6 @@ keywords = ["html"]
 [dependencies]
 "peg" = "0.8.0"
 "tl" = "0.7.6"
-snafu = { version = "0.7", features = ["backtraces"]}
+snafu = { version = "0.7", features = ["backtraces"] }
 clap = "3.2"
 exitcode = "1.1.2"

@@ -1,10 +1,23 @@
+use snafu::{Backtrace, OptionExt, Snafu};
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::ops::Index;
+
 use tl::{NodeHandle, Parser, VDom};
 
 #[cfg(test)]
 mod tests;
+
+#[derive(Debug, Snafu)]
+pub enum IndexError {
+    #[snafu(display("Index seems out of date. NodeHandle couldn't be found in Parser"))]
+    OutdatedIndex { backtrace: Backtrace },
+    #[snafu(display("HTML seems broken: {operation} failed"))]
+    InvalidHtml {
+        operation: String,
+        backtrace: Backtrace,
+    },
+}
 
 /// The related nodes for a given node
 pub(crate) struct HtmlNodeIndex {
@@ -47,11 +60,13 @@ impl<'a> HtmlIndex<'a> {
         let mut direct_sibling: Option<NodeHandle> = None;
 
         for child in dom.children().to_vec().iter().rev() {
-            let node_descendents =
-                Self::fill_recursive(index, child, parser, &children, direct_sibling);
-            descendents.extend(node_descendents);
-            children.insert(child.clone());
-            direct_sibling = Some(child.clone())
+            if let Some(node_descendents) =
+                Self::fill_recursive(index, child, parser, &children, direct_sibling)
+            {
+                descendents.extend(node_descendents);
+                children.insert(child.clone());
+                direct_sibling = Some(child.clone())
+            }
         }
         descendents.extend(&children);
 
@@ -74,26 +89,31 @@ impl<'a> HtmlIndex<'a> {
         parser: &'_ Parser<'a>,
         sibling: &HashSet<NodeHandle>,
         direct_sibling: Option<NodeHandle>,
-    ) -> HashSet<NodeHandle> {
+    ) -> Option<HashSet<NodeHandle>> {
         let mut descendents = HashSet::new();
         let mut childs_direct_sibling: Option<NodeHandle>;
 
         if let Some(node) = node_handle.get(parser) {
+            if node.as_tag().is_none() {
+                return None;
+            }
+
             let mut children: HashSet<NodeHandle> = HashSet::new();
             childs_direct_sibling = None;
 
             if let Some(tl_children) = node.children() {
                 for child in tl_children.top().to_vec().iter().rev() {
-                    let node_descendents = Self::fill_recursive(
+                    if let Some(node_descendents) = Self::fill_recursive(
                         index,
                         &child,
                         parser,
                         &children,
                         childs_direct_sibling,
-                    );
-                    descendents.extend(node_descendents);
-                    children.insert(child.clone());
-                    childs_direct_sibling = Some(child.clone());
+                    ) {
+                        descendents.extend(node_descendents);
+                        children.insert(child.clone());
+                        childs_direct_sibling = Some(child.clone());
+                    }
                 }
 
                 descendents.extend(&children);
@@ -112,7 +132,7 @@ impl<'a> HtmlIndex<'a> {
             );
         }
 
-        return descendents;
+        return Some(descendents);
     }
 
     /// get the relations for a given node
@@ -131,18 +151,24 @@ impl<'a> HtmlIndex<'a> {
         HashSet::from_iter(self.dom.borrow().children().iter().cloned())
     }
 
-    pub(crate) fn render(&self, handle: &NodeHandle) -> String {
+    pub(crate) fn render(&self, handle: &NodeHandle) -> Result<String, IndexError> {
         let dom = self.dom.borrow();
         let parser = dom.parser();
-        handle.get(parser).unwrap().outer_html(parser).into_owned()
+        Ok(handle
+            .get(parser)
+            .context(OutdatedIndexSnafu)?
+            .outer_html(parser)
+            .into_owned())
     }
 
-    pub(crate) fn remove(&self, handle: &NodeHandle) {
+    pub(crate) fn remove(&self, handle: &NodeHandle) -> Result<(), IndexError> {
         if let Some(parent) = self.find_parent(handle) {
             let mut dom = self.dom.borrow_mut();
             let mut_parser = dom.parser_mut();
-            let parent = parent.get_mut(mut_parser).unwrap();
-            let parent = parent.as_tag_mut().unwrap();
+            let parent = parent.get_mut(mut_parser).context(OutdatedIndexSnafu)?;
+            let parent = parent.as_tag_mut().context(InvalidHtmlSnafu {
+                operation: String::from("treating parent as tag"),
+            })?;
 
             let mut children = parent.children_mut();
             let children = children.top_mut();
@@ -154,6 +180,8 @@ impl<'a> HtmlIndex<'a> {
 
             //TODO: remove from index?
         }
+
+        Ok(())
     }
 }
 
@@ -161,6 +189,8 @@ impl<'a> Index<NodeHandle> for HtmlIndex<'a> {
     type Output = HtmlNodeIndex;
 
     fn index(&self, index: NodeHandle) -> &Self::Output {
-        self.inner.get(&index).unwrap()
+        self.inner
+            .get(&index)
+            .expect("Asking for a NodeHandle that does not belong to the index")
     }
 }

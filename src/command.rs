@@ -1,7 +1,28 @@
-use crate::{CssSelectorList, HtmlIndex};
+use snafu::{ResultExt, Snafu};
 use std::collections::HashSet;
 use std::fmt::{Debug, Formatter};
+
 use tl::NodeHandle;
+
+use crate::{CssSelectorList, HtmlIndex};
+
+#[derive(Debug, Snafu)]
+pub enum CommandError {
+    #[snafu(display("Failed run FILTER"))]
+    FilterFailed {
+        #[snafu(backtrace)]
+        source: FilterError,
+    },
+}
+
+#[derive(Debug, Snafu)]
+pub enum FilterError {
+    #[snafu(display("Failed to remove HTML node"))]
+    RemovingNodeFailed {
+        #[snafu(backtrace)]
+        source: crate::html::IndexError,
+    },
+}
 
 pub enum Command<'a> {
     /// Find all nodes, beginning at the input, that match the given CSS selector
@@ -29,17 +50,20 @@ impl<'a> Command<'a> {
         &self,
         input: &HashSet<NodeHandle>,
         index: &'_ HtmlIndex<'a>,
-    ) -> Result<HashSet<NodeHandle>, ()> {
+    ) -> Result<HashSet<NodeHandle>, CommandError> {
         match self {
             Command::Only(selector) => Self::only(input, index, selector),
-            Command::Filter(selector) => Self::filter(input, index, selector),
+            Command::Filter(selector) => {
+                Self::filter(input, index, selector).context(FilterFailedSnafu)
+            }
         }
     }
+
     fn only(
         input: &HashSet<NodeHandle>,
         index: &'_ HtmlIndex<'a>,
         selector: &CssSelectorList<'a>,
-    ) -> Result<HashSet<NodeHandle>, ()> {
+    ) -> Result<HashSet<NodeHandle>, CommandError> {
         Ok(selector.query(index, input))
     }
 
@@ -47,11 +71,11 @@ impl<'a> Command<'a> {
         input: &HashSet<NodeHandle>,
         index: &'_ HtmlIndex<'a>,
         selector: &CssSelectorList<'a>,
-    ) -> Result<HashSet<NodeHandle>, ()> {
+    ) -> Result<HashSet<NodeHandle>, FilterError> {
         let findings = selector.query(index, input);
 
         for node in findings.iter() {
-            index.remove(node)
+            index.remove(node).context(RemovingNodeFailedSnafu)?
         }
 
         Ok(input.clone())

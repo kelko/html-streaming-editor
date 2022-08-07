@@ -1,8 +1,23 @@
-use crate::command::Command;
-use crate::HtmlIndex;
+use snafu::{ResultExt, Snafu};
 use std::collections::HashSet;
 use std::fmt::{Debug, Formatter};
 use tl::NodeHandle;
+
+use crate::command::Command;
+use crate::HtmlIndex;
+
+#[cfg(test)]
+mod tests;
+
+#[derive(Debug, Snafu)]
+pub enum PipelineError {
+    #[snafu(display("Command at index {index} failed"))]
+    CommandFailed {
+        index: usize,
+        #[snafu(backtrace)]
+        source: crate::command::CommandError,
+    },
+}
 
 pub struct Pipeline<'a>(Vec<Command<'a>>);
 
@@ -21,10 +36,16 @@ impl<'a> Pipeline<'a> {
         &self,
         nodes: HashSet<NodeHandle>,
         index: &'_ HtmlIndex<'a>,
-    ) -> Result<HashSet<NodeHandle>, ()> {
+    ) -> Result<HashSet<NodeHandle>, PipelineError> {
         let mut intermediate = nodes;
+        let mut command_index: usize = 0;
         for command in self.0.iter() {
-            intermediate = command.execute(&intermediate, index)?;
+            intermediate = command
+                .execute(&intermediate, index)
+                .context(CommandFailedSnafu {
+                    index: command_index,
+                })?;
+            command_index += 1;
         }
 
         return Ok(intermediate);

@@ -14,19 +14,22 @@ The basic syntax is:
 Some `COMMAND` use sub-pipelines, those would be written as follows:
 > (COMMAND SELECTOR {(COMMAND SELECTOR) | (COMMAND SELECTOR)})
 
-The `SELECTOR` is a [CSS selector](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors), wrapped in either `"`, `'` 
+The `SELECTOR` is a [CSS selector](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors), wrapped in
+either `"`, `'`
 or `?` (as to reduce the necessity of escaping to a minimum).
 
 Commands
 -------------
 
 Planned commands:
+
 - ONLY: remove everything not matching the CSS selector
 - FILTER: remove everything matching the CSS selector
 - MAP: run the nodes matching the CSS selector through a sub-pipeline and replace them with the result of that pipeline
 - Some attribute & text-content manipulation
 
 Currently supported:
+
 - ONLY
 - FILTER is in code, but mis-behaves
 
@@ -48,7 +51,6 @@ OPTIONS:
     -o, --output <output>    File name of the Output. `-` for stdout (default)
     -V, --version            Print version information
 ```
-
 
 Example
 --------

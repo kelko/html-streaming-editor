@@ -1,12 +1,14 @@
-#[cfg(test)]
-mod tests;
-
-use crate::HtmlIndex;
 use std::borrow::Cow;
 use std::collections::HashSet;
 use std::fmt::{Debug, Formatter};
 use std::ops::Index;
+
 use tl::{Bytes, HTMLTag, NodeHandle};
+
+use crate::HtmlIndex;
+
+#[cfg(test)]
+mod tests;
 
 /// CSS [pseudo classes](https://developer.mozilla.org/en-US/docs/Web/CSS/Pseudo-classes) selector
 #[derive(Clone, Debug, PartialEq)]

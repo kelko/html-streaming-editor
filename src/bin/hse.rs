@@ -1,13 +1,15 @@
 extern crate clap;
 
-use clap::clap_app;
-use html_streaming_editor::HtmlStreamingEditor;
 use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Write};
 
+use clap::clap_app;
+
+use html_streaming_editor::{report, HtmlStreamingEditor};
+
 fn main() {
     let options = clap_app!(hse =>
-        (version: "0.0.1")
+        (version: "0.0.4")
         (author: ":kelko:")
         (about: "Html Streaming Editor")
         (@arg input: -i --input +takes_value "File name of the Input. `-` for stdin (default)")
@@ -29,7 +31,7 @@ fn main() {
         let input_file = if let Ok(file) = File::open(input_path) {
             file
         } else {
-            eprintln!("Could not open input file");
+            eprintln!("[ERROR] Could not open input file");
             std::process::exit(exitcode::NOINPUT);
         };
 
@@ -42,7 +44,7 @@ fn main() {
         let output_file = if let Ok(file) = File::create(output_path) {
             file
         } else {
-            eprintln!("Could not open output file");
+            eprintln!("[ERROR] Could not open output file");
             std::process::exit(exitcode::CANTCREAT);
         };
 
@@ -52,6 +54,6 @@ fn main() {
     let editor = HtmlStreamingEditor::new(input_reader, output_writer);
     match editor.run(commands) {
         Ok(()) => (),
-        Err(_e) => todo!(),
+        Err(e) => report(&e),
     }
 }

@@ -29,7 +29,7 @@ fn parse_selector_attribute_exists() {
         Ok(CssSelector::for_attribute(CssAttributeSelector {
             attribute: "a",
             operator: CssAttributeComparison::Exist,
-            value: None
+            value: None,
         }))
     )
 }
@@ -42,7 +42,7 @@ fn parse_selector_attribute_equals() {
         Ok(CssSelector::for_attribute(CssAttributeSelector {
             attribute: "a",
             operator: CssAttributeComparison::EqualsExact,
-            value: Some("b")
+            value: Some("b"),
         }))
     )
 }
@@ -60,8 +60,8 @@ fn parse_selector_mix() {
             attributes: vec![CssAttributeSelector {
                 attribute: "a",
                 operator: CssAttributeComparison::EqualsExact,
-                value: Some("b")
-            }]
+                value: Some("b"),
+            }],
         })
     )
 }
@@ -82,7 +82,7 @@ fn parse_two_step_path_descendant() {
         parsed,
         Ok(CssSelectorPath::new(
             CssSelector::for_element("a"),
-            vec![CssSelectorStep::descendent(CssSelector::for_element("b"))]
+            vec![CssSelectorStep::descendent(CssSelector::for_element("b"))],
         ))
     )
 }
@@ -94,7 +94,7 @@ fn parse_two_step_path_direct_children() {
         parsed,
         Ok(CssSelectorPath::new(
             CssSelector::for_element("a"),
-            vec![CssSelectorStep::direct_child(CssSelector::for_element("b"))]
+            vec![CssSelectorStep::direct_child(CssSelector::for_element("b"))],
         ))
     )
 }
@@ -108,7 +108,7 @@ fn parse_two_step_path_general_sibling() {
             CssSelector::for_element("a"),
             vec![CssSelectorStep::general_sibling(CssSelector::for_element(
                 "b"
-            ))]
+            ))],
         ))
     )
 }
@@ -122,7 +122,7 @@ fn parse_two_step_path_general_siblings_spaceless() {
             CssSelector::for_element("a"),
             vec![CssSelectorStep::general_sibling(CssSelector::for_element(
                 "b"
-            ))]
+            ))],
         ))
     )
 }
@@ -136,7 +136,7 @@ fn parse_two_step_path_adjacent_sibling() {
             CssSelector::for_element("a"),
             vec![CssSelectorStep::adjacent_sibling(CssSelector::for_element(
                 "b"
-            ))]
+            ))],
         ))
     )
 }
@@ -150,7 +150,7 @@ fn parse_two_step_path_adjacent_siblings_spaceless() {
             CssSelector::for_element("a"),
             vec![CssSelectorStep::adjacent_sibling(CssSelector::for_element(
                 "b"
-            ))]
+            ))],
         ))
     )
 }
@@ -194,8 +194,8 @@ fn parse_list_complex() {
                 attributes: vec![CssAttributeSelector {
                     attribute: "src",
                     operator: CssAttributeComparison::Exist,
-                    value: None
-                }]
+                    value: None,
+                }],
             }),
             CssSelectorPath::new(
                 CssSelector {
@@ -203,16 +203,16 @@ fn parse_list_complex() {
                     id: Some("content"),
                     classes: vec![],
                     pseudo_classes: vec![],
-                    attributes: vec![]
+                    attributes: vec![],
                 },
                 vec![
                     CssSelectorStep::descendent(CssSelector::for_class("single")),
                     CssSelectorStep::descendent(CssSelector::for_element("aside")),
-                ]
+                ],
             ),
             CssSelectorPath::new(
                 CssSelector::for_class("row"),
-                vec![CssSelectorStep::direct_child(CssSelector::for_class("col"))]
+                vec![CssSelectorStep::direct_child(CssSelector::for_class("col"))],
             ),
         ]))
     )
@@ -593,16 +593,87 @@ fn query_direct_child() {
 #[test]
 fn query_adjacent_sibling() {
     let dom = tl::parse(
-        "<html><head></head><body><header><h1>Hallo</h1></header><main><p>Ups<em class=\"single-class\">I'm sorry</em></p><img id=\"element-under-test\" class=\"single-class\" src=\"\"></main><footer></footer><nav><ul><li>1</li><li>2</li></ul></nav></body></html>",
+        "<html><head></head><body><header><h1>Hallo</h1></header><main><header><h2>Title</h2></header><p id=\"element-under-test\">Hello World</p><p id=\"not-in-test\">Brave new World</p><p>Hello, there</p></main></body></html>",
         tl::ParserOptions::default(),
     )
         .unwrap();
     let index = HtmlIndex::load(dom);
 
     let selector = CssSelectorList::new(vec![CssSelectorPath::new(
-        CssSelector::for_element("p"),
-        vec![CssSelectorStep::adjacent_sibling(CssSelector::for_class(
-            "single-class",
+        CssSelector::for_element("header"),
+        vec![CssSelectorStep::adjacent_sibling(CssSelector::for_element(
+            "p",
+        ))],
+    )]);
+
+    let starting_elements = index.root_elements();
+    let result = selector.query(&index, &starting_elements);
+
+    let element_handle = index
+        .dom
+        .borrow()
+        .get_element_by_id("element-under-test")
+        .unwrap();
+    let non_result_handle = index.dom.borrow().get_element_by_id("not-in-test").unwrap();
+
+    assert_eq!(result.len(), 1);
+    assert!(result.contains(&element_handle));
+    assert!(!result.contains(&non_result_handle));
+}
+
+#[test]
+fn query_adjacent_sibling_with_whitespaces() {
+    let dom = tl::parse(
+        "<html>
+            <head></head>
+            <body>
+            <h1>Title</h1>
+            <p id=\"first-para\">Some first text</p>
+        <p id=\"second-para\">Some more text, even with an <img src=\"\"></p>
+        <p id=\"third-para\">Third text of <abbr>HTML</abbr>, but no <abbr>CSS</abbr></p>
+        <ul id=\"list\">
+            <li id=\"item-1\">1</li>
+            <li id=\"item-2\">2</li>
+            <li id=\"item-3\">3</li>
+        </ul>
+    </body>
+</html>",
+        tl::ParserOptions::default(),
+    )
+    .unwrap();
+    let index = HtmlIndex::load(dom);
+
+    let selector = CssSelectorList::new(vec![CssSelectorPath::new(
+        CssSelector::for_element("h1"),
+        vec![CssSelectorStep::adjacent_sibling(CssSelector::for_element(
+            "p",
+        ))],
+    )]);
+
+    let starting_elements = index.root_elements();
+    let result = selector.query(&index, &starting_elements);
+
+    let element_handle = index.dom.borrow().get_element_by_id("first-para").unwrap();
+    let non_result_handle = index.dom.borrow().get_element_by_id("second-para").unwrap();
+
+    assert_eq!(result.len(), 1);
+    assert!(result.contains(&element_handle));
+    assert!(!result.contains(&non_result_handle));
+}
+
+#[test]
+fn query_general_sibling() {
+    let dom = tl::parse(
+        "<html><head></head><body><header><h1>Hallo</h1></header><main><p id=\"not-in-test\">Prelude</p><h2>Title</h2><p>Hello World</p><p>Brave new World</p><p id=\"element-under-test\">Hello, there</p></main></body></html>",
+        tl::ParserOptions::default(),
+    )
+        .unwrap();
+    let index = HtmlIndex::load(dom);
+
+    let selector = CssSelectorList::new(vec![CssSelectorPath::new(
+        CssSelector::for_element("h2"),
+        vec![CssSelectorStep::general_sibling(CssSelector::for_element(
+            "p",
         ))],
     )]);
 
@@ -615,6 +686,11 @@ fn query_adjacent_sibling() {
         .get_element_by_id("element-under-test")
         .unwrap();
 
-    assert_eq!(result.len(), 1);
+    let non_result_handle = index.dom.borrow().get_element_by_id("not-in-test").unwrap();
+
+    assert_eq!(result.len(), 3);
     assert!(result.contains(&element_handle));
+    assert!(!result.contains(&non_result_handle));
 }
+
+//TODO: query_or

@@ -118,6 +118,7 @@ fn parse_selector_simple_doublequotes() {
         )]))
     )
 }
+
 #[test]
 fn parse_selector_simple_singlequotes() {
     let parsed = super::grammar::selector("'a'");
@@ -201,7 +202,7 @@ fn parse_two_grammar() {
             )])),
             Command::Filter(CssSelectorList::new(vec![CssSelectorPath::single(
                 CssSelector::for_element("b")
-            )]))
+            )])),
         ]))
     );
 }

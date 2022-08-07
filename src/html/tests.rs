@@ -1,5 +1,6 @@
-use crate::HtmlIndex;
 use std::collections::HashSet;
+
+use crate::HtmlIndex;
 
 #[test]
 fn fill_simplest_html() {
@@ -48,9 +49,9 @@ fn fill_medium_html() {
         .unwrap();
     let body_index = index.relations_of(&body_handle).unwrap();
 
-    assert_eq!(index.inner.len(), 19);
+    assert_eq!(index.inner.len(), 14);
     assert_eq!(body_index.children.len(), 4);
-    assert_eq!(body_index.descendents.len(), 16);
+    assert_eq!(body_index.descendents.len(), 11);
     assert_eq!(
         body_index.children,
         //order is not preserved
