@@ -15,23 +15,21 @@ Some `COMMAND` use sub-pipelines, those would be written as follows:
 > (COMMAND SELECTOR {(COMMAND SELECTOR) | (COMMAND SELECTOR)})
 
 The `SELECTOR` is a [CSS selector](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors), wrapped in
-either `"`, `'`
-or `?` (as to reduce the necessity of escaping to a minimum).
+either `"`, `'` or `?` (as to reduce the necessity of escaping to a minimum).
 
 Commands
 -------------
 
 Planned commands:
 
-- ONLY: remove everything not matching the CSS selector
-- FILTER: remove everything matching the CSS selector
-- MAP: run the nodes matching the CSS selector through a sub-pipeline and replace them with the result of that pipeline
+- `ONLY`: remove everything not matching the CSS selector (alias: `SELECT`)
+- `WITHOUT`: remove everything matching the CSS selector (alias: `FILTER`)
 - Some attribute & text-content manipulation
 
 Currently supported:
 
-- ONLY
-- FILTER is in code, but mis-behaves
+- `ONLY`
+- `WITHOUT`
 
 Binary
 -------
@@ -58,4 +56,9 @@ Example
 ```shell
 # fetches all elements with CSS class "content" inside a <header> element
 hse -i index.html '(ONLY ?header .content?)'
+```
+
+```shell
+# fetches the `<main>` or element with CSS class `main`, but without any `<script>` defined inside
+hse -i index.html '(ONLY ?main, .main?) | (WITHOUT ?script?)'
 ```

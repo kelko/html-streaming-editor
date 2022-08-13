@@ -181,11 +181,33 @@ fn parse_single_only() {
 }
 
 #[test]
-fn parse_single_filter() {
-    let parsed = super::grammar::filter_command("(FILTER 'a')");
+fn parse_single_select_alias() {
+    let parsed = super::grammar::only_command("(SELECT 'a')");
     assert_eq!(
         parsed,
-        Ok(Command::Filter(CssSelectorList::new(vec![
+        Ok(Command::Only(CssSelectorList::new(vec![
+            CssSelectorPath::single(CssSelector::for_element("a"))
+        ])))
+    );
+}
+
+#[test]
+fn parse_single_without() {
+    let parsed = super::grammar::without_command("(WITHOUT 'a')");
+    assert_eq!(
+        parsed,
+        Ok(Command::Without(CssSelectorList::new(vec![
+            CssSelectorPath::single(CssSelector::for_element("a"))
+        ])))
+    );
+}
+
+#[test]
+fn parse_single_filter_alias() {
+    let parsed = super::grammar::without_command("(FILTER 'a')");
+    assert_eq!(
+        parsed,
+        Ok(Command::Without(CssSelectorList::new(vec![
             CssSelectorPath::single(CssSelector::for_element("a"))
         ])))
     );
@@ -193,14 +215,14 @@ fn parse_single_filter() {
 
 #[test]
 fn parse_two_grammar() {
-    let parsed = super::grammar::pipeline("(ONLY 'a') | (FILTER 'b')");
+    let parsed = super::grammar::pipeline("(ONLY 'a') | (WITHOUT 'b')");
     assert_eq!(
         parsed,
         Ok(Pipeline::new(vec![
             Command::Only(CssSelectorList::new(vec![CssSelectorPath::single(
                 CssSelector::for_element("a")
             )])),
-            Command::Filter(CssSelectorList::new(vec![CssSelectorPath::single(
+            Command::Without(CssSelectorList::new(vec![CssSelectorPath::single(
                 CssSelector::for_element("b")
             )])),
         ]))

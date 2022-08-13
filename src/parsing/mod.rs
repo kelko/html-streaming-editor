@@ -83,12 +83,12 @@ parser! {
             / "'" c:(css_selector_list()) "'" { c }
             / "?" c:(css_selector_list()) "?" { c }
         pub(crate) rule only_command() -> Command<'input>
-            = "(ONLY " oc:selector() whitespace()? ")" { Command::Only(oc) }
-        pub(crate) rule filter_command() -> Command<'input>
-            = "(FILTER " oc:selector() whitespace()? ")" { Command::Filter(oc) }
+            = "(" ("ONLY" / "SELECT") " " oc:selector() whitespace()? ")" { Command::Only(oc) }
+        pub(crate) rule without_command() -> Command<'input>
+            = "(" ("WITHOUT" / "FILTER") " " oc:selector() whitespace()? ")" { Command::Without(oc) }
         rule command() -> Command<'input>
             = only_command()
-            / filter_command()
+            / without_command()
         pub rule pipeline() -> Pipeline<'input>
             = p:(command() ** " | ") { Pipeline::new(p) }
   }

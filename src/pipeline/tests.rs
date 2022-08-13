@@ -40,8 +40,8 @@ fn run_on_single_only() {
 }
 
 #[test]
-fn run_on_single_filter() {
-    let pipeline = Pipeline::new(vec![Command::Filter(CssSelectorList::new(vec![
+fn run_on_single_without() {
+    let pipeline = Pipeline::new(vec![Command::Without(CssSelectorList::new(vec![
         CssSelectorPath::new(
             CssSelector::for_element("h1"),
             vec![CssSelectorStep::adjacent_sibling(CssSelector::for_element(

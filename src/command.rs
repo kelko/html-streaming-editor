@@ -8,15 +8,15 @@ use crate::{CssSelectorList, HtmlIndex};
 
 #[derive(Debug, Snafu)]
 pub enum CommandError {
-    #[snafu(display("Failed run FILTER"))]
-    FilterFailed {
+    #[snafu(display("Failed run WITHOUT"))]
+    WithoutFailed {
         #[snafu(backtrace)]
-        source: FilterError,
+        source: WithoutError,
     },
 }
 
 #[derive(Debug, Snafu)]
-pub enum FilterError {
+pub enum WithoutError {
     #[snafu(display("Failed to remove HTML node"))]
     RemovingNodeFailed {
         #[snafu(backtrace)]
@@ -31,7 +31,7 @@ pub enum Command<'a> {
     /// Find all nodes, beginning at the input, that match the given CSS selector
     /// and remove them from their parent nodes.
     /// Returns the input as result.
-    Filter(CssSelectorList<'a>),
+    Without(CssSelectorList<'a>),
     // Map(String, Pipeline),
     // GetAttribute(String),
     // SetAttribute(String, Pipeline),
@@ -53,8 +53,8 @@ impl<'a> Command<'a> {
     ) -> Result<HashSet<NodeHandle>, CommandError> {
         match self {
             Command::Only(selector) => Self::only(input, index, selector),
-            Command::Filter(selector) => {
-                Self::filter(input, index, selector).context(FilterFailedSnafu)
+            Command::Without(selector) => {
+                Self::without(input, index, selector).context(WithoutFailedSnafu)
             }
         }
     }
@@ -67,11 +67,11 @@ impl<'a> Command<'a> {
         Ok(selector.query(index, input))
     }
 
-    fn filter(
+    fn without(
         input: &HashSet<NodeHandle>,
         index: &'_ HtmlIndex<'a>,
         selector: &CssSelectorList<'a>,
-    ) -> Result<HashSet<NodeHandle>, FilterError> {
+    ) -> Result<HashSet<NodeHandle>, WithoutError> {
         let findings = selector.query(index, input);
 
         for node in findings.iter() {
@@ -99,8 +99,8 @@ impl<'a> PartialEq for Command<'a> {
                     false
                 }
             }
-            Command::Filter(selector) => {
-                if let Command::Filter(other_selector) = other {
+            Command::Without(selector) => {
+                if let Command::Without(other_selector) = other {
                     selector == other_selector
                 } else {
                     false
