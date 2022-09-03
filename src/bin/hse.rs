@@ -8,6 +8,8 @@ use clap::clap_app;
 use html_streaming_editor::{report, HtmlStreamingEditor};
 
 fn main() {
+    pretty_env_logger::init();
+
     let options = clap_app!(hse =>
         (version: "0.0.4")
         (author: ":kelko:")

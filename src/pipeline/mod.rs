@@ -1,6 +1,7 @@
+use log::{trace, warn};
 use snafu::{ResultExt, Snafu};
 use std::collections::HashSet;
-use std::fmt::{Debug, Formatter};
+use std::fmt::Debug;
 use tl::NodeHandle;
 
 use crate::command::Command;
@@ -19,6 +20,7 @@ pub enum PipelineError {
     },
 }
 
+#[derive(Debug, PartialEq)]
 pub struct Pipeline<'a>(Vec<Command<'a>>);
 
 /// The command pipeline: a list of individual commands
@@ -40,27 +42,21 @@ impl<'a> Pipeline<'a> {
         let mut intermediate = nodes;
         let mut command_index: usize = 0;
         for command in self.0.iter() {
+            trace!("Running Next: {:#?}", &command);
+            trace!("Current Element Set: {:#?}", &intermediate);
+
             intermediate = command
                 .execute(&intermediate, index)
                 .context(CommandFailedSnafu {
                     index: command_index,
                 })?;
             command_index += 1;
+
+            if intermediate.len() == 0 {
+                warn!("Command resulted in an empty result set");
+            }
         }
 
         return Ok(intermediate);
-    }
-}
-
-impl<'a> Debug for Pipeline<'a> {
-    //TODO: Actually implement it
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str("TODO")
-    }
-}
-
-impl<'a> PartialEq for Pipeline<'a> {
-    fn eq(&self, other: &Self) -> bool {
-        return self.0.eq(&other.0);
     }
 }

@@ -1,11 +1,12 @@
 use std::borrow::Cow;
 use std::collections::HashSet;
-use std::fmt::{Debug, Formatter};
+use std::fmt::Debug;
 use std::ops::Index;
 
 use tl::{Bytes, HTMLTag, NodeHandle};
 
 use crate::HtmlIndex;
+use log::trace;
 
 #[cfg(test)]
 mod tests;
@@ -54,6 +55,7 @@ pub enum CssAttributeComparison {
     EqualsTillHyphen,
 }
 
+#[derive(Debug, Clone, PartialEq)]
 /// CSS [attribute](https://developer.mozilla.org/en-US/docs/Web/CSS/Attribute_selectors) selector
 pub struct CssAttributeSelector<'a> {
     /// the attribute name to match against
@@ -103,24 +105,7 @@ impl<'a> CssAttributeSelector<'a> {
     }
 }
 
-impl<'a> Clone for CssAttributeSelector<'a> {
-    fn clone(&self) -> Self {
-        CssAttributeSelector {
-            attribute: self.attribute.clone(),
-            operator: self.operator.clone(),
-            value: self.value.clone(),
-        }
-    }
-}
-
-impl<'a> PartialEq for CssAttributeSelector<'a> {
-    fn eq(&self, other: &Self) -> bool {
-        self.attribute == other.attribute
-            && self.operator == other.operator
-            && self.value == other.value
-    }
-}
-
+#[derive(Debug, Clone, PartialEq)]
 /// model for [CSS selectors](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors)
 pub struct CssSelector<'a> {
     /// selector on element name
@@ -252,34 +237,6 @@ impl<'a> CssSelector<'a> {
     }
 }
 
-impl<'a> Clone for CssSelector<'a> {
-    fn clone(&self) -> Self {
-        CssSelector {
-            element: self.element.clone(),
-            id: self.id.clone(),
-            classes: self.classes.clone(),
-            pseudo_classes: self.pseudo_classes.clone(),
-            attributes: self.attributes.clone(),
-        }
-    }
-}
-
-impl<'a> PartialEq for CssSelector<'a> {
-    fn eq(&self, other: &Self) -> bool {
-        self.element == other.element
-            && self.id == other.id
-            && self.classes == other.classes
-            && self.pseudo_classes == other.pseudo_classes
-            && self.attributes == other.attributes
-    }
-}
-
-impl<'a> Debug for CssSelector<'a> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str("booo")
-    }
-}
-
 /// Combining different "steps" of the CSS selector path
 #[derive(Clone, Debug, PartialEq)]
 pub enum CssSelectorCombinator {
@@ -302,6 +259,7 @@ pub enum CssSelectorCombinator {
 /// `a > b` would be two steps:
 /// - start of a
 /// - direct-child of b
+#[derive(Debug, Clone, PartialEq)]
 pub struct CssSelectorStep<'a> {
     pub selector: CssSelector<'a>,
     pub combinator: CssSelectorCombinator,
@@ -344,22 +302,8 @@ impl<'a> CssSelectorStep<'a> {
     }
 }
 
-impl<'a> Clone for CssSelectorStep<'a> {
-    fn clone(&self) -> Self {
-        CssSelectorStep {
-            selector: self.selector.clone(),
-            combinator: self.combinator.clone(),
-        }
-    }
-}
-
-impl<'a> PartialEq for CssSelectorStep<'a> {
-    fn eq(&self, other: &Self) -> bool {
-        self.combinator == other.combinator && self.selector == other.selector
-    }
-}
-
 /// a whole "path" of CSS selectors
+#[derive(Debug, Clone, PartialEq)]
 pub struct CssSelectorPath<'a>(Vec<CssSelectorStep<'a>>);
 
 impl<'a> CssSelectorPath<'a> {
@@ -368,7 +312,7 @@ impl<'a> CssSelectorPath<'a> {
     }
 
     pub fn new(start: CssSelector<'a>, rest: Vec<CssSelectorStep<'a>>) -> Self {
-        let mut list = vec![CssSelectorStep::descendent(start)];
+        let mut list = vec![CssSelectorStep::start(start)];
         list.extend_from_slice(&rest);
         CssSelectorPath(list)
     }
@@ -397,27 +341,24 @@ impl<'a> CssSelectorPath<'a> {
         combinator: &CssSelectorCombinator,
         source: HashSet<NodeHandle>,
     ) -> HashSet<NodeHandle> {
+        let relations = source.iter().filter_map(|n| index.relations_of(n));
+
         match combinator {
-            CssSelectorCombinator::Start => source
-                .iter()
-                .flat_map(|n| index.relations_of(n).unwrap().descendents.clone())
+            CssSelectorCombinator::Start => relations
+                .flat_map(|r| r.descendents.clone())
                 .chain(source.clone())
                 .collect::<HashSet<_>>(),
-            CssSelectorCombinator::Descendent => source
-                .iter()
-                .flat_map(|n| index.relations_of(n).unwrap().descendents.clone())
+            CssSelectorCombinator::Descendent => relations
+                .flat_map(|r| r.descendents.clone())
                 .collect::<HashSet<_>>(),
-            CssSelectorCombinator::DirectChild => source
-                .iter()
-                .flat_map(|n| index.relations_of(n).unwrap().children.clone())
+            CssSelectorCombinator::DirectChild => relations
+                .flat_map(|r| r.children.clone())
                 .collect::<HashSet<_>>(),
-            CssSelectorCombinator::GeneralSibling => source
-                .iter()
-                .flat_map(|n| index.relations_of(n).unwrap().siblings.clone())
+            CssSelectorCombinator::GeneralSibling => relations
+                .flat_map(|r| r.siblings.clone())
                 .collect::<HashSet<_>>(),
-            CssSelectorCombinator::AdjacentSibling => source
-                .iter()
-                .filter_map(|n| index.relations_of(n).unwrap().direct_sibling)
+            CssSelectorCombinator::AdjacentSibling => relations
+                .flat_map(|r| r.direct_sibling)
                 .collect::<HashSet<_>>(),
         }
     }
@@ -431,26 +372,8 @@ impl<'a> Index<usize> for CssSelectorPath<'a> {
     }
 }
 
-impl<'a> Clone for CssSelectorPath<'a> {
-    fn clone(&self) -> Self {
-        CssSelectorPath(self.0.clone())
-    }
-}
-
-impl<'a> PartialEq for CssSelectorPath<'a> {
-    fn eq(&self, other: &Self) -> bool {
-        self.0 == other.0
-    }
-}
-
-impl<'a> Debug for CssSelectorPath<'a> {
-    //TODO: Actually implement it
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str("TODO")
-    }
-}
-
 /// the list of all (comma-seperated) CSS paths
+#[derive(Debug, PartialEq)]
 pub struct CssSelectorList<'a>(Vec<CssSelectorPath<'a>>);
 
 impl<'a> CssSelectorList<'a> {
@@ -467,22 +390,11 @@ impl<'a> CssSelectorList<'a> {
         index: &'_ HtmlIndex<'a>,
         start: &HashSet<NodeHandle>,
     ) -> HashSet<NodeHandle> {
+        trace!("Querying using Selector {:#?}", &self.0);
+
         self.0
             .iter()
             .flat_map(|p| p.query(index, start))
             .collect::<HashSet<_>>()
-    }
-}
-
-impl<'a> PartialEq for CssSelectorList<'a> {
-    fn eq(&self, other: &Self) -> bool {
-        self.0 == other.0
-    }
-}
-
-impl<'a> Debug for CssSelectorList<'a> {
-    //TODO: Actually implement it
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str("TODO")
     }
 }

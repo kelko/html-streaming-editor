@@ -1,3 +1,4 @@
+use log::debug;
 use peg::str::LineCol;
 use snafu::{Backtrace, ResultExt, Snafu};
 use std::io::{BufRead, Read, Write};
@@ -63,6 +64,8 @@ impl HtmlStreamingEditor {
 
     pub fn run(mut self, commands: String) -> Result<(), StreamingEditorError> {
         let pipeline = parsing::grammar::pipeline(&commands).context(ParsingPipelineFailedSnafu)?;
+        debug!("Parsed Pipeline: {:#?}", &pipeline);
+
         let mut string_content = String::new();
         self.input
             .read_to_string(&mut string_content)
@@ -74,6 +77,8 @@ impl HtmlStreamingEditor {
         let result = pipeline
             .run_on(index.root_elements(), &index)
             .context(RunningPipelineFailedSnafu)?;
+
+        debug!("Final Result: {:#?}", &result);
         for node in result.iter() {
             let html = index.render(node).context(RenderingOutputFailedSnafu)?;
             self.output

@@ -1,6 +1,7 @@
+use log::trace;
 use snafu::{ResultExt, Snafu};
 use std::collections::HashSet;
-use std::fmt::{Debug, Formatter};
+use std::fmt::Debug;
 
 use tl::NodeHandle;
 
@@ -24,6 +25,7 @@ pub enum WithoutError {
     },
 }
 
+#[derive(Debug, PartialEq)]
 pub enum Command<'a> {
     /// Find all nodes, beginning at the input, that match the given CSS selector
     /// and return only those
@@ -64,6 +66,7 @@ impl<'a> Command<'a> {
         index: &'_ HtmlIndex<'a>,
         selector: &CssSelectorList<'a>,
     ) -> Result<HashSet<NodeHandle>, CommandError> {
+        trace!("Running ONLY command using selector: {:#?}", selector);
         Ok(selector.query(index, input))
     }
 
@@ -72,6 +75,7 @@ impl<'a> Command<'a> {
         index: &'_ HtmlIndex<'a>,
         selector: &CssSelectorList<'a>,
     ) -> Result<HashSet<NodeHandle>, WithoutError> {
+        trace!("Running WITHOUT command using selector: {:#?}", selector);
         let findings = selector.query(index, input);
 
         for node in findings.iter() {
@@ -79,33 +83,5 @@ impl<'a> Command<'a> {
         }
 
         Ok(input.clone())
-    }
-}
-
-impl<'a> Debug for Command<'a> {
-    //TODO: Actually implement it
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str("TODO")
-    }
-}
-
-impl<'a> PartialEq for Command<'a> {
-    fn eq(&self, other: &Self) -> bool {
-        match self {
-            Command::Only(selector) => {
-                if let Command::Only(other_selector) = other {
-                    selector == other_selector
-                } else {
-                    false
-                }
-            }
-            Command::Without(selector) => {
-                if let Command::Without(other_selector) = other {
-                    selector == other_selector
-                } else {
-                    false
-                }
-            }
-        }
     }
 }

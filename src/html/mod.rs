@@ -20,6 +20,7 @@ pub enum IndexError {
 }
 
 /// The related nodes for a given node
+#[derive(Debug)]
 pub(crate) struct HtmlNodeIndex {
     pub(crate) children: HashSet<NodeHandle>,
     pub(crate) descendents: HashSet<NodeHandle>,
@@ -31,6 +32,7 @@ pub(crate) struct HtmlNodeIndex {
 ///
 /// Iterates through the whole DOM and stores the related nodes for each node
 /// to quickly find children, descendents and siblings
+#[derive(Debug)]
 pub(crate) struct HtmlIndex<'a> {
     pub(self) inner: HashMap<NodeHandle, HtmlNodeIndex>,
     pub(crate) dom: RefCell<VDom<'a>>,
