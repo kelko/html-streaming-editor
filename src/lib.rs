@@ -1,7 +1,7 @@
 use log::debug;
 use peg::str::LineCol;
 use snafu::{Backtrace, ResultExt, Snafu};
-use std::io::{BufRead, Read, Write};
+use std::io::{BufRead, Write};
 
 pub use crate::command::Command;
 pub(crate) use crate::css::{
@@ -52,17 +52,17 @@ pub enum StreamingEditorError {
     },
 }
 
-pub struct HtmlStreamingEditor {
-    input: Box<dyn BufRead>,
-    output: Box<dyn Write>,
+pub struct HtmlStreamingEditor<'a> {
+    input: &'a mut dyn BufRead,
+    output: &'a mut dyn Write,
 }
 
-impl HtmlStreamingEditor {
-    pub fn new(input: Box<dyn BufRead>, output: Box<dyn Write>) -> Self {
+impl<'a> HtmlStreamingEditor<'a> {
+    pub fn new(input: &'a mut dyn BufRead, output: &'a mut dyn Write) -> Self {
         HtmlStreamingEditor { input, output }
     }
 
-    pub fn run(mut self, commands: String) -> Result<(), StreamingEditorError> {
+    pub fn run(self, commands: &str) -> Result<(), StreamingEditorError> {
         let pipeline = parsing::grammar::pipeline(&commands).context(ParsingPipelineFailedSnafu)?;
         debug!("Parsed Pipeline: {:#?}", &pipeline);
 

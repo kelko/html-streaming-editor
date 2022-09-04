@@ -22,12 +22,9 @@ fn main() {
 
     let input_path = options.value_of("input").unwrap_or("-").to_string();
     let output_path = options.value_of("output").unwrap_or("-").to_string();
-    let commands = options
-        .value_of("COMMANDS")
-        .expect("COMMANDS must be set")
-        .to_string();
+    let commands = options.value_of("COMMANDS").expect("COMMANDS must be set");
 
-    let input_reader: Box<dyn BufRead> = if input_path == "-" {
+    let mut input_reader: Box<dyn BufRead> = if input_path == "-" {
         Box::new(std::io::stdin().lock())
     } else {
         let input_file = if let Ok(file) = File::open(input_path) {
@@ -40,7 +37,7 @@ fn main() {
         Box::new(BufReader::new(input_file))
     };
 
-    let output_writer: Box<dyn Write> = if output_path == "-" {
+    let mut output_writer: Box<dyn Write> = if output_path == "-" {
         Box::new(std::io::stdout().lock())
     } else {
         let output_file = if let Ok(file) = File::create(output_path) {
@@ -53,9 +50,9 @@ fn main() {
         Box::new(BufWriter::new(output_file))
     };
 
-    let editor = HtmlStreamingEditor::new(input_reader, output_writer);
+    let editor = HtmlStreamingEditor::new(&mut input_reader, &mut output_writer);
     match editor.run(commands) {
-        Ok(()) => (),
+        Ok(_) => (),
         Err(e) => report(&e),
     }
 }

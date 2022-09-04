@@ -149,6 +149,8 @@ impl<'a> HtmlIndex<'a> {
             .map(|(parent, _)| parent)
     }
 
+    /// convenience method to fetch the "root" elements, e.g. the elements on the very top
+    /// of the DOM tree
     pub(crate) fn root_elements(&self) -> HashSet<NodeHandle> {
         HashSet::from_iter(self.dom.borrow().children().iter().cloned())
     }

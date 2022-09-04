@@ -308,7 +308,7 @@ pub struct CssSelectorPath<'a>(Vec<CssSelectorStep<'a>>);
 
 impl<'a> CssSelectorPath<'a> {
     pub fn single(step: CssSelector<'a>) -> Self {
-        CssSelectorPath(vec![CssSelectorStep::descendent(step)])
+        CssSelectorPath(vec![CssSelectorStep::start(step)])
     }
 
     pub fn new(start: CssSelector<'a>, rest: Vec<CssSelectorStep<'a>>) -> Self {
