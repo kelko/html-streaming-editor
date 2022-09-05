@@ -61,117 +61,8 @@ fn parse_value_questionmarked_cant_have_questionmarks() {
 }
 
 #[test]
-fn parse_identifier_simple_doublequotes() {
-    let parsed = super::grammar::enclosed_identifier("\"a\"");
-    assert_eq!(parsed, Ok("a"))
-}
-
-#[test]
-fn parse_identifier_simple_singlequotes() {
-    let parsed = super::grammar::enclosed_identifier("'a'");
-    assert_eq!(parsed, Ok("a"))
-}
-
-#[test]
-fn parse_identifier_simple_questionsmarks() {
-    let parsed = super::grammar::enclosed_identifier("?a?");
-    assert_eq!(parsed, Ok("a"))
-}
-
-#[test]
-fn parse_identifier_whitespaced_questionsmarks() {
-    let parsed = super::grammar::enclosed_identifier("? a ?");
-    assert_eq!(parsed, Ok("a"))
-}
-
-#[test]
-fn parse_identifier_whitespaced_doublequotes() {
-    let parsed = super::grammar::enclosed_identifier("\" a \"");
-    assert_eq!(parsed, Ok("a"))
-}
-
-#[test]
-fn parse_identifier_whitespaced_singlequotes() {
-    let parsed = super::grammar::enclosed_identifier("' a '");
-    assert_eq!(parsed, Ok("a"))
-}
-
-#[test]
-fn parse_identifier_underscore() {
-    let parsed = super::grammar::enclosed_identifier("\"a_b\"");
-    assert_eq!(parsed, Ok("a_b"))
-}
-
-#[test]
-fn parse_identifier_dash() {
-    let parsed = super::grammar::enclosed_identifier("\"a-b\"");
-    assert_eq!(parsed, Ok("a-b"))
-}
-
-#[test]
-fn parse_selector_simple_doublequotes() {
-    let parsed = super::grammar::selector("\"a\"");
-    assert_eq!(
-        parsed,
-        Ok(CssSelectorList::new(vec![CssSelectorPath::single(
-            CssSelector::for_element("a")
-        )]))
-    )
-}
-
-#[test]
-fn parse_selector_simple_singlequotes() {
-    let parsed = super::grammar::selector("'a'");
-    assert_eq!(
-        parsed,
-        Ok(CssSelectorList::new(vec![CssSelectorPath::single(
-            CssSelector::for_element("a")
-        )]))
-    )
-}
-
-#[test]
-fn parse_selector_whitespaced_doublequotes() {
-    let parsed = super::grammar::selector("\" a \"");
-    assert_eq!(
-        parsed,
-        Ok(CssSelectorList::new(vec![CssSelectorPath::single(
-            CssSelector::for_element("a")
-        )]))
-    )
-}
-
-#[test]
-fn parse_selector_whitespaced_singlequotes() {
-    let parsed = super::grammar::selector("' a '");
-    assert_eq!(
-        parsed,
-        Ok(CssSelectorList::new(vec![CssSelectorPath::single(
-            CssSelector::for_element("a")
-        )]))
-    )
-}
-
-#[test]
-fn parse_selector_whitespaced_questionsmarks() {
-    let parsed = super::grammar::selector("? a ?");
-    assert_eq!(
-        parsed,
-        Ok(CssSelectorList::new(vec![CssSelectorPath::single(
-            CssSelector::for_element("a")
-        )]))
-    )
-}
-
-#[test]
-fn parse_selector_doublequoted_cant_have_doublequotes() {
-    let parsed = super::grammar::selector("\"a\"b\"");
-    assert!(parsed.is_err())
-}
-
-#[test]
 fn parse_single_only() {
-    let parsed = super::grammar::only_command("(ONLY 'a')");
+    let parsed = super::grammar::only_command("ONLY{a}");
     assert_eq!(
         parsed,
         Ok(Command::Only(CssSelectorList::new(vec![
@@ -182,7 +73,7 @@ fn parse_single_only() {
 
 #[test]
 fn parse_single_select_alias() {
-    let parsed = super::grammar::only_command("(SELECT 'a')");
+    let parsed = super::grammar::only_command("SELECT{a}");
     assert_eq!(
         parsed,
         Ok(Command::Only(CssSelectorList::new(vec![
@@ -193,7 +84,7 @@ fn parse_single_select_alias() {
 
 #[test]
 fn parse_single_without() {
-    let parsed = super::grammar::without_command("(WITHOUT 'a')");
+    let parsed = super::grammar::without_command("WITHOUT{a}");
     assert_eq!(
         parsed,
         Ok(Command::Without(CssSelectorList::new(vec![
@@ -204,7 +95,7 @@ fn parse_single_without() {
 
 #[test]
 fn parse_single_filter_alias() {
-    let parsed = super::grammar::without_command("(FILTER 'a')");
+    let parsed = super::grammar::without_command("FILTER{a}");
     assert_eq!(
         parsed,
         Ok(Command::Without(CssSelectorList::new(vec![
@@ -215,7 +106,7 @@ fn parse_single_filter_alias() {
 
 #[test]
 fn parse_two_grammar() {
-    let parsed = super::grammar::pipeline("(ONLY 'a') | (WITHOUT 'b')");
+    let parsed = super::grammar::pipeline("ONLY{a} | WITHOUT{b}");
     assert_eq!(
         parsed,
         Ok(Pipeline::new(vec![

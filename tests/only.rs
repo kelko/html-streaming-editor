@@ -17,7 +17,7 @@ const HTML_INPUT: &str = r#"<html>
 
 #[test]
 fn only_first_para() -> Result<(), StreamingEditorError> {
-    let command = "(ONLY ?#first-para?)";
+    let command = "ONLY{#first-para}";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
     let mut output = Vec::new();
@@ -36,7 +36,7 @@ fn only_first_para() -> Result<(), StreamingEditorError> {
 
 #[test]
 fn only_list_items() -> Result<(), StreamingEditorError> {
-    let command = "(ONLY ?li?)";
+    let command = "ONLY{li}";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
     let mut output = Vec::new();

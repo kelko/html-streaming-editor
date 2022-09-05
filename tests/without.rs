@@ -4,7 +4,7 @@ const HTML_INPUT: &str = r#"<html><head></head><body><h1>Title</h1><p id="first-
 
 #[test]
 fn without_first_para() -> Result<(), StreamingEditorError> {
-    let command = "(WITHOUT ?#first-para?)";
+    let command = "WITHOUT{#first-para}";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
     let mut output = Vec::new();

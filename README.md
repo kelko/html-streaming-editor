@@ -9,13 +9,18 @@ Syntax
 ----------
 
 The basic syntax is:
-> (COMMAND SELECTOR) | (COMMAND SELECTOR)
+> COMMAND{ SELECTOR } | COMMAND{ SELECTOR }
 
-Some `COMMAND` use sub-pipelines, those would be written as follows:
-> (COMMAND SELECTOR {(COMMAND SELECTOR) | (COMMAND SELECTOR)})
+Some `COMMAND` use sub-pipelines. There are two kind of `COMMANDS` with this:
+- "iterate"/"forEach": For each (sub) node matching the inner selector the sub-pipeline is processed, but the elements themselves are not changed
 
-The `SELECTOR` is a [CSS selector](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors), wrapped in
-either `"`, `'` or `?` (as to reduce the necessity of escaping to a minimum).
+  > COMMAND{ SELECTOR ↦ COMMAND{ SELECTOR } | COMMAND { SELECTOR } }
+
+- "map"/"replace": For each (sub) node matching the inner selector the sub-pipeline is processed, and the pipelines result is used instead of the element
+
+  > COMMAND{ SELECTOR ↤ COMMAND{ SELECTOR } | COMMAND { SELECTOR } }
+ 
+The `SELECTOR` is a [CSS selector](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors).
 
 Commands
 -------------
@@ -55,10 +60,10 @@ Example
 
 ```shell
 # fetches all elements with CSS class "content" inside a <header> element
-hse -i index.html '(ONLY ?header .content?)'
+hse -i index.html 'ONLY{header .content}'
 ```
 
 ```shell
 # fetches the `<main>` or element with CSS class `main`, but without any `<script>` defined inside
-hse -i index.html '(ONLY ?main, .main?) | (WITHOUT ?script?)'
+hse -i index.html 'ONLY{main, .main} | WITHOUT{script}'
 ```

@@ -50,6 +50,10 @@ parser! {
             / ":first-of-type" { CssPseudoClass::FirstOfType }
             / ":nth-child(" i:(number()) ")" { CssPseudoClass::NthChild(i) }
             / ":nth-of-type(" i:(number()) ")" { CssPseudoClass::NthOfType(i) }
+            / ":last-child" { CssPseudoClass::LastChild }
+            / ":last-of-type" { CssPseudoClass::LastOfType }
+            / ":nth-last-child(" i:(number()) ")" { CssPseudoClass::NthLastChild(i) }
+            / ":nth-last-of-type(" i:(number()) ")" { CssPseudoClass::NthLastOfType(i) }
         rule css_pseudo_classes() -> Vec<CssPseudoClass>
             = p:(css_pseudo_class() ++ "") { p }
         rule css_id() -> &'input str
@@ -74,18 +78,10 @@ parser! {
             = "\"" whitespace()? s:$([^'"']+) "\"" { s.trim() }
             / "'" whitespace()? s:$([^'\'']+) "'" { s.trim() }
             / "?" whitespace()? s:$([^'?']+) "?" { s.trim() }
-        pub(crate) rule enclosed_identifier() -> &'input str
-            = "\"" whitespace()? s:(identifier()) whitespace()? "\"" { s }
-            / "'" whitespace()? s:(identifier())  whitespace()? "'" { s }
-            / "?" whitespace()? s:(identifier())  whitespace()? "?" { s }
-        pub(crate) rule selector() -> CssSelectorList<'input>
-            = "\"" c:(css_selector_list()) "\"" { c }
-            / "'" c:(css_selector_list()) "'" { c }
-            / "?" c:(css_selector_list()) "?" { c }
         pub(crate) rule only_command() -> Command<'input>
-            = "(" ("ONLY" / "SELECT") " " oc:selector() whitespace()? ")" { Command::Only(oc) }
+            = ("ONLY" / "SELECT") "{" whitespace()?  oc:css_selector_list() whitespace()? "}" { Command::Only(oc) }
         pub(crate) rule without_command() -> Command<'input>
-            = "(" ("WITHOUT" / "FILTER") " " oc:selector() whitespace()? ")" { Command::Without(oc) }
+            = ("WITHOUT" / "FILTER") "{" whitespace()? oc:css_selector_list() whitespace()? "}" { Command::Without(oc) }
         rule command() -> Command<'input>
             = only_command()
             / without_command()
