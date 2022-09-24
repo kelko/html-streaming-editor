@@ -82,9 +82,15 @@ parser! {
             = ("ONLY" / "SELECT") "{" whitespace()?  oc:css_selector_list() whitespace()? "}" { Command::Only(oc) }
         pub(crate) rule without_command() -> Command<'input>
             = ("WITHOUT" / "FILTER") "{" whitespace()? oc:css_selector_list() whitespace()? "}" { Command::Without(oc) }
+        pub(crate) rule clear_attr_command() -> Command<'input>
+            = "CLEAR-ATTR" "{" whitespace()? a:identifier() whitespace()? "}" { Command::ClearAttribute(String::from(a)) }
+        pub(crate) rule clear_content_command() -> Command<'input>
+            = "CLEAR-CONTENT" { Command::ClearContent }
         rule command() -> Command<'input>
             = only_command()
             / without_command()
+            / clear_attr_command()
+            / clear_content_command()
         pub rule pipeline() -> Pipeline<'input>
             = p:(command() ** " | ") { Pipeline::new(p) }
   }

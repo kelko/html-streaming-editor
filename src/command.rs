@@ -32,13 +32,13 @@ pub enum Command<'a> {
     /// and remove them from their parent nodes.
     /// Returns the input as result.
     Without(CssSelectorList<'a>),
-    // Map(String, Pipeline),
-    // GetAttribute(String),
-    // SetAttribute(String, Pipeline),
-    // RemoveAttribute(String),
-    // GetText(),
-    // SetText(Pipeline),
-    // RemoveText(),
+    ClearAttribute(String),
+    ClearContent,
+    //SetAttribute
+    //SetTextContent
+    //AddTextContent
+    //AddElement
+    //AddComment
 }
 
 impl<'a> Command<'a> {
@@ -55,6 +55,8 @@ impl<'a> Command<'a> {
             Command::Without(selector) => {
                 Self::without(input, selector).context(WithoutFailedSnafu)
             }
+            Command::ClearAttribute(attribute) => Self::clear_attr(input, attribute),
+            Command::ClearContent => Self::clear_content(input),
         }
     }
 
@@ -75,6 +77,41 @@ impl<'a> Command<'a> {
 
         for mut node in findings {
             node.detach();
+        }
+
+        Ok(input
+            .iter()
+            .map(|n| rctree::Node::clone(n))
+            .collect::<Vec<_>>())
+    }
+
+    fn clear_attr(
+        input: &Vec<rctree::Node<HtmlContent>>,
+        attribute: &String,
+    ) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
+        trace!("Running CLEAR-ATTR command for attr: {:#?}", attribute);
+
+        for node in input {
+            let mut working_copy = rctree::Node::clone(node);
+            let mut data = working_copy.borrow_mut();
+            data.clear_attribute(attribute);
+        }
+
+        Ok(input
+            .iter()
+            .map(|n| rctree::Node::clone(n))
+            .collect::<Vec<_>>())
+    }
+
+    fn clear_content(
+        input: &Vec<rctree::Node<HtmlContent>>,
+    ) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
+        trace!("Running CLEAR-CONTENT command");
+
+        for node in input {
+            for mut child in node.children() {
+                child.detach()
+            }
         }
 
         Ok(input

@@ -25,16 +25,25 @@ The `SELECTOR` is a [CSS selector](https://developer.mozilla.org/en-US/docs/Web/
 Commands
 -------------
 
-Planned commands:
+Currently supported:
 
 - `ONLY`: remove everything not matching the CSS selector (alias: `SELECT`)
 - `WITHOUT`: remove everything matching the CSS selector (alias: `FILTER`)
-- Some attribute & text-content manipulation
+- `CLEAR-ATTR`: removes a given attribute from the previously selected elements  
+- `CLEAR-CONTENT`: clears all children from the previously selected elements
 
-Currently supported:
+Planned commands:
 
-- `ONLY`
-- `WITHOUT`
+- `SET-ATTR`: Sets a given attribute to a specified value
+- `SET-TEXT-CONTENT`: removes previous children and replaces it with exactly one given text child
+- `ADD-TEXT-CONTENT`: appends a new text child
+- `ADD-COMMENT`: appends a new comment child
+- `ADD-ELEMENT`: appends a new tag/element child
+- `REPLACE-WITH`: replace all elements matching a CSS selector with new elements (alias: `MAP`)
+- `READ-FROM`: reads a DOM from a different file, mainly in combination with `ADD-ELEMENT` or `REPLACE-WITH` (alias: `SOURCE`)
+- `CREATE-ELEMENT`: creates a new, empty element, mainly in combination with `ADD-ELEMENT` or `REPLACE-WITH` (alias: `NEW`)
+- `FOR-EACH`: run a sub-pipeline on all sub-elements matching a CSS selector but return the previously selected elements 
+
 
 Binary
 -------

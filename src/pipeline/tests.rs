@@ -81,3 +81,49 @@ fn run_on_single_without() {
         )
     );
 }
+
+#[test]
+fn run_on_single_clear_attr() {
+    let pipeline = Pipeline::new(vec![Command::ClearAttribute(String::from("data-test"))]);
+
+    let dom = tl::parse(
+        r#"<div data-test="foo" class="bar">Some Content</div>"#,
+        tl::ParserOptions::default(),
+    )
+    .unwrap();
+    let starting_elements = HtmlContent::import(dom).unwrap();
+
+    let mut result = pipeline
+        .run_on(vec![rctree::Node::clone(&starting_elements)])
+        .unwrap();
+
+    assert_eq!(result.len(), 1);
+    let first_result = result.pop().unwrap();
+    assert_eq!(
+        first_result.outer_html(),
+        String::from(r#"<div class="bar">Some Content</div>"#)
+    );
+}
+
+#[test]
+fn run_on_single_clear_content() {
+    let pipeline = Pipeline::new(vec![Command::ClearContent]);
+
+    let dom = tl::parse(
+        r#"<div data-test="foo" class="bar">Some Content</div>"#,
+        tl::ParserOptions::default(),
+    )
+    .unwrap();
+    let starting_elements = HtmlContent::import(dom).unwrap();
+
+    let mut result = pipeline
+        .run_on(vec![rctree::Node::clone(&starting_elements)])
+        .unwrap();
+
+    assert_eq!(result.len(), 1);
+    let first_result = result.pop().unwrap();
+    assert_eq!(
+        first_result.outer_html(),
+        String::from(r#"<div class="bar" data-test="foo"></div>"#)
+    );
+}

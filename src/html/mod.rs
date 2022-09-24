@@ -241,6 +241,15 @@ impl HtmlContent {
             HtmlContent::Tag(t) => t.matches_selector(selector),
         }
     }
+
+    pub(crate) fn clear_attribute(&mut self, attribute: &String) {
+        match self {
+            HtmlContent::Comment(_) | HtmlContent::Text(_) => (),
+            HtmlContent::Tag(tag) => {
+                tag.attributes.remove(attribute);
+            }
+        }
+    }
 }
 
 pub(crate) trait HtmlRenderable {

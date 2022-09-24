@@ -119,3 +119,15 @@ fn parse_two_grammar() {
         ]))
     );
 }
+
+#[test]
+fn parse_single_clear_attr() {
+    let parsed = super::grammar::clear_attr_command("CLEAR-ATTR{a}");
+    assert_eq!(parsed, Ok(Command::ClearAttribute(String::from("a"))));
+}
+
+#[test]
+fn parse_single_clear_content() {
+    let parsed = super::grammar::clear_content_command("CLEAR-CONTENT");
+    assert_eq!(parsed, Ok(Command::ClearContent));
+}
