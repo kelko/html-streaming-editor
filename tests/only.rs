@@ -45,7 +45,6 @@ fn only_list_items() -> Result<(), StreamingEditorError> {
     let _ = hse.run(command)?;
     let result_string = String::from_utf8(output).unwrap();
 
-    // order is not (yet) fix
     assert!(result_string.contains(r#"<li id="item-1">1</li>"#));
     assert!(result_string.contains(r#"<li id="item-2">2</li>"#));
     assert!(result_string.contains(r#"<li id="item-3">3</li>"#));

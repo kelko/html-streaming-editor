@@ -1,11 +1,9 @@
 use log::{trace, warn};
 use snafu::{ResultExt, Snafu};
-use std::collections::HashSet;
 use std::fmt::Debug;
-use tl::NodeHandle;
 
 use crate::command::Command;
-use crate::HtmlIndex;
+use crate::html::HtmlContent;
 
 #[cfg(test)]
 mod tests;
@@ -36,20 +34,17 @@ impl<'a> Pipeline<'a> {
     /// The result of the last command is the result of this pipeline
     pub(crate) fn run_on(
         &self,
-        nodes: HashSet<NodeHandle>,
-        index: &'_ HtmlIndex<'a>,
-    ) -> Result<HashSet<NodeHandle>, PipelineError> {
+        nodes: Vec<rctree::Node<HtmlContent>>,
+    ) -> Result<Vec<rctree::Node<HtmlContent>>, PipelineError> {
         let mut intermediate = nodes;
         let mut command_index: usize = 0;
         for command in self.0.iter() {
             trace!("Running Next: {:#?}", &command);
             trace!("Current Element Set: {:#?}", &intermediate);
 
-            intermediate = command
-                .execute(&intermediate, index)
-                .context(CommandFailedSnafu {
-                    index: command_index,
-                })?;
+            intermediate = command.execute(&intermediate).context(CommandFailedSnafu {
+                index: command_index,
+            })?;
             command_index += 1;
 
             if intermediate.len() == 0 {

@@ -1,11 +1,7 @@
-use std::borrow::Cow;
-use std::collections::HashSet;
 use std::fmt::Debug;
 use std::ops::Index;
 
-use tl::{Bytes, HTMLTag, NodeHandle};
-
-use crate::HtmlIndex;
+use crate::html::{HtmlContent, HtmlQueryable};
 use log::trace;
 
 #[cfg(test)]
@@ -67,8 +63,8 @@ pub struct CssAttributeSelector<'a> {
 }
 
 impl<'a> CssAttributeSelector<'a> {
-    fn matches(&self, attribute: &Bytes) -> bool {
-        let given_value = attribute.as_utf8_str();
+    pub(crate) fn matches(&self, attribute: impl Into<String>) -> bool {
+        let given_value = attribute.into();
 
         if self.operator == CssAttributeComparison::Exist {
             // has to short-circuit as Exist does not have a self.value
@@ -94,7 +90,7 @@ impl<'a> CssAttributeSelector<'a> {
         }
     }
 
-    fn equals_till_hyphen(expected_value: &str, given_value: Cow<str>) -> bool {
+    fn equals_till_hyphen(expected_value: &str, given_value: String) -> bool {
         match given_value.find('-') {
             None => given_value.eq(expected_value),
             Some(position) => {
@@ -178,62 +174,17 @@ impl<'a> CssSelector<'a> {
 
     pub(crate) fn query(
         &self,
-        index: &HtmlIndex,
-        nodes: HashSet<NodeHandle>,
-    ) -> HashSet<NodeHandle> {
-        let mut findings = HashSet::new();
+        nodes: &Vec<rctree::Node<HtmlContent>>,
+    ) -> Vec<rctree::Node<HtmlContent>> {
+        let mut findings = vec![];
 
         for node in nodes {
-            let dom = index.dom.borrow();
-            if let Some(tag) = node.get(dom.parser()).unwrap().as_tag() {
-                if self.matches(tag) {
-                    findings.insert(node.clone());
-                }
+            if node.matches_selector(self) {
+                findings.push(rctree::Node::clone(node));
             }
         }
 
         return findings;
-    }
-
-    pub(crate) fn matches(&self, tag: &HTMLTag) -> bool {
-        if let Some(element) = self.element {
-            if element.as_bytes() != tag.name().as_bytes() {
-                return false;
-            }
-        }
-
-        if let Some(id) = self.id {
-            if let Some(tag_id) = tag.attributes().id() {
-                if id.as_bytes() != tag_id.as_bytes() {
-                    return false;
-                }
-            } else {
-                return false;
-            }
-        }
-
-        for class in self.classes.iter() {
-            if !tag.attributes().is_class_member(class) {
-                return false;
-            }
-        }
-
-        for _pseudo_class in self.pseudo_classes.iter() {
-            todo!("Implement pseudo-class support")
-        }
-
-        for attribute in self.attributes.iter() {
-            if let Some(attribute_value_bytes) = tag.attributes().get(attribute.attribute).flatten()
-            {
-                if !attribute.matches(attribute_value_bytes) {
-                    return false;
-                }
-            } else {
-                return false;
-            }
-        }
-
-        true
     }
 }
 
@@ -323,44 +274,63 @@ impl<'a> CssSelectorPath<'a> {
 
     pub(crate) fn query(
         &self,
-        index: &HtmlIndex,
-        start: &HashSet<NodeHandle>,
-    ) -> HashSet<NodeHandle> {
-        let mut findings = start.clone();
+        start: &Vec<rctree::Node<HtmlContent>>,
+    ) -> Vec<rctree::Node<HtmlContent>> {
+        let mut findings = start
+            .iter()
+            .map(|n| rctree::Node::clone(n))
+            .collect::<Vec<_>>();
 
-        for step in self.0.iter() {
-            let candidates = Self::resolve_combinator(index, &step.combinator, findings);
-            findings = step.selector.query(index, candidates);
+        for step in &self.0 {
+            let candidates = Self::resolve_combinator(&step.combinator, findings);
+            findings = step.selector.query(&candidates);
         }
 
         return findings;
     }
 
     fn resolve_combinator(
-        index: &HtmlIndex,
         combinator: &CssSelectorCombinator,
-        source: HashSet<NodeHandle>,
-    ) -> HashSet<NodeHandle> {
-        let relations = source.iter().filter_map(|n| index.relations_of(n));
-
+        source: Vec<rctree::Node<HtmlContent>>,
+    ) -> Vec<rctree::Node<HtmlContent>> {
         match combinator {
-            CssSelectorCombinator::Start => relations
-                .flat_map(|r| r.descendents.clone())
-                .chain(source.clone())
-                .collect::<HashSet<_>>(),
-            CssSelectorCombinator::Descendent => relations
-                .flat_map(|r| r.descendents.clone())
-                .collect::<HashSet<_>>(),
-            CssSelectorCombinator::DirectChild => relations
-                .flat_map(|r| r.children.clone())
-                .collect::<HashSet<_>>(),
-            CssSelectorCombinator::GeneralSibling => relations
-                .flat_map(|r| r.siblings.clone())
-                .collect::<HashSet<_>>(),
-            CssSelectorCombinator::AdjacentSibling => relations
-                .flat_map(|r| r.direct_sibling)
-                .collect::<HashSet<_>>(),
+            CssSelectorCombinator::Start => source
+                .iter()
+                .flat_map(|s| s.descendants())
+                .collect::<Vec<_>>(),
+            CssSelectorCombinator::Descendent => source
+                .iter()
+                .flat_map(|s| s.descendants().filter(move |d| s != d))
+                .collect::<Vec<_>>(),
+            CssSelectorCombinator::DirectChild => {
+                source.iter().flat_map(|s| s.children()).collect::<Vec<_>>()
+            }
+            CssSelectorCombinator::GeneralSibling => source
+                .iter()
+                .flat_map(|s| s.following_siblings().filter(move |d| s != d))
+                .collect::<Vec<_>>(),
+            CssSelectorCombinator::AdjacentSibling => source
+                .iter()
+                .flat_map(|s| Self::find_tag_sibling(s))
+                .collect::<Vec<_>>(),
         }
+    }
+
+    fn find_tag_sibling(start: &rctree::Node<HtmlContent>) -> Option<rctree::Node<HtmlContent>> {
+        let mut candidate = start.next_sibling();
+        loop {
+            if let Some(node) = candidate {
+                if node.borrow().is_tag() {
+                    return Some(node);
+                } else {
+                    candidate = node.next_sibling();
+                }
+            } else {
+                break;
+            }
+        }
+
+        None
     }
 }
 
@@ -387,14 +357,13 @@ impl<'a> CssSelectorList<'a> {
 
     pub(crate) fn query(
         &self,
-        index: &'_ HtmlIndex<'a>,
-        start: &HashSet<NodeHandle>,
-    ) -> HashSet<NodeHandle> {
+        start: &Vec<rctree::Node<HtmlContent>>,
+    ) -> Vec<rctree::Node<HtmlContent>> {
         trace!("Querying using Selector {:#?}", &self.0);
 
         self.0
             .iter()
-            .flat_map(|p| p.query(index, start))
-            .collect::<HashSet<_>>()
+            .flat_map(|p| p.query(start))
+            .collect::<Vec<_>>()
     }
 }

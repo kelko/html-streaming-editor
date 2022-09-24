@@ -1,113 +1,275 @@
-use std::collections::HashSet;
+use crate::html::{HtmlContent, HtmlRenderable, HtmlTag};
+use std::collections::BTreeMap;
 
-use crate::HtmlIndex;
+fn build_comment() -> rctree::Node<HtmlContent> {
+    rctree::Node::<HtmlContent>::new(HtmlContent::Comment(String::from("Some Comment")))
+}
+
+fn build_text() -> rctree::Node<HtmlContent> {
+    build_text_with_content("Some Text")
+}
+
+fn build_text_with_content(text: impl Into<String>) -> rctree::Node<HtmlContent> {
+    rctree::Node::<HtmlContent>::new(HtmlContent::Text(text.into()))
+}
+
+fn build_tag() -> rctree::Node<HtmlContent> {
+    rctree::Node::<HtmlContent>::new(HtmlContent::Tag(HtmlTag::of_name("div")))
+}
+
+fn build_tag_with_attr() -> rctree::Node<HtmlContent> {
+    rctree::Node::<HtmlContent>::new(HtmlContent::Tag(HtmlTag {
+        name: String::from("div"),
+        attributes: BTreeMap::<String, String>::from([
+            (String::from("class"), String::from("foo")),
+            (String::from("data-bar"), String::from("value")),
+        ]),
+    }))
+}
+
+fn build_tag_with_comment() -> rctree::Node<HtmlContent> {
+    let mut unit_of_test = build_tag();
+    unit_of_test.append(build_comment());
+
+    unit_of_test
+}
+
+fn build_tag_with_text() -> rctree::Node<HtmlContent> {
+    let mut unit_of_test = build_tag();
+    unit_of_test.append(build_text());
+
+    unit_of_test
+}
+
+fn build_tag_with_complex_content() -> rctree::Node<HtmlContent> {
+    let mut unit_of_test = build_tag();
+    unit_of_test.append(build_text());
+    unit_of_test.append(build_comment());
+
+    let mut child_tag = build_tag_with_attr();
+    child_tag.append(build_text_with_content("Other Text"));
+    unit_of_test.append(child_tag);
+
+    unit_of_test.append(build_text_with_content("Third Text"));
+
+    unit_of_test
+}
 
 #[test]
-fn fill_simplest_html() {
-    let dom = tl::parse(
-        "<html><head></head><body></body></html>",
-        tl::ParserOptions::default(),
-    )
-    .unwrap();
-    let index = HtmlIndex::load(dom);
+fn outer_html_of_comment_has_correct_syntax() {
+    let unit_of_test = build_comment();
+    let rendered_outer_html = unit_of_test.outer_html();
 
-    assert_eq!(index.inner.len(), 3);
+    assert_eq!(rendered_outer_html, String::from("<!-- Some Comment -->"));
+}
+
+#[test]
+fn outer_html_of_text_is_string() {
+    let unit_of_test = build_text();
+    let rendered_outer_html = unit_of_test.outer_html();
+
+    assert_eq!(rendered_outer_html, String::from("Some Text"));
+}
+
+#[test]
+fn outer_html_of_childless_tag_is_tag_pair() {
+    let unit_of_test = build_tag();
+    let rendered_outer_html = unit_of_test.outer_html();
+
+    assert_eq!(rendered_outer_html, String::from("<div></div>"));
+}
+
+#[test]
+fn outer_html_of_tag_contains_attributes() {
+    let unit_of_test = build_tag_with_attr();
+    let rendered_outer_html = unit_of_test.outer_html();
+
     assert_eq!(
-        index
-            .dom
-            .borrow()
-            .children()
-            .iter()
-            .filter_map(|n| index.relations_of(n))
-            .collect::<Vec<_>>()
-            .len(),
-        1
-    );
-    assert_eq!(
-        index
-            .relations_of(index.dom.borrow().children().first().unwrap())
-            .unwrap()
-            .children
-            .len(),
-        2
+        rendered_outer_html,
+        String::from(r#"<div class="foo" data-bar="value"></div>"#)
     );
 }
 
 #[test]
-fn fill_medium_html() {
-    let dom = tl::parse(
-        "<html><head></head><body id=\"element-under-test\"><header><h1>Hallo</h1></header><main><p>Ups <em>I'm sorry</em></p><img src=\"\"></main><footer></footer><nav><ul><li>1</li><li>2</li></ul></nav></body></html>",
-        tl::ParserOptions::default(),
-    )
-        .unwrap();
-    let index = HtmlIndex::load(dom);
+fn outer_html_of_tag_with_comment_has_comment() {
+    let unit_of_test = build_tag_with_comment();
+    let rendered_outer_html = unit_of_test.outer_html();
 
-    let body_handle = index
-        .dom
-        .borrow()
-        .get_element_by_id("element-under-test")
-        .unwrap();
-    let body_index = index.relations_of(&body_handle).unwrap();
-
-    assert_eq!(index.inner.len(), 14);
-    assert_eq!(body_index.children.len(), 4);
-    assert_eq!(body_index.descendents.len(), 11);
     assert_eq!(
-        body_index.children,
-        //order is not preserved
-        HashSet::from_iter(
-            body_handle
-                .get(index.dom.borrow().parser())
-                .unwrap()
-                .children()
-                .unwrap()
-                .top()
-                .iter()
-                .map(|n| n.clone())
+        rendered_outer_html,
+        String::from("<div><!-- Some Comment --></div>")
+    );
+}
+
+#[test]
+fn outer_html_of_tag_with_text_has_string() {
+    let unit_of_test = build_tag_with_text();
+    let rendered_outer_html = unit_of_test.outer_html();
+
+    assert_eq!(rendered_outer_html, String::from("<div>Some Text</div>"));
+}
+
+#[test]
+fn outer_html_of_complex_node_has_all() {
+    let unit_of_test = build_tag_with_complex_content();
+    let rendered_outer_html = unit_of_test.outer_html();
+
+    assert_eq!(
+        rendered_outer_html,
+        String::from(
+            r#"<div>Some Text<!-- Some Comment --><div class="foo" data-bar="value">Other Text</div>Third Text</div>"#
         )
     );
 }
 
 #[test]
-fn fill_medium_html_siblings_of_main() {
-    let dom = tl::parse(
-        "<html><head></head><body><header><h1>Hallo</h1></header><main id=\"element-under-test\"><p>Ups <em>I'm sorry</em></p><img src=\"\"></main><footer id=\"sibling\"></footer><nav><ul><li>1</li><li>2</li></ul></nav></body></html>",
-        tl::ParserOptions::default(),
-    )
-        .unwrap();
-    let index = HtmlIndex::load(dom);
+fn inner_html_of_comment_is_empty() {
+    let unit_of_test = build_comment();
+    let rendered_inner_html = unit_of_test.inner_html();
 
-    let main_handle = index
-        .dom
-        .borrow()
-        .get_element_by_id("element-under-test")
-        .unwrap();
-    let main_index = index.relations_of(&main_handle).unwrap();
-
-    let footer_handle = index.dom.borrow().get_element_by_id("sibling").unwrap();
-
-    assert_eq!(main_index.siblings.len(), 2);
-    assert_eq!(main_index.direct_sibling, Some(footer_handle));
+    assert_eq!(rendered_inner_html, String::new());
 }
 
 #[test]
-fn fill_medium_html_siblings_of_header() {
+fn inner_html_of_text_is_string() {
+    let unit_of_test = build_text();
+    let rendered_inner_html = unit_of_test.inner_html();
+
+    assert_eq!(rendered_inner_html, String::from("Some Text"));
+}
+
+#[test]
+fn inner_html_of_childless_tag_is_empty() {
+    let unit_of_test = build_tag();
+    let rendered_inner_html = unit_of_test.inner_html();
+
+    assert_eq!(rendered_inner_html, String::new());
+}
+
+#[test]
+fn inner_html_of_tag_containing_attributes_is_empty() {
+    let unit_of_test = build_tag_with_attr();
+    let rendered_inner_html = unit_of_test.inner_html();
+
+    assert_eq!(rendered_inner_html, String::new());
+}
+
+#[test]
+fn inner_html_of_tag_with_comment_has_comment() {
+    let unit_of_test = build_tag_with_comment();
+    let rendered_inner_html = unit_of_test.inner_html();
+
+    assert_eq!(rendered_inner_html, String::from("<!-- Some Comment -->"));
+}
+
+#[test]
+fn inner_html_of_tag_with_text_has_string() {
+    let unit_of_test = build_tag_with_text();
+    let rendered_inner_html = unit_of_test.inner_html();
+
+    assert_eq!(rendered_inner_html, String::from("Some Text"));
+}
+
+#[test]
+fn inner_html_of_complex_node_has_all() {
+    let unit_of_test = build_tag_with_complex_content();
+    let rendered_inner_html = unit_of_test.inner_html();
+
+    assert_eq!(
+        rendered_inner_html,
+        String::from(
+            r#"Some Text<!-- Some Comment --><div class="foo" data-bar="value">Other Text</div>Third Text"#
+        )
+    );
+}
+
+#[test]
+fn text_content_of_comment_is_empty() {
+    let unit_of_test = build_comment();
+    let rendered_text_content = unit_of_test.text_content();
+
+    assert_eq!(rendered_text_content, String::new());
+}
+
+#[test]
+fn text_content_of_text_is_string() {
+    let unit_of_test = build_text();
+    let rendered_text_content = unit_of_test.text_content();
+
+    assert_eq!(rendered_text_content, String::from("Some Text"));
+}
+
+#[test]
+fn text_content_of_childless_tag_is_empty() {
+    let unit_of_test = build_tag();
+    let rendered_text_content = unit_of_test.text_content();
+
+    assert_eq!(rendered_text_content, String::new());
+}
+
+#[test]
+fn text_content_of_tag_containing_attributes_is_empty() {
+    let unit_of_test = build_tag_with_attr();
+    let rendered_text_content = unit_of_test.text_content();
+
+    assert_eq!(rendered_text_content, String::new());
+}
+
+#[test]
+fn text_content_of_tag_with_comment_is_empty() {
+    let unit_of_test = build_tag_with_comment();
+    let rendered_text_content = unit_of_test.text_content();
+
+    assert_eq!(rendered_text_content, String::new());
+}
+
+#[test]
+fn text_content_of_tag_with_text_is_string() {
+    let unit_of_test = build_tag_with_text();
+    let rendered_text_content = unit_of_test.text_content();
+
+    assert_eq!(rendered_text_content, String::from("Some Text"));
+}
+
+#[test]
+fn text_content_of_complex_node_is_set() {
+    let unit_of_test = build_tag_with_complex_content();
+    let rendered_text_content = unit_of_test.text_content();
+
+    assert_eq!(
+        rendered_text_content,
+        String::from("Some Text Other Text Third Text")
+    );
+}
+
+#[test]
+fn convert_single_vdom_works() {
     let dom = tl::parse(
-        "<html><head></head><body><header id=\"element-under-test\"><h1>Hallo</h1></header><main id=\"sibling\"><p>Ups <em>I'm sorry</em></p><img src=\"\"></main><footer></footer><nav><ul><li>1</li><li>2</li></ul></nav></body></html>",
+        "<html><head></head><!-- nothing here --><body class=\"simple\" data-test=\"Ala ma kota\">Hello World</body></html>",
         tl::ParserOptions::default(),
     )
         .unwrap();
-    let index = HtmlIndex::load(dom);
+    let converted = HtmlContent::import(dom).unwrap();
 
-    let header_handle = index
-        .dom
-        .borrow()
-        .get_element_by_id("element-under-test")
-        .unwrap();
-    let header_index = index.relations_of(&header_handle).unwrap();
+    let mut expected = rctree::Node::<HtmlContent>::new(HtmlContent::Tag(HtmlTag::of_name("html")));
+    expected.append(rctree::Node::<HtmlContent>::new(HtmlContent::Tag(
+        HtmlTag::of_name("head"),
+    )));
+    expected.append(rctree::Node::<HtmlContent>::new(HtmlContent::Comment(
+        String::from("nothing here"),
+    )));
 
-    let main_handle = index.dom.borrow().get_element_by_id("sibling").unwrap();
+    let mut body = rctree::Node::<HtmlContent>::new(HtmlContent::Tag(HtmlTag {
+        name: String::from("body"),
+        attributes: BTreeMap::<String, String>::from([
+            (String::from("class"), String::from("simple")),
+            (String::from("data-test"), String::from("Ala ma kota")),
+        ]),
+    }));
+    body.append(rctree::Node::<HtmlContent>::new(HtmlContent::Text(
+        String::from("Hello World"),
+    )));
+    expected.append(body);
 
-    assert_eq!(header_index.siblings.len(), 3);
-    assert_eq!(header_index.direct_sibling, Some(main_handle));
+    assert_eq!(converted.outer_html(), expected.outer_html());
 }

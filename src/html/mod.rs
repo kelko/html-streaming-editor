@@ -1,12 +1,276 @@
-use snafu::{Backtrace, OptionExt, Snafu};
-use std::cell::RefCell;
-use std::collections::{HashMap, HashSet};
-use std::ops::Index;
+use log::warn;
+use rctree::{Children, Node};
+use snafu::{Backtrace, Snafu};
+use std::collections::BTreeMap;
 
-use tl::{NodeHandle, Parser, VDom};
+use crate::CssSelector;
+use tl::{HTMLTag, NodeHandle, Parser, VDom};
 
 #[cfg(test)]
 mod tests;
+
+const HTML_VOID_ELEMENTS: [&str; 16] = [
+    "area", "base", "br", "col", "command", "embed", "hr", "img", "input", "keygen", "link",
+    "meta", "param", "source", "track", "wbr",
+];
+
+#[derive(Debug, PartialEq)]
+pub(crate) struct HtmlTag {
+    pub name: String,
+    pub attributes: BTreeMap<String, String>,
+}
+
+impl HtmlTag {
+    #[cfg(test)]
+    fn of_name(name: impl Into<String>) -> Self {
+        HtmlTag {
+            name: name.into(),
+            attributes: BTreeMap::<String, String>::new(),
+        }
+    }
+
+    pub(crate) fn build_start_tag(&self, mut add_string: impl FnMut(String) -> ()) {
+        add_string(format!("<{}", self.name));
+        self.attributes
+            .iter()
+            .for_each(|(key, value)| add_string(format!(r#" {}="{}""#, key, value)));
+        add_string(String::from(">"));
+    }
+
+    pub(crate) fn build_end_tag(&self, mut add_string: impl FnMut(String) -> ()) {
+        if HTML_VOID_ELEMENTS.contains(&self.name.as_ref()) {
+            return;
+        }
+
+        add_string(format!("</{}>", self.name));
+    }
+
+    fn matches_selector(&self, selector: &CssSelector) -> bool {
+        if let Some(element) = selector.element {
+            if element.as_bytes() != self.name.as_bytes() {
+                return false;
+            }
+        }
+
+        if let Some(id) = selector.id {
+            if let Some(tag_id) = self.attributes.get(&String::from("id")) {
+                if id.as_bytes() != tag_id.as_bytes() {
+                    return false;
+                }
+            } else {
+                return false;
+            }
+        }
+
+        for class in &selector.classes {
+            if !self.is_class_member(class) {
+                return false;
+            }
+        }
+
+        for _pseudo_class in &selector.pseudo_classes {
+            todo!("Implement pseudo-class support")
+        }
+
+        for attribute in &selector.attributes {
+            if let Some(attribute_value) = self.attributes.get(&String::from(attribute.attribute)) {
+                if !attribute.matches(attribute_value) {
+                    return false;
+                }
+            } else {
+                return false;
+            }
+        }
+
+        true
+    }
+
+    fn is_class_member(&self, class: &&str) -> bool {
+        if let Some(classes) = self.attributes.get(&String::from("class")) {
+            if let Some(_) = classes.split(" ").into_iter().find(|c| c == class) {
+                return true;
+            }
+        }
+
+        false
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub(crate) enum HtmlContent {
+    Tag(HtmlTag),
+    Text(String),
+    Comment(String),
+}
+
+impl HtmlContent {
+    pub(crate) fn is_tag(&self) -> bool {
+        match self {
+            HtmlContent::Tag(_) => true,
+            _ => false,
+        }
+    }
+
+    pub(crate) fn import(dom: VDom) -> Result<Node<HtmlContent>, ()> {
+        let parser = dom.parser();
+        let mut converted = dom
+            .children()
+            .iter()
+            .filter_map(|node_handle| {
+                if let Some(node) = node_handle.get(parser) {
+                    if let Some(tag) = node.as_tag() {
+                        return Some(Self::convert_tag(tag, parser));
+                    }
+                }
+
+                None
+            })
+            .collect::<Vec<_>>();
+
+        if converted.len() > 1 {
+            warn!("VDom seemed to have more then one root tag")
+        }
+
+        if let Some(root_result) = converted.pop() {
+            root_result
+        } else {
+            Err(())
+        }
+    }
+
+    fn convert_tag(tag: &HTMLTag, parser: &Parser) -> Result<Node<HtmlContent>, ()> {
+        let name = String::from(tag.name().as_utf8_str());
+        let mut attributes = BTreeMap::new();
+
+        for (key, value) in tag.attributes().iter() {
+            let value_string = if let Some(value_content) = value {
+                String::from(value_content)
+            } else {
+                String::new()
+            };
+
+            attributes.insert(String::from(key), value_string);
+        }
+
+        let mut converted =
+            Node::<HtmlContent>::new(HtmlContent::Tag(HtmlTag { name, attributes }));
+
+        for child in tag.children().top().iter() {
+            converted.append(Self::convert_node(child, parser)?)
+        }
+
+        Ok(converted)
+    }
+
+    fn convert_node(node_handle: &NodeHandle, parser: &Parser) -> Result<Node<HtmlContent>, ()> {
+        if let Some(node) = node_handle.get(parser) {
+            return match node {
+                tl::Node::Tag(tag) => Self::convert_tag(tag, parser),
+                tl::Node::Raw(text) => Self::convert_text(text.as_utf8_str()),
+                tl::Node::Comment(comment) => Self::convert_comment(comment.as_utf8_str()),
+            };
+        }
+
+        Err(())
+    }
+
+    fn convert_text(text: impl Into<String>) -> Result<Node<HtmlContent>, ()> {
+        Ok(Node::new(HtmlContent::Text(text.into())))
+    }
+
+    fn convert_comment(comment: impl Into<String>) -> Result<Node<HtmlContent>, ()> {
+        let comment = comment.into();
+        let comment = comment.trim_start_matches("<!-- ");
+        let comment = comment.trim_end_matches(" -->");
+        Ok(Node::new(HtmlContent::Comment(comment.into())))
+    }
+
+    fn inner_html(&self, children: Children<HtmlContent>) -> String {
+        match self {
+            HtmlContent::Comment(_) => String::new(),
+            HtmlContent::Text(s) => s.clone(),
+            HtmlContent::Tag(_t) => children
+                .into_iter()
+                .map(|c| c.outer_html())
+                .collect::<Vec<_>>()
+                .join(""),
+        }
+    }
+
+    fn outer_html(&self, children: Children<HtmlContent>) -> String {
+        match self {
+            HtmlContent::Comment(s) => format!("<!-- {} -->", s),
+            HtmlContent::Text(s) => s.clone(),
+            HtmlContent::Tag(t) => {
+                let mut parts = Vec::<String>::new();
+                t.build_start_tag(|content| parts.push(content));
+
+                for child in children {
+                    parts.push(child.outer_html());
+                }
+
+                t.build_end_tag(|content| parts.push(content));
+                parts.join("")
+            }
+        }
+    }
+
+    fn text_content(&self, children: Children<HtmlContent>) -> String {
+        match self {
+            HtmlContent::Comment(_) => String::new(),
+            HtmlContent::Text(s) => s.clone(),
+            HtmlContent::Tag(_t) => children
+                .into_iter()
+                .filter_map(|c| {
+                    let child_render = c.text_content();
+
+                    if child_render.is_empty() {
+                        None
+                    } else {
+                        Some(child_render)
+                    }
+                })
+                .collect::<Vec<_>>()
+                .join(" "),
+        }
+    }
+
+    fn matches_selector(&self, selector: &CssSelector) -> bool {
+        match self {
+            HtmlContent::Comment(_) | HtmlContent::Text(_) => false,
+            HtmlContent::Tag(t) => t.matches_selector(selector),
+        }
+    }
+}
+
+pub(crate) trait HtmlRenderable {
+    fn inner_html(&self) -> String;
+    fn outer_html(&self) -> String;
+    fn text_content(&self) -> String;
+}
+
+impl HtmlRenderable for Node<HtmlContent> {
+    fn inner_html(&self) -> String {
+        let children = self.children();
+        let inner = self.borrow();
+
+        inner.inner_html(children)
+    }
+
+    fn outer_html(&self) -> String {
+        let children = self.children();
+        let inner = self.borrow();
+
+        inner.outer_html(children)
+    }
+
+    fn text_content(&self) -> String {
+        let children = self.children();
+        let inner = self.borrow();
+
+        inner.text_content(children)
+    }
+}
 
 #[derive(Debug, Snafu)]
 pub enum IndexError {
@@ -19,182 +283,13 @@ pub enum IndexError {
     },
 }
 
-/// The related nodes for a given node
-#[derive(Debug)]
-pub(crate) struct HtmlNodeIndex {
-    pub(crate) children: HashSet<NodeHandle>,
-    pub(crate) descendents: HashSet<NodeHandle>,
-    pub(crate) siblings: HashSet<NodeHandle>,
-    pub(crate) direct_sibling: Option<NodeHandle>,
+pub(crate) trait HtmlQueryable {
+    fn matches_selector(&self, selector: &CssSelector) -> bool;
 }
 
-/// An index of the whole node relationships for easier CSS resolution
-///
-/// Iterates through the whole DOM and stores the related nodes for each node
-/// to quickly find children, descendents and siblings
-#[derive(Debug)]
-pub(crate) struct HtmlIndex<'a> {
-    pub(self) inner: HashMap<NodeHandle, HtmlNodeIndex>,
-    pub(crate) dom: RefCell<VDom<'a>>,
-}
-
-impl<'a> HtmlIndex<'a> {
-    /// build a new Index for a given DOM
-    pub fn load(dom: VDom<'a>) -> Self {
-        let mut index = HashMap::new();
-        Self::fill(&mut index, &dom);
-
-        HtmlIndex {
-            inner: index,
-            dom: RefCell::new(dom),
-        }
-    }
-
-    /// start on the top level elements of the DOM
-    fn fill(
-        index: &mut HashMap<NodeHandle, HtmlNodeIndex>,
-        dom: &'_ VDom<'a>,
-    ) -> HashSet<NodeHandle> {
-        let parser = dom.parser();
-        let mut descendents = HashSet::new();
-        let mut children: HashSet<NodeHandle> = HashSet::new();
-
-        let mut direct_sibling: Option<NodeHandle> = None;
-
-        for child in dom.children().to_vec().iter().rev() {
-            if let Some(node_descendents) =
-                Self::fill_recursive(index, child, parser, &children, direct_sibling)
-            {
-                descendents.extend(node_descendents);
-                children.insert(child.clone());
-                direct_sibling = Some(child.clone())
-            }
-        }
-        descendents.extend(&children);
-
-        return descendents;
-    }
-
-    /// recursively find all children and descendents for a node,
-    /// the list of siblings is passed in as parameter from the calling method.
-    ///
-    /// Notes:
-    ///
-    /// - The list of children is iterated in reverse to build up the siblings list for each elements
-    ///   as only following elements count for ~ and + combinators.
-    /// - Each child returns the set of all its descendents, those are then merged together,
-    ///   including the list of children, to make up the set of the parent node
-    ///
-    fn fill_recursive(
-        index: &mut HashMap<NodeHandle, HtmlNodeIndex>,
-        node_handle: &NodeHandle,
-        parser: &'_ Parser<'a>,
-        sibling: &HashSet<NodeHandle>,
-        direct_sibling: Option<NodeHandle>,
-    ) -> Option<HashSet<NodeHandle>> {
-        let mut descendents = HashSet::new();
-        let mut childs_direct_sibling: Option<NodeHandle>;
-
-        if let Some(node) = node_handle.get(parser) {
-            if node.as_tag().is_none() {
-                return None;
-            }
-
-            let mut children: HashSet<NodeHandle> = HashSet::new();
-            childs_direct_sibling = None;
-
-            if let Some(tl_children) = node.children() {
-                for child in tl_children.top().to_vec().iter().rev() {
-                    if let Some(node_descendents) = Self::fill_recursive(
-                        index,
-                        &child,
-                        parser,
-                        &children,
-                        childs_direct_sibling,
-                    ) {
-                        descendents.extend(node_descendents);
-                        children.insert(child.clone());
-                        childs_direct_sibling = Some(child.clone());
-                    }
-                }
-
-                descendents.extend(&children);
-            } else {
-                children = HashSet::new();
-            }
-
-            index.insert(
-                node_handle.clone(),
-                HtmlNodeIndex {
-                    children,
-                    descendents: descendents.clone(),
-                    siblings: sibling.clone(),
-                    direct_sibling,
-                },
-            );
-        }
-
-        return Some(descendents);
-    }
-
-    /// get the relations for a given node
-    pub(crate) fn relations_of(&self, node: &NodeHandle) -> Option<&HtmlNodeIndex> {
-        self.inner.get(node)
-    }
-
-    pub(crate) fn find_parent(&self, child: &NodeHandle) -> Option<&NodeHandle> {
-        self.inner
-            .iter()
-            .find(|(_, relations)| relations.children.contains(child))
-            .map(|(parent, _)| parent)
-    }
-
-    /// convenience method to fetch the "root" elements, e.g. the elements on the very top
-    /// of the DOM tree
-    pub(crate) fn root_elements(&self) -> HashSet<NodeHandle> {
-        HashSet::from_iter(self.dom.borrow().children().iter().cloned())
-    }
-
-    pub(crate) fn render(&self, handle: &NodeHandle) -> Result<String, IndexError> {
-        let dom = self.dom.borrow();
-        let parser = dom.parser();
-        Ok(handle
-            .get(parser)
-            .context(OutdatedIndexSnafu)?
-            .outer_html(parser)
-            .into_owned())
-    }
-
-    pub(crate) fn remove(&self, handle: &NodeHandle) -> Result<(), IndexError> {
-        if let Some(parent) = self.find_parent(handle) {
-            let mut dom = self.dom.borrow_mut();
-            let mut_parser = dom.parser_mut();
-            let parent = parent.get_mut(mut_parser).context(OutdatedIndexSnafu)?;
-            let parent = parent.as_tag_mut().context(InvalidHtmlSnafu {
-                operation: String::from("treating parent as tag"),
-            })?;
-
-            let mut children = parent.children_mut();
-            let children = children.top_mut();
-            let index = children
-                .iter()
-                .position(|t| t == handle)
-                .expect("HtmlIndex cache must be broken. Please file bug report");
-            children.remove(index);
-
-            //TODO: remove from index?
-        }
-
-        Ok(())
-    }
-}
-
-impl<'a> Index<NodeHandle> for HtmlIndex<'a> {
-    type Output = HtmlNodeIndex;
-
-    fn index(&self, index: NodeHandle) -> &Self::Output {
-        self.inner
-            .get(&index)
-            .expect("Asking for a NodeHandle that does not belong to the index")
+impl HtmlQueryable for Node<HtmlContent> {
+    fn matches_selector(&self, selector: &CssSelector) -> bool {
+        let inner = self.borrow();
+        inner.matches_selector(selector)
     }
 }

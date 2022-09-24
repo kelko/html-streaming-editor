@@ -1,11 +1,9 @@
 use log::trace;
 use snafu::{ResultExt, Snafu};
-use std::collections::HashSet;
 use std::fmt::Debug;
 
-use tl::NodeHandle;
-
-use crate::{CssSelectorList, HtmlIndex};
+use crate::html::HtmlContent;
+use crate::CssSelectorList;
 
 #[derive(Debug, Snafu)]
 pub enum CommandError {
@@ -50,38 +48,38 @@ impl<'a> Command<'a> {
     /// others change the result-set
     pub(crate) fn execute(
         &self,
-        input: &HashSet<NodeHandle>,
-        index: &'_ HtmlIndex<'a>,
-    ) -> Result<HashSet<NodeHandle>, CommandError> {
+        input: &Vec<rctree::Node<HtmlContent>>,
+    ) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
         match self {
-            Command::Only(selector) => Self::only(input, index, selector),
+            Command::Only(selector) => Self::only(input, selector),
             Command::Without(selector) => {
-                Self::without(input, index, selector).context(WithoutFailedSnafu)
+                Self::without(input, selector).context(WithoutFailedSnafu)
             }
         }
     }
 
     fn only(
-        input: &HashSet<NodeHandle>,
-        index: &'_ HtmlIndex<'a>,
+        input: &Vec<rctree::Node<HtmlContent>>,
         selector: &CssSelectorList<'a>,
-    ) -> Result<HashSet<NodeHandle>, CommandError> {
+    ) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
         trace!("Running ONLY command using selector: {:#?}", selector);
-        Ok(selector.query(index, input))
+        Ok(selector.query(input))
     }
 
     fn without(
-        input: &HashSet<NodeHandle>,
-        index: &'_ HtmlIndex<'a>,
+        input: &Vec<rctree::Node<HtmlContent>>,
         selector: &CssSelectorList<'a>,
-    ) -> Result<HashSet<NodeHandle>, WithoutError> {
+    ) -> Result<Vec<rctree::Node<HtmlContent>>, WithoutError> {
         trace!("Running WITHOUT command using selector: {:#?}", selector);
-        let findings = selector.query(index, input);
+        let findings = selector.query(input);
 
-        for node in findings.iter() {
-            index.remove(node).context(RemovingNodeFailedSnafu)?
+        for mut node in findings {
+            node.detach();
         }
 
-        Ok(input.clone())
+        Ok(input
+            .iter()
+            .map(|n| rctree::Node::clone(n))
+            .collect::<Vec<_>>())
     }
 }

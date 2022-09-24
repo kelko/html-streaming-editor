@@ -8,7 +8,7 @@ pub(crate) use crate::css::{
     CssAttributeComparison, CssAttributeSelector, CssPseudoClass, CssSelector, CssSelectorList,
     CssSelectorPath, CssSelectorStep,
 };
-use crate::html::HtmlIndex;
+use crate::html::{HtmlContent, HtmlRenderable};
 pub use crate::parsing::grammar;
 pub use crate::pipeline::Pipeline;
 
@@ -73,14 +73,14 @@ impl<'a> HtmlStreamingEditor<'a> {
 
         let dom = tl::parse(&string_content, tl::ParserOptions::default())
             .context(ParsingInputFailedSnafu)?;
-        let index = HtmlIndex::load(dom);
+        let root_element = HtmlContent::import(dom).unwrap();
         let result = pipeline
-            .run_on(index.root_elements(), &index)
+            .run_on(vec![rctree::Node::clone(&root_element)])
             .context(RunningPipelineFailedSnafu)?;
 
         debug!("Final Result: {:#?}", &result);
-        for node in result.iter() {
-            let html = index.render(node).context(RenderingOutputFailedSnafu)?;
+        for node in &result {
+            let html = node.outer_html();
             self.output
                 .write((*html).as_bytes())
                 .context(WritingOutputFailedSnafu)?;
