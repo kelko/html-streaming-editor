@@ -81,9 +81,9 @@ parser! {
             = v:(css_selector_path() ++ ",") { CssSelectorList::new(v) }
 
         pub(crate) rule string_value() -> &'input str
-            = "\"" whitespace()? s:$([^'"']+) "\"" { s.trim() }
-            / "'" whitespace()? s:$([^'\'']+) "'" { s.trim() }
-            / "?" whitespace()? s:$([^'?']+) "?" { s.trim() }
+            = "\"" whitespace()? s:$([^'"']+) "\"" { s }
+            / "'" whitespace()? s:$([^'\'']+) "'" { s }
+            / "?" whitespace()? s:$([^'?']+) "?" { s }
         rule only_command() -> Command<'input>
             = ("ONLY" / "SELECT") "{" whitespace()?  oc:css_selector_list() whitespace()? "}" { Command::Only(oc) }
         rule without_command() -> Command<'input>
