@@ -1,8 +1,10 @@
 use log::trace;
 use snafu::{ResultExt, Snafu};
 use std::fmt::Debug;
+use std::ops::Add;
 
-use crate::html::HtmlContent;
+use crate::html::{HtmlContent, HtmlTag};
+use crate::pipeline::PipelineError;
 use crate::{CssSelectorList, Pipeline};
 
 #[derive(Debug, Snafu)]
@@ -11,6 +13,11 @@ pub enum CommandError {
     WithoutFailed {
         #[snafu(backtrace)]
         source: WithoutError,
+    },
+    SubpipelineFailed {
+        #[snafu(backtrace)]
+        #[snafu(source(from(PipelineError, Box::new)))]
+        source: Box<PipelineError>,
     },
 }
 
@@ -46,6 +53,9 @@ pub enum Command<'a> {
     /// and remove them from their parent nodes.
     /// Returns the input as result.
     Without(CssSelectorList<'a>),
+    /// runs a sub-pipeline on each element matching the given CSS selector
+    /// Returns the input as result.
+    ForEach(CssSelectorList<'a>, Pipeline<'a>),
     /// Remove the given attribute from all currently selected nodes
     /// Returns the input as result.
     ClearAttribute(String),
@@ -64,9 +74,12 @@ pub enum Command<'a> {
     /// adds a new comment as child
     /// Returns the input as result.
     AddComment(ValueSource),
-    /// runs a sub-pipeline on each element matching the given CSS selector
+    /// runs a sub-pipeline and adds the result as child
     /// Returns the input as result.
-    ForEach(CssSelectorList<'a>, Pipeline<'a>),
+    AddElement(Pipeline<'a>),
+    /// creates an HTML element of given type
+    /// Returns the created element as result.
+    CreateElement(String),
 }
 
 impl<'a> Command<'a> {
@@ -92,6 +105,8 @@ impl<'a> Command<'a> {
             Command::AddTextContent(value_source) => Self::add_text_content(input, value_source),
             Command::AddComment(value_source) => Self::add_comment(input, value_source),
             Command::ForEach(selector, pipeline) => Self::for_each(input, selector, pipeline),
+            Command::AddElement(pipeline) => Self::add_element(input, pipeline),
+            Command::CreateElement(element_name) => Self::create_element(element_name),
         }
     }
 
@@ -233,5 +248,50 @@ impl<'a> Command<'a> {
         }
 
         Ok(input.clone())
+    }
+
+    fn add_element(
+        input: &Vec<rctree::Node<HtmlContent>>,
+        pipeline: &Pipeline,
+    ) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
+        for node in input {
+            if let Some(new_element) = pipeline
+                .run_on(vec![])
+                .context(SubpipelineFailedSnafu)?
+                .pop()
+            {
+                let mut working_copy = rctree::Node::clone(node);
+                working_copy.append(new_element);
+            }
+        }
+
+        Ok(input.clone())
+    }
+
+    fn create_element(name: &String) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
+        Ok(vec![rctree::Node::new(HtmlContent::Tag(HtmlTag::of_name(
+            name.clone(),
+        )))])
+    }
+}
+
+impl<'a> Add<Command<'a>> for Command<'a> {
+    type Output = Vec<Command<'a>>;
+
+    fn add(self, rhs: Command<'a>) -> Self::Output {
+        vec![self, rhs]
+    }
+}
+
+impl<'a> Add<Option<Vec<Command<'a>>>> for Command<'a> {
+    type Output = Vec<Command<'a>>;
+
+    fn add(self, rhs: Option<Vec<Command<'a>>>) -> Self::Output {
+        if let Some(mut vec) = rhs {
+            vec.insert(0, self);
+            return vec;
+        }
+
+        vec![self]
     }
 }

@@ -29,10 +29,10 @@ parser! {
             = quiet!{[' ' | '\n' | '\t']+}
         rule assign_marker()
             = "↤"
-            / "<-|"
+            / "<="
         rule iterate_marker()
             = "↦"
-            / "|->"
+            / "=>"
         rule number() -> usize
             = n:$(['0'..='9']+) { n.parse().unwrap() }
         pub(crate) rule identifier() -> &'input str
@@ -88,6 +88,8 @@ parser! {
             = ("ONLY" / "SELECT") "{" whitespace()?  oc:css_selector_list() whitespace()? "}" { Command::Only(oc) }
         rule without_command() -> Command<'input>
             = ("WITHOUT" / "FILTER") "{" whitespace()? oc:css_selector_list() whitespace()? "}" { Command::Without(oc) }
+        rule for_each_command() -> Command<'input>
+            = "FOR-EACH{" whitespace()? oc:css_selector_list() whitespace()? iterate_marker() whitespace()? sp:pipeline() whitespace()?  "}" { Command::ForEach(oc, sp) }
         rule clear_attr_command() -> Command<'input>
             = "CLEAR-ATTR{" whitespace()? a:identifier() whitespace()? "}" { Command::ClearAttribute(String::from(a)) }
         rule clear_content_command() -> Command<'input>
@@ -100,18 +102,27 @@ parser! {
             = "ADD-TEXT-CONTENT{" whitespace()? (assign_marker() whitespace()?)? v:string_value() "}" { Command::AddTextContent(ValueSource::StringValue(String::from(v))) }
         rule add_comment_command() -> Command<'input>
             = "ADD-COMMENT{" whitespace()? (assign_marker() whitespace()?)? v:string_value() "}" { Command::AddComment(ValueSource::StringValue(String::from(v))) }
-        rule for_each_command() -> Command<'input>
-            = "FOR-EACH{" whitespace()? oc:css_selector_list() whitespace()? iterate_marker() whitespace()? sp:pipeline() whitespace()?  "}" { Command::ForEach(oc, sp) }
+        rule add_element_command() -> Command<'input>
+            = "ADD-ELEMENT{" whitespace()? (assign_marker() whitespace()?)? sp:element_creating_pipeline() whitespace()?  "}" { Command::AddElement(sp) }
+        rule create_element_command() -> Command<'input>
+            = ("CREATE-ELEMENT"/"NEW") "{" whitespace()? n:identifier() whitespace()? "}" { Command::CreateElement(String::from(n))}
         pub(super) rule command() -> Command<'input>
             = only_command()
             / without_command()
+            / for_each_command()
             / clear_attr_command()
             / clear_content_command()
             / set_attr_command()
             / set_text_content_command()
             / add_text_content_command()
             / add_comment_command()
-            / for_each_command()
+            / add_element_command()
+        rule element_source_command() -> Command<'input>
+            = create_element_command()
+        rule element_manipulating_pipeline() -> Vec<Command<'input>>
+            = " | " p:(command() ** " | ") { p }
+        rule element_creating_pipeline() -> Pipeline<'input>
+            = s:element_source_command() p:element_manipulating_pipeline()? { Pipeline::new(s + p) }
         pub rule pipeline() -> Pipeline<'input>
             = p:(command() ** " | ") { Pipeline::new(p) }
   }

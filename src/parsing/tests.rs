@@ -146,7 +146,7 @@ fn parse_single_set_attr_by_string() {
 
 #[test]
 fn parse_single_set_attr_by_string_with_ascii_arrow() {
-    let parsed = super::grammar::command("SET-ATTR{data-test <-| 'some text'}");
+    let parsed = super::grammar::command("SET-ATTR{data-test <= 'some text'}");
     assert_eq!(
         parsed,
         Ok(Command::SetAttribute(
@@ -180,7 +180,7 @@ fn parse_single_set_text_content_by_string_with_arrow() {
 
 #[test]
 fn parse_single_set_text_content_by_string_with_ascii_arrow() {
-    let parsed = super::grammar::command("SET-TEXT-CONTENT{ <-| 'some text'}");
+    let parsed = super::grammar::command("SET-TEXT-CONTENT{ <= 'some text'}");
     assert_eq!(
         parsed,
         Ok(Command::SetTextContent(ValueSource::StringValue(
@@ -213,7 +213,7 @@ fn parse_single_add_text_content_by_string_with_arrow() {
 
 #[test]
 fn parse_single_add_text_content_by_string_with_ascii_arrow() {
-    let parsed = super::grammar::command("ADD-TEXT-CONTENT{ <-| 'some text'}");
+    let parsed = super::grammar::command("ADD-TEXT-CONTENT{ <= 'some text'}");
     assert_eq!(
         parsed,
         Ok(Command::AddTextContent(ValueSource::StringValue(
@@ -246,7 +246,7 @@ fn parse_single_add_comment_by_string_with_arrow() {
 
 #[test]
 fn parse_single_add_comment_by_string_with_ascii_arrow() {
-    let parsed = super::grammar::command("ADD-COMMENT{ <-| 'some text'}");
+    let parsed = super::grammar::command("ADD-COMMENT{ <= 'some text'}");
     assert_eq!(
         parsed,
         Ok(Command::AddComment(ValueSource::StringValue(String::from(
@@ -274,7 +274,7 @@ fn parse_single_for_each_using_set_attr() {
 
 #[test]
 fn parse_single_for_each_with_ascii_arrow_using_set_attr() {
-    let parsed = super::grammar::command("FOR-EACH{li |-> SET-ATTR{data-test ↤ 'some text'}}");
+    let parsed = super::grammar::command("FOR-EACH{li => SET-ATTR{data-test ↤ 'some text'}}");
     assert_eq!(
         parsed,
         Ok(Command::ForEach(
@@ -286,5 +286,49 @@ fn parse_single_for_each_with_ascii_arrow_using_set_attr() {
                 ValueSource::StringValue(String::from("some text"))
             )]),
         ))
+    );
+}
+
+#[test]
+fn parse_single_add_element_using_new_alias() {
+    let parsed = super::grammar::command("ADD-ELEMENT{NEW{div}}");
+    assert_eq!(
+        parsed,
+        Ok(Command::AddElement(Pipeline::new(vec![
+            Command::CreateElement(String::from("div"))
+        ]),))
+    );
+}
+
+#[test]
+fn parse_single_add_element_using_create() {
+    let parsed = super::grammar::command("ADD-ELEMENT{CREATE-ELEMENT{div}}");
+    assert_eq!(
+        parsed,
+        Ok(Command::AddElement(Pipeline::new(vec![
+            Command::CreateElement(String::from("div"))
+        ]),))
+    );
+}
+
+#[test]
+fn parse_single_add_element_with_arrow_using_create() {
+    let parsed = super::grammar::command("ADD-ELEMENT{ ↤ CREATE-ELEMENT{div}}");
+    assert_eq!(
+        parsed,
+        Ok(Command::AddElement(Pipeline::new(vec![
+            Command::CreateElement(String::from("div"))
+        ]),))
+    );
+}
+
+#[test]
+fn parse_single_add_element_with_ascii_arrow_using_create() {
+    let parsed = super::grammar::command("ADD-ELEMENT{ <= CREATE-ELEMENT{div}}");
+    assert_eq!(
+        parsed,
+        Ok(Command::AddElement(Pipeline::new(vec![
+            Command::CreateElement(String::from("div"))
+        ]),))
     );
 }

@@ -21,8 +21,7 @@ pub(crate) struct HtmlTag {
 }
 
 impl HtmlTag {
-    #[cfg(test)]
-    fn of_name(name: impl Into<String>) -> Self {
+    pub(crate) fn of_name(name: impl Into<String>) -> Self {
         HtmlTag {
             name: name.into(),
             attributes: BTreeMap::<String, String>::new(),

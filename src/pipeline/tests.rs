@@ -444,3 +444,28 @@ fn run_on_single_for_each_on_ul() {
         String::from(r#"<ul><li data-test="x">1</li><li data-test="x">2</li></ul>"#)
     );
 }
+
+#[test]
+fn run_on_single_add_element_from_create_for_tag() {
+    let pipeline = Pipeline::new(vec![Command::AddElement(Pipeline::new(vec![
+        Command::CreateElement(String::from("div")),
+    ]))]);
+
+    let dom = tl::parse(
+        r#"<div data-test="foo" class="bar">Some Content</div>"#,
+        tl::ParserOptions::default(),
+    )
+    .unwrap();
+    let starting_elements = HtmlContent::import(dom).unwrap();
+
+    let mut result = pipeline
+        .run_on(vec![rctree::Node::clone(&starting_elements)])
+        .unwrap();
+
+    assert_eq!(result.len(), 1);
+    let first_result = result.pop().unwrap();
+    assert_eq!(
+        first_result.outer_html(),
+        String::from(r#"<div class="bar" data-test="foo">Some Content<div></div></div>"#)
+    );
+}
