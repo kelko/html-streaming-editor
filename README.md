@@ -37,14 +37,14 @@ Currently supported:
 - `SET-TEXT-CONTENT`: removes previous children and replaces it with exactly one given text child
 - `ADD-TEXT-CONTENT`: appends a new text child
 - `ADD-COMMENT`: appends a new comment child
+- `FOR-EACH`: run a sub-pipeline on all sub-elements matching a CSS selector but return the previously selected elements
 
 Planned commands:
 
 - `ADD-ELEMENT`: appends a new tag/element child
 - `REPLACE-WITH`: replace all elements matching a CSS selector with new elements (alias: `MAP`)
 - `READ-FROM`: reads a DOM from a different file, mainly in combination with `ADD-ELEMENT` or `REPLACE-WITH` (alias: `SOURCE`)
-- `CREATE-ELEMENT`: creates a new, empty element, mainly in combination with `ADD-ELEMENT` or `REPLACE-WITH` (alias: `NEW`)
-- `FOR-EACH`: run a sub-pipeline on all sub-elements matching a CSS selector but return the previously selected elements 
+- `CREATE-ELEMENT`: creates a new, empty element, mainly in combination with `ADD-ELEMENT` or `REPLACE-WITH` (alias: `NEW`) 
 
 
 Binary

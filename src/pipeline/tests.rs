@@ -413,3 +413,34 @@ fn run_on_single_add_comment_from_string_for_tag_with_multiple_children() {
         )
     );
 }
+
+#[test]
+fn run_on_single_for_each_on_ul() {
+    let pipeline = Pipeline::new(vec![Command::ForEach(
+        CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_element(
+            "li",
+        ))]),
+        Pipeline::new(vec![Command::SetAttribute(
+            String::from("data-test"),
+            ValueSource::StringValue(String::from("x")),
+        )]),
+    )]);
+
+    let dom = tl::parse(
+        r#"<ul><li>1</li><li>2</li></ul>"#,
+        tl::ParserOptions::default(),
+    )
+    .unwrap();
+    let starting_elements = HtmlContent::import(dom).unwrap();
+
+    let mut result = pipeline
+        .run_on(vec![rctree::Node::clone(&starting_elements)])
+        .unwrap();
+
+    assert_eq!(result.len(), 1);
+    let first_result = result.pop().unwrap();
+    assert_eq!(
+        first_result.outer_html(),
+        String::from(r#"<ul><li data-test="x">1</li><li data-test="x">2</li></ul>"#)
+    );
+}

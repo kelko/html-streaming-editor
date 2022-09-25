@@ -146,7 +146,7 @@ fn parse_single_set_attr_by_string() {
 
 #[test]
 fn parse_single_set_attr_by_string_with_ascii_arrow() {
-    let parsed = super::grammar::command("SET-ATTR{data-test <- 'some text'}");
+    let parsed = super::grammar::command("SET-ATTR{data-test <-| 'some text'}");
     assert_eq!(
         parsed,
         Ok(Command::SetAttribute(
@@ -180,7 +180,7 @@ fn parse_single_set_text_content_by_string_with_arrow() {
 
 #[test]
 fn parse_single_set_text_content_by_string_with_ascii_arrow() {
-    let parsed = super::grammar::command("SET-TEXT-CONTENT{ <- 'some text'}");
+    let parsed = super::grammar::command("SET-TEXT-CONTENT{ <-| 'some text'}");
     assert_eq!(
         parsed,
         Ok(Command::SetTextContent(ValueSource::StringValue(
@@ -213,7 +213,7 @@ fn parse_single_add_text_content_by_string_with_arrow() {
 
 #[test]
 fn parse_single_add_text_content_by_string_with_ascii_arrow() {
-    let parsed = super::grammar::command("ADD-TEXT-CONTENT{ <- 'some text'}");
+    let parsed = super::grammar::command("ADD-TEXT-CONTENT{ <-| 'some text'}");
     assert_eq!(
         parsed,
         Ok(Command::AddTextContent(ValueSource::StringValue(
@@ -246,11 +246,45 @@ fn parse_single_add_comment_by_string_with_arrow() {
 
 #[test]
 fn parse_single_add_comment_by_string_with_ascii_arrow() {
-    let parsed = super::grammar::command("ADD-COMMENT{ <- 'some text'}");
+    let parsed = super::grammar::command("ADD-COMMENT{ <-| 'some text'}");
     assert_eq!(
         parsed,
         Ok(Command::AddComment(ValueSource::StringValue(String::from(
             "some text"
         ))))
+    );
+}
+
+#[test]
+fn parse_single_for_each_using_set_attr() {
+    let parsed = super::grammar::command("FOR-EACH{li ↦ SET-ATTR{data-test ↤ 'some text'}}");
+    assert_eq!(
+        parsed,
+        Ok(Command::ForEach(
+            CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_element(
+                "li"
+            ))]),
+            Pipeline::new(vec![Command::SetAttribute(
+                String::from("data-test"),
+                ValueSource::StringValue(String::from("some text"))
+            )]),
+        ))
+    );
+}
+
+#[test]
+fn parse_single_for_each_with_ascii_arrow_using_set_attr() {
+    let parsed = super::grammar::command("FOR-EACH{li |-> SET-ATTR{data-test ↤ 'some text'}}");
+    assert_eq!(
+        parsed,
+        Ok(Command::ForEach(
+            CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_element(
+                "li"
+            ))]),
+            Pipeline::new(vec![Command::SetAttribute(
+                String::from("data-test"),
+                ValueSource::StringValue(String::from("some text"))
+            )]),
+        ))
     );
 }

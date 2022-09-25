@@ -3,7 +3,7 @@ use snafu::{ResultExt, Snafu};
 use std::fmt::Debug;
 
 use crate::html::HtmlContent;
-use crate::CssSelectorList;
+use crate::{CssSelectorList, Pipeline};
 
 #[derive(Debug, Snafu)]
 pub enum CommandError {
@@ -64,6 +64,9 @@ pub enum Command<'a> {
     /// adds a new comment as child
     /// Returns the input as result.
     AddComment(ValueSource),
+    /// runs a sub-pipeline on each element matching the given CSS selector
+    /// Returns the input as result.
+    ForEach(CssSelectorList<'a>, Pipeline<'a>),
 }
 
 impl<'a> Command<'a> {
@@ -88,7 +91,19 @@ impl<'a> Command<'a> {
             Command::SetTextContent(value_source) => Self::set_text_content(input, value_source),
             Command::AddTextContent(value_source) => Self::add_text_content(input, value_source),
             Command::AddComment(value_source) => Self::add_comment(input, value_source),
+            Command::ForEach(selector, pipeline) => Self::for_each(input, selector, pipeline),
         }
+    }
+
+    fn for_each(
+        input: &Vec<rctree::Node<HtmlContent>>,
+        selector: &CssSelectorList<'a>,
+        pipeline: &Pipeline,
+    ) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
+        let queried_elements = selector.query(input);
+        let _ = pipeline.run_on(queried_elements);
+
+        Ok(input.clone())
     }
 
     fn only(

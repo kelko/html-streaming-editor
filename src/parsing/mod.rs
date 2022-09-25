@@ -29,10 +29,10 @@ parser! {
             = quiet!{[' ' | '\n' | '\t']+}
         rule assign_marker()
             = "↤"
-            / "<-"
+            / "<-|"
         rule iterate_marker()
             = "↦"
-            / "->"
+            / "|->"
         rule number() -> usize
             = n:$(['0'..='9']+) { n.parse().unwrap() }
         pub(crate) rule identifier() -> &'input str
@@ -100,6 +100,8 @@ parser! {
             = "ADD-TEXT-CONTENT{" whitespace()? (assign_marker() whitespace()?)? v:string_value() "}" { Command::AddTextContent(ValueSource::StringValue(String::from(v))) }
         rule add_comment_command() -> Command<'input>
             = "ADD-COMMENT{" whitespace()? (assign_marker() whitespace()?)? v:string_value() "}" { Command::AddComment(ValueSource::StringValue(String::from(v))) }
+        rule for_each_command() -> Command<'input>
+            = "FOR-EACH{" whitespace()? oc:css_selector_list() whitespace()? iterate_marker() whitespace()? sp:pipeline() whitespace()?  "}" { Command::ForEach(oc, sp) }
         pub(super) rule command() -> Command<'input>
             = only_command()
             / without_command()
@@ -109,6 +111,7 @@ parser! {
             / set_text_content_command()
             / add_text_content_command()
             / add_comment_command()
+            / for_each_command()
         pub rule pipeline() -> Pipeline<'input>
             = p:(command() ** " | ") { Pipeline::new(p) }
   }

@@ -18,7 +18,7 @@ pub enum PipelineError {
     },
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Pipeline<'a>(Vec<Command<'a>>);
 
 /// The command pipeline: a list of individual commands
