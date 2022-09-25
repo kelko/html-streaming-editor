@@ -257,3 +257,159 @@ fn run_on_single_set_text_content_from_string_for_tag_with_multiple_children() {
         String::from(r#"<div class="bar" data-test="foo">Other Content</div>"#)
     );
 }
+
+#[test]
+fn run_on_single_add_text_content_from_string_for_tag() {
+    let pipeline = Pipeline::new(vec![Command::AddTextContent(ValueSource::StringValue(
+        String::from("Other Content"),
+    ))]);
+
+    let dom = tl::parse(
+        r#"<div data-test="foo" class="bar">Some Content</div>"#,
+        tl::ParserOptions::default(),
+    )
+    .unwrap();
+    let starting_elements = HtmlContent::import(dom).unwrap();
+
+    let mut result = pipeline
+        .run_on(vec![rctree::Node::clone(&starting_elements)])
+        .unwrap();
+
+    assert_eq!(result.len(), 1);
+    let first_result = result.pop().unwrap();
+    assert_eq!(
+        first_result.outer_html(),
+        String::from(r#"<div class="bar" data-test="foo">Some ContentOther Content</div>"#)
+    );
+}
+
+#[test]
+fn run_on_single_add_text_content_from_string_for_empty_tag() {
+    let pipeline = Pipeline::new(vec![Command::AddTextContent(ValueSource::StringValue(
+        String::from("Other Content"),
+    ))]);
+
+    let dom = tl::parse(
+        r#"<div data-test="foo" class="bar"></div>"#,
+        tl::ParserOptions::default(),
+    )
+    .unwrap();
+    let starting_elements = HtmlContent::import(dom).unwrap();
+
+    let mut result = pipeline
+        .run_on(vec![rctree::Node::clone(&starting_elements)])
+        .unwrap();
+
+    assert_eq!(result.len(), 1);
+    let first_result = result.pop().unwrap();
+    assert_eq!(
+        first_result.outer_html(),
+        String::from(r#"<div class="bar" data-test="foo">Other Content</div>"#)
+    );
+}
+
+#[test]
+fn run_on_single_add_text_content_from_string_for_tag_with_multiple_children() {
+    let pipeline = Pipeline::new(vec![Command::AddTextContent(ValueSource::StringValue(
+        String::from("Other Content"),
+    ))]);
+
+    let dom = tl::parse(
+        r#"<div data-test="foo" class="bar">Some <em>special</em> Content. <!-- rightly so --></div>"#,
+        tl::ParserOptions::default(),
+    )
+        .unwrap();
+    let starting_elements = HtmlContent::import(dom).unwrap();
+
+    let mut result = pipeline
+        .run_on(vec![rctree::Node::clone(&starting_elements)])
+        .unwrap();
+
+    assert_eq!(result.len(), 1);
+    let first_result = result.pop().unwrap();
+    assert_eq!(
+        first_result.outer_html(),
+        String::from(
+            r#"<div class="bar" data-test="foo">Some <em>special</em> Content. <!-- rightly so -->Other Content</div>"#
+        )
+    );
+}
+
+#[test]
+fn run_on_single_add_comment_from_string_for_tag() {
+    let pipeline = Pipeline::new(vec![Command::AddComment(ValueSource::StringValue(
+        String::from("Other Content"),
+    ))]);
+
+    let dom = tl::parse(
+        r#"<div data-test="foo" class="bar">Some Content</div>"#,
+        tl::ParserOptions::default(),
+    )
+    .unwrap();
+    let starting_elements = HtmlContent::import(dom).unwrap();
+
+    let mut result = pipeline
+        .run_on(vec![rctree::Node::clone(&starting_elements)])
+        .unwrap();
+
+    assert_eq!(result.len(), 1);
+    let first_result = result.pop().unwrap();
+    assert_eq!(
+        first_result.outer_html(),
+        String::from(
+            r#"<div class="bar" data-test="foo">Some Content<!-- Other Content --></div>"#
+        )
+    );
+}
+
+#[test]
+fn run_on_single_add_comment_from_string_for_empty_tag() {
+    let pipeline = Pipeline::new(vec![Command::AddComment(ValueSource::StringValue(
+        String::from("Other Content"),
+    ))]);
+
+    let dom = tl::parse(
+        r#"<div data-test="foo" class="bar"></div>"#,
+        tl::ParserOptions::default(),
+    )
+    .unwrap();
+    let starting_elements = HtmlContent::import(dom).unwrap();
+
+    let mut result = pipeline
+        .run_on(vec![rctree::Node::clone(&starting_elements)])
+        .unwrap();
+
+    assert_eq!(result.len(), 1);
+    let first_result = result.pop().unwrap();
+    assert_eq!(
+        first_result.outer_html(),
+        String::from(r#"<div class="bar" data-test="foo"><!-- Other Content --></div>"#)
+    );
+}
+
+#[test]
+fn run_on_single_add_comment_from_string_for_tag_with_multiple_children() {
+    let pipeline = Pipeline::new(vec![Command::AddComment(ValueSource::StringValue(
+        String::from("Other Content"),
+    ))]);
+
+    let dom = tl::parse(
+        r#"<div data-test="foo" class="bar"><!-- rightly so -->Some <em>special</em> Content.</div>"#,
+        tl::ParserOptions::default(),
+    )
+        .unwrap();
+    let starting_elements = HtmlContent::import(dom).unwrap();
+
+    let mut result = pipeline
+        .run_on(vec![rctree::Node::clone(&starting_elements)])
+        .unwrap();
+
+    assert_eq!(result.len(), 1);
+    let first_result = result.pop().unwrap();
+    assert_eq!(
+        first_result.outer_html(),
+        String::from(
+            r#"<div class="bar" data-test="foo"><!-- rightly so -->Some <em>special</em> Content.<!-- Other Content --></div>"#
+        )
+    );
+}

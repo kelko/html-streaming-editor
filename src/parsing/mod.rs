@@ -96,6 +96,10 @@ parser! {
             = "SET-ATTR{" whitespace()? a:identifier() whitespace()? assign_marker() whitespace()? v:string_value() "}" { Command::SetAttribute(String::from(a), ValueSource::StringValue(String::from(v))) }
         rule set_text_content_command() -> Command<'input>
             = "SET-TEXT-CONTENT{" whitespace()? (assign_marker() whitespace()?)? v:string_value() "}" { Command::SetTextContent(ValueSource::StringValue(String::from(v))) }
+        rule add_text_content_command() -> Command<'input>
+            = "ADD-TEXT-CONTENT{" whitespace()? (assign_marker() whitespace()?)? v:string_value() "}" { Command::AddTextContent(ValueSource::StringValue(String::from(v))) }
+        rule add_comment_command() -> Command<'input>
+            = "ADD-COMMENT{" whitespace()? (assign_marker() whitespace()?)? v:string_value() "}" { Command::AddComment(ValueSource::StringValue(String::from(v))) }
         pub(super) rule command() -> Command<'input>
             = only_command()
             / without_command()
@@ -103,6 +107,8 @@ parser! {
             / clear_content_command()
             / set_attr_command()
             / set_text_content_command()
+            / add_text_content_command()
+            / add_comment_command()
         pub rule pipeline() -> Pipeline<'input>
             = p:(command() ** " | ") { Pipeline::new(p) }
   }

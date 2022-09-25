@@ -58,6 +58,12 @@ pub enum Command<'a> {
     /// Remove all children of the currently selected nodes and add a new text as child instead
     /// Returns the input as result.
     SetTextContent(ValueSource),
+    /// adds a new text as child
+    /// Returns the input as result.
+    AddTextContent(ValueSource),
+    /// adds a new comment as child
+    /// Returns the input as result.
+    AddComment(ValueSource),
 }
 
 impl<'a> Command<'a> {
@@ -80,6 +86,8 @@ impl<'a> Command<'a> {
                 Self::set_attr(input, attribute, value_source)
             }
             Command::SetTextContent(value_source) => Self::set_text_content(input, value_source),
+            Command::AddTextContent(value_source) => Self::add_text_content(input, value_source),
+            Command::AddComment(value_source) => Self::add_comment(input, value_source),
         }
     }
 
@@ -171,6 +179,42 @@ impl<'a> Command<'a> {
 
             let mut working_copy = rctree::Node::clone(node);
             working_copy.append(rctree::Node::new(HtmlContent::Text(value_source.render())));
+        }
+
+        Ok(input.clone())
+    }
+
+    fn add_text_content(
+        input: &Vec<rctree::Node<HtmlContent>>,
+        value_source: &ValueSource,
+    ) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
+        trace!(
+            "Running ADD-TEXT-CONTENT command with value: {:#?}",
+            value_source
+        );
+
+        for node in input {
+            let mut working_copy = rctree::Node::clone(node);
+            working_copy.append(rctree::Node::new(HtmlContent::Text(value_source.render())));
+        }
+
+        Ok(input.clone())
+    }
+
+    fn add_comment(
+        input: &Vec<rctree::Node<HtmlContent>>,
+        value_source: &ValueSource,
+    ) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
+        trace!(
+            "Running ADD-COMMENT command with value: {:#?}",
+            value_source
+        );
+
+        for node in input {
+            let mut working_copy = rctree::Node::clone(node);
+            working_copy.append(rctree::Node::new(HtmlContent::Comment(
+                value_source.render(),
+            )));
         }
 
         Ok(input.clone())

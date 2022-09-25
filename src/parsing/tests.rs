@@ -188,3 +188,69 @@ fn parse_single_set_text_content_by_string_with_ascii_arrow() {
         )))
     );
 }
+
+#[test]
+fn parse_single_add_text_content_by_string() {
+    let parsed = super::grammar::command("ADD-TEXT-CONTENT{'some text'}");
+    assert_eq!(
+        parsed,
+        Ok(Command::AddTextContent(ValueSource::StringValue(
+            String::from("some text")
+        )))
+    );
+}
+
+#[test]
+fn parse_single_add_text_content_by_string_with_arrow() {
+    let parsed = super::grammar::command("ADD-TEXT-CONTENT{ ↤ 'some text'}");
+    assert_eq!(
+        parsed,
+        Ok(Command::AddTextContent(ValueSource::StringValue(
+            String::from("some text")
+        )))
+    );
+}
+
+#[test]
+fn parse_single_add_text_content_by_string_with_ascii_arrow() {
+    let parsed = super::grammar::command("ADD-TEXT-CONTENT{ <- 'some text'}");
+    assert_eq!(
+        parsed,
+        Ok(Command::AddTextContent(ValueSource::StringValue(
+            String::from("some text")
+        )))
+    );
+}
+
+#[test]
+fn parse_single_add_comment_by_string() {
+    let parsed = super::grammar::command("ADD-COMMENT{'some text'}");
+    assert_eq!(
+        parsed,
+        Ok(Command::AddComment(ValueSource::StringValue(String::from(
+            "some text"
+        ))))
+    );
+}
+
+#[test]
+fn parse_single_add_comment_by_string_with_arrow() {
+    let parsed = super::grammar::command("ADD-COMMENT{ ↤ 'some text'}");
+    assert_eq!(
+        parsed,
+        Ok(Command::AddComment(ValueSource::StringValue(String::from(
+            "some text"
+        ))))
+    );
+}
+
+#[test]
+fn parse_single_add_comment_by_string_with_ascii_arrow() {
+    let parsed = super::grammar::command("ADD-COMMENT{ <- 'some text'}");
+    assert_eq!(
+        parsed,
+        Ok(Command::AddComment(ValueSource::StringValue(String::from(
+            "some text"
+        ))))
+    );
+}
