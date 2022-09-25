@@ -343,7 +343,7 @@ impl<'a> Index<usize> for CssSelectorPath<'a> {
 }
 
 /// the list of all (comma-seperated) CSS paths
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct CssSelectorList<'a>(Vec<CssSelectorPath<'a>>);
 
 impl<'a> CssSelectorList<'a> {

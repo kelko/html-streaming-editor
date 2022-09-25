@@ -3,12 +3,13 @@ use peg::str::LineCol;
 use snafu::{Backtrace, ResultExt, Snafu};
 use std::io::{BufRead, Write};
 
-pub use crate::command::Command;
+pub use crate::command::{Command, ValueSource};
 pub(crate) use crate::css::{
     CssAttributeComparison, CssAttributeSelector, CssPseudoClass, CssSelector, CssSelectorList,
     CssSelectorPath, CssSelectorStep,
 };
 use crate::html::{HtmlContent, HtmlRenderable};
+
 pub use crate::parsing::grammar;
 pub use crate::pipeline::Pipeline;
 

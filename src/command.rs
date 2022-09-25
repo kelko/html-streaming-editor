@@ -23,7 +23,21 @@ pub enum WithoutError {
     },
 }
 
-#[derive(Debug, PartialEq)]
+/// Is the value directly defined or is it a sub-pipeline?
+#[derive(Debug, PartialEq, Clone)]
+pub enum ValueSource {
+    StringValue(String),
+}
+
+impl ValueSource {
+    pub(crate) fn render(&self) -> String {
+        match self {
+            ValueSource::StringValue(value) => value.clone(),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
 pub enum Command<'a> {
     /// Find all nodes, beginning at the input, that match the given CSS selector
     /// and return only those
@@ -32,13 +46,18 @@ pub enum Command<'a> {
     /// and remove them from their parent nodes.
     /// Returns the input as result.
     Without(CssSelectorList<'a>),
+    /// Remove the given attribute from all currently selected nodes
+    /// Returns the input as result.
     ClearAttribute(String),
+    /// Remove all children of the currently selected nodes
+    /// Returns the input as result
     ClearContent,
-    //SetAttribute
-    //SetTextContent
-    //AddTextContent
-    //AddElement
-    //AddComment
+    /// Add or Reset a given attribute with a new value
+    /// Returns the input as result.
+    SetAttribute(String, ValueSource),
+    /// Remove all children of the currently selected nodes and add a new text as child instead
+    /// Returns the input as result.
+    SetTextContent(ValueSource),
 }
 
 impl<'a> Command<'a> {
@@ -57,6 +76,10 @@ impl<'a> Command<'a> {
             }
             Command::ClearAttribute(attribute) => Self::clear_attr(input, attribute),
             Command::ClearContent => Self::clear_content(input),
+            Command::SetAttribute(attribute, value_source) => {
+                Self::set_attr(input, attribute, value_source)
+            }
+            Command::SetTextContent(value_source) => Self::set_text_content(input, value_source),
         }
     }
 
@@ -79,10 +102,7 @@ impl<'a> Command<'a> {
             node.detach();
         }
 
-        Ok(input
-            .iter()
-            .map(|n| rctree::Node::clone(n))
-            .collect::<Vec<_>>())
+        Ok(input.clone())
     }
 
     fn clear_attr(
@@ -97,10 +117,7 @@ impl<'a> Command<'a> {
             data.clear_attribute(attribute);
         }
 
-        Ok(input
-            .iter()
-            .map(|n| rctree::Node::clone(n))
-            .collect::<Vec<_>>())
+        Ok(input.clone())
     }
 
     fn clear_content(
@@ -114,9 +131,48 @@ impl<'a> Command<'a> {
             }
         }
 
-        Ok(input
-            .iter()
-            .map(|n| rctree::Node::clone(n))
-            .collect::<Vec<_>>())
+        Ok(input.clone())
+    }
+
+    fn set_attr(
+        input: &Vec<rctree::Node<HtmlContent>>,
+        attribute: &String,
+        value_source: &ValueSource,
+    ) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
+        trace!(
+            "Running SET-ATTR command for attr: {:#?} with value: {:#?}",
+            attribute,
+            value_source
+        );
+
+        for node in input {
+            let mut working_copy = rctree::Node::clone(node);
+            let mut data = working_copy.borrow_mut();
+            data.set_attribute(attribute, value_source);
+        }
+
+        Ok(input.clone())
+    }
+
+    fn set_text_content(
+        input: &Vec<rctree::Node<HtmlContent>>,
+        value_source: &ValueSource,
+    ) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
+        trace!(
+            "Running SET-TEXT-CONTENT command with value: {:#?}",
+            value_source
+        );
+
+        for node in input {
+            // first clear everything that was there before
+            for mut child in node.children() {
+                child.detach()
+            }
+
+            let mut working_copy = rctree::Node::clone(node);
+            working_copy.append(rctree::Node::new(HtmlContent::Text(value_source.render())));
+        }
+
+        Ok(input.clone())
     }
 }

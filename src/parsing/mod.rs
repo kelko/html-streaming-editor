@@ -2,7 +2,7 @@ use peg::parser;
 
 use crate::{
     Command, CssAttributeComparison, CssAttributeSelector, CssPseudoClass, CssSelector,
-    CssSelectorList, CssSelectorPath, CssSelectorStep, Pipeline,
+    CssSelectorList, CssSelectorPath, CssSelectorStep, Pipeline, ValueSource,
 };
 
 #[cfg(test)]
@@ -27,6 +27,12 @@ parser! {
   pub grammar grammar() for str {
         rule whitespace()
             = quiet!{[' ' | '\n' | '\t']+}
+        rule assign_marker()
+            = "↤"
+            / "<-"
+        rule iterate_marker()
+            = "↦"
+            / "->"
         rule number() -> usize
             = n:$(['0'..='9']+) { n.parse().unwrap() }
         pub(crate) rule identifier() -> &'input str
@@ -78,19 +84,25 @@ parser! {
             = "\"" whitespace()? s:$([^'"']+) "\"" { s.trim() }
             / "'" whitespace()? s:$([^'\'']+) "'" { s.trim() }
             / "?" whitespace()? s:$([^'?']+) "?" { s.trim() }
-        pub(crate) rule only_command() -> Command<'input>
+        rule only_command() -> Command<'input>
             = ("ONLY" / "SELECT") "{" whitespace()?  oc:css_selector_list() whitespace()? "}" { Command::Only(oc) }
-        pub(crate) rule without_command() -> Command<'input>
+        rule without_command() -> Command<'input>
             = ("WITHOUT" / "FILTER") "{" whitespace()? oc:css_selector_list() whitespace()? "}" { Command::Without(oc) }
-        pub(crate) rule clear_attr_command() -> Command<'input>
-            = "CLEAR-ATTR" "{" whitespace()? a:identifier() whitespace()? "}" { Command::ClearAttribute(String::from(a)) }
-        pub(crate) rule clear_content_command() -> Command<'input>
+        rule clear_attr_command() -> Command<'input>
+            = "CLEAR-ATTR{" whitespace()? a:identifier() whitespace()? "}" { Command::ClearAttribute(String::from(a)) }
+        rule clear_content_command() -> Command<'input>
             = "CLEAR-CONTENT" { Command::ClearContent }
-        rule command() -> Command<'input>
+        rule set_attr_command() -> Command<'input>
+            = "SET-ATTR{" whitespace()? a:identifier() whitespace()? assign_marker() whitespace()? v:string_value() "}" { Command::SetAttribute(String::from(a), ValueSource::StringValue(String::from(v))) }
+        rule set_text_content_command() -> Command<'input>
+            = "SET-TEXT-CONTENT{" whitespace()? (assign_marker() whitespace()?)? v:string_value() "}" { Command::SetTextContent(ValueSource::StringValue(String::from(v))) }
+        pub(super) rule command() -> Command<'input>
             = only_command()
             / without_command()
             / clear_attr_command()
             / clear_content_command()
+            / set_attr_command()
+            / set_text_content_command()
         pub rule pipeline() -> Pipeline<'input>
             = p:(command() ** " | ") { Pipeline::new(p) }
   }

@@ -1,4 +1,4 @@
-use crate::{Command, CssSelector, CssSelectorList, CssSelectorPath, Pipeline};
+use crate::{Command, CssSelector, CssSelectorList, CssSelectorPath, Pipeline, ValueSource};
 
 #[test]
 fn parse_value_simple_doublequotes() {
@@ -62,7 +62,7 @@ fn parse_value_questionmarked_cant_have_questionmarks() {
 
 #[test]
 fn parse_single_only() {
-    let parsed = super::grammar::only_command("ONLY{a}");
+    let parsed = super::grammar::command("ONLY{a}");
     assert_eq!(
         parsed,
         Ok(Command::Only(CssSelectorList::new(vec![
@@ -73,7 +73,7 @@ fn parse_single_only() {
 
 #[test]
 fn parse_single_select_alias() {
-    let parsed = super::grammar::only_command("SELECT{a}");
+    let parsed = super::grammar::command("SELECT{a}");
     assert_eq!(
         parsed,
         Ok(Command::Only(CssSelectorList::new(vec![
@@ -84,7 +84,7 @@ fn parse_single_select_alias() {
 
 #[test]
 fn parse_single_without() {
-    let parsed = super::grammar::without_command("WITHOUT{a}");
+    let parsed = super::grammar::command("WITHOUT{a}");
     assert_eq!(
         parsed,
         Ok(Command::Without(CssSelectorList::new(vec![
@@ -95,7 +95,7 @@ fn parse_single_without() {
 
 #[test]
 fn parse_single_filter_alias() {
-    let parsed = super::grammar::without_command("FILTER{a}");
+    let parsed = super::grammar::command("FILTER{a}");
     assert_eq!(
         parsed,
         Ok(Command::Without(CssSelectorList::new(vec![
@@ -122,12 +122,69 @@ fn parse_two_grammar() {
 
 #[test]
 fn parse_single_clear_attr() {
-    let parsed = super::grammar::clear_attr_command("CLEAR-ATTR{a}");
+    let parsed = super::grammar::command("CLEAR-ATTR{a}");
     assert_eq!(parsed, Ok(Command::ClearAttribute(String::from("a"))));
 }
 
 #[test]
 fn parse_single_clear_content() {
-    let parsed = super::grammar::clear_content_command("CLEAR-CONTENT");
+    let parsed = super::grammar::command("CLEAR-CONTENT");
     assert_eq!(parsed, Ok(Command::ClearContent));
+}
+
+#[test]
+fn parse_single_set_attr_by_string() {
+    let parsed = super::grammar::command("SET-ATTR{data-test ↤ 'some text'}");
+    assert_eq!(
+        parsed,
+        Ok(Command::SetAttribute(
+            String::from("data-test"),
+            ValueSource::StringValue(String::from("some text"))
+        ))
+    );
+}
+
+#[test]
+fn parse_single_set_attr_by_string_with_ascii_arrow() {
+    let parsed = super::grammar::command("SET-ATTR{data-test <- 'some text'}");
+    assert_eq!(
+        parsed,
+        Ok(Command::SetAttribute(
+            String::from("data-test"),
+            ValueSource::StringValue(String::from("some text"))
+        ))
+    );
+}
+
+#[test]
+fn parse_single_set_text_content_by_string() {
+    let parsed = super::grammar::command("SET-TEXT-CONTENT{'some text'}");
+    assert_eq!(
+        parsed,
+        Ok(Command::SetTextContent(ValueSource::StringValue(
+            String::from("some text")
+        )))
+    );
+}
+
+#[test]
+fn parse_single_set_text_content_by_string_with_arrow() {
+    let parsed = super::grammar::command("SET-TEXT-CONTENT{ ↤ 'some text'}");
+    assert_eq!(
+        parsed,
+        Ok(Command::SetTextContent(ValueSource::StringValue(
+            String::from("some text")
+        )))
+    );
+}
+
+#[test]
+fn parse_single_set_text_content_by_string_with_ascii_arrow() {
+    let parsed = super::grammar::command("SET-TEXT-CONTENT{ <- 'some text'}");
+    assert_eq!(
+        parsed,
+        Ok(Command::SetTextContent(ValueSource::StringValue(
+            String::from("some text")
+        )))
+    );
 }
