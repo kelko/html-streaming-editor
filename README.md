@@ -15,11 +15,13 @@ Some `COMMAND` use sub-pipelines. There are two kind of `COMMANDS` with this:
 - "iterate"/"forEach": For each (sub) node matching the inner selector the sub-pipeline is processed, but the elements themselves are not changed
 
   > COMMAND{ SELECTOR ↦ COMMAND{ SELECTOR } | COMMAND { SELECTOR } }
+  > 
   > COMMAND{ SELECTOR -> COMMAND{ SELECTOR } | COMMAND { SELECTOR } }
 
 - "map"/"replace": For each (sub) node matching the inner selector the sub-pipeline is processed, and the pipelines result is used instead of the element
 
   > COMMAND{ SELECTOR ↤ COMMAND{ SELECTOR } | COMMAND { SELECTOR } }
+  > 
   > COMMAND{ SELECTOR <- COMMAND{ SELECTOR } | COMMAND { SELECTOR } }
  
 The `SELECTOR` is a [CSS selector](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors).
