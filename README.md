@@ -16,13 +16,13 @@ Some `COMMAND` use sub-pipelines. There are two kind of `COMMANDS` with this:
 
   > COMMAND{ SELECTOR ↦ COMMAND{ SELECTOR } | COMMAND { SELECTOR } }
   > 
-  > COMMAND{ SELECTOR -> COMMAND{ SELECTOR } | COMMAND { SELECTOR } }
+  > COMMAND{ SELECTOR => COMMAND{ SELECTOR } | COMMAND { SELECTOR } }
 
 - "map"/"replace": For each (sub) node matching the inner selector the sub-pipeline is processed, and the pipelines result is used instead of the element
 
   > COMMAND{ SELECTOR ↤ COMMAND{ SELECTOR } | COMMAND { SELECTOR } }
   > 
-  > COMMAND{ SELECTOR <- COMMAND{ SELECTOR } | COMMAND { SELECTOR } }
+  > COMMAND{ SELECTOR <= COMMAND{ SELECTOR } | COMMAND { SELECTOR } }
  
 The `SELECTOR` is a [CSS selector](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors).
 
