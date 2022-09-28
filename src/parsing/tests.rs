@@ -296,7 +296,7 @@ fn parse_single_add_element_using_new_alias() {
         parsed,
         Ok(Command::AddElement(Pipeline::new(vec![
             Command::CreateElement(String::from("div"))
-        ]),))
+        ])))
     );
 }
 
@@ -307,7 +307,7 @@ fn parse_single_add_element_using_create() {
         parsed,
         Ok(Command::AddElement(Pipeline::new(vec![
             Command::CreateElement(String::from("div"))
-        ]),))
+        ])))
     );
 }
 
@@ -318,7 +318,7 @@ fn parse_single_add_element_with_arrow_using_create() {
         parsed,
         Ok(Command::AddElement(Pipeline::new(vec![
             Command::CreateElement(String::from("div"))
-        ]),))
+        ])))
     );
 }
 
@@ -329,6 +329,36 @@ fn parse_single_add_element_with_ascii_arrow_using_create() {
         parsed,
         Ok(Command::AddElement(Pipeline::new(vec![
             Command::CreateElement(String::from("div"))
-        ]),))
+        ])))
+    );
+}
+
+//noinspection DuplicatedCode
+#[test]
+fn parse_single_replace_using_create() {
+    let parsed = super::grammar::command("REPLACE{.replace-me ↤ CREATE-ELEMENT{p} }");
+    assert_eq!(
+        parsed,
+        Ok(Command::Replace(
+            CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_class(
+                "replace-me"
+            ))]),
+            Pipeline::new(vec![Command::CreateElement(String::from("p"))])
+        )),
+    );
+}
+
+//noinspection DuplicatedCode
+#[test]
+fn parse_single_replace_with_ascii_arrow_using_create() {
+    let parsed = super::grammar::command("REPLACE{.replace-me <= CREATE-ELEMENT{p} }");
+    assert_eq!(
+        parsed,
+        Ok(Command::Replace(
+            CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_class(
+                "replace-me"
+            ))]),
+            Pipeline::new(vec![Command::CreateElement(String::from("p"))])
+        )),
     );
 }

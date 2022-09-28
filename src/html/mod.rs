@@ -14,7 +14,7 @@ const HTML_VOID_ELEMENTS: [&str; 16] = [
     "meta", "param", "source", "track", "wbr",
 ];
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub(crate) struct HtmlTag {
     pub name: String,
     pub attributes: BTreeMap<String, String>,
@@ -95,7 +95,7 @@ impl HtmlTag {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub(crate) enum HtmlContent {
     Tag(HtmlTag),
     Text(String),

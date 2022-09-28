@@ -11,7 +11,7 @@ fn main() {
     pretty_env_logger::init();
 
     let options = clap_app!(hse =>
-        (version: "0.2.0")
+        (version: "0.3.0")
         (author: ":kelko:")
         (about: "Html Streaming Editor")
         (@arg input: -i --input +takes_value "File name of the Input. `-` for stdin (default)")

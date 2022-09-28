@@ -90,6 +90,8 @@ parser! {
             = ("WITHOUT" / "FILTER") "{" whitespace()? oc:css_selector_list() whitespace()? "}" { Command::Without(oc) }
         rule for_each_command() -> Command<'input>
             = "FOR-EACH{" whitespace()? oc:css_selector_list() whitespace()? iterate_marker() whitespace()? sp:pipeline() whitespace()?  "}" { Command::ForEach(oc, sp) }
+        rule replace_command() -> Command<'input>
+            = ("REPLACE"/"MAP") "{" whitespace()? oc:css_selector_list() whitespace()? assign_marker() whitespace()? sp:element_creating_pipeline() whitespace()? "}" { Command::Replace(oc, sp)}
         rule clear_attr_command() -> Command<'input>
             = "CLEAR-ATTR{" whitespace()? a:identifier() whitespace()? "}" { Command::ClearAttribute(String::from(a)) }
         rule clear_content_command() -> Command<'input>
@@ -117,6 +119,7 @@ parser! {
             / add_text_content_command()
             / add_comment_command()
             / add_element_command()
+            / replace_command()
         rule element_source_command() -> Command<'input>
             = create_element_command()
         rule element_manipulating_pipeline() -> Vec<Command<'input>>

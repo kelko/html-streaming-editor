@@ -56,6 +56,9 @@ pub enum Command<'a> {
     /// runs a sub-pipeline on each element matching the given CSS selector
     /// Returns the input as result.
     ForEach(CssSelectorList<'a>, Pipeline<'a>),
+    /// runs a sub-pipeline and replaces each element matching the given CSS selector with the result of the pipeline
+    /// Returns the input as result.
+    Replace(CssSelectorList<'a>, Pipeline<'a>),
     /// Remove the given attribute from all currently selected nodes
     /// Returns the input as result.
     ClearAttribute(String),
@@ -107,6 +110,7 @@ impl<'a> Command<'a> {
             Command::ForEach(selector, pipeline) => Self::for_each(input, selector, pipeline),
             Command::AddElement(pipeline) => Self::add_element(input, pipeline),
             Command::CreateElement(element_name) => Self::create_element(element_name),
+            Command::Replace(selector, pipeline) => Self::replace(input, selector, pipeline),
         }
     }
 
@@ -138,6 +142,25 @@ impl<'a> Command<'a> {
 
         for mut node in findings {
             node.detach();
+        }
+
+        Ok(input.clone())
+    }
+
+    fn replace(
+        input: &Vec<rctree::Node<HtmlContent>>,
+        selector: &CssSelectorList<'a>,
+        pipeline: &Pipeline,
+    ) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
+        let queried_elements = selector.query(input);
+        let mut created_elements = pipeline.run_on(vec![]).context(SubpipelineFailedSnafu)?;
+
+        for mut element_for_replacement in queried_elements {
+            for new_element in &mut created_elements {
+                let copy = new_element.make_deep_copy();
+                element_for_replacement.insert_after(copy);
+            }
+            element_for_replacement.detach();
         }
 
         Ok(input.clone())
