@@ -1,6 +1,12 @@
 HTML Streaming Editor
 =======================
 
+![GitHub](https://img.shields.io/github/license/kelko/html-streaming-editor)
+![GitHub Workflow Status](https://img.shields.io/github/workflow/status/kelko/html-streaming-editor/Rust)
+[![docs.rs](https://img.shields.io/docsrs/html-streaming-editor?style=flat-square])](https://docs.rs/html-streaming-editor/)
+[![Crates.io](https://img.shields.io/crates/v/html-streaming-editor)](https://crates.io/crates/html-streaming-editor)
+
+
 Run (simple) manipulations on HTML files, like extracting parts.
 Use CSS selectors to define which parts of the HTML to operator on,
 use different commands in pipes to perform the desired operations.
