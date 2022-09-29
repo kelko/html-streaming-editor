@@ -39,7 +39,7 @@ Currently supported:
 
 - `ONLY`: remove everything not matching the CSS selector (alias: `SELECT`)
 - `WITHOUT`: remove everything matching the CSS selector (alias: `FILTER`)
-- `FOR-EACH`: run a sub-pipeline on all sub-elements matching a CSS selector but return the previously selected elements
+- `FOR-EACH`: run a sub-pipeline on all sub-elements matching a CSS selector but return the previously selected elements (alias: `FOR`)
 - `CLEAR-ATTR`: removes a given attribute from the previously selected elements  
 - `CLEAR-CONTENT`: clears all children from the previously selected elements
 - `SET-ATTR`: Sets a given attribute to a specified value

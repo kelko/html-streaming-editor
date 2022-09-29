@@ -89,7 +89,7 @@ parser! {
         rule without_command() -> Command<'input>
             = ("WITHOUT" / "FILTER") "{" whitespace()? oc:css_selector_list() whitespace()? "}" { Command::Without(oc) }
         rule for_each_command() -> Command<'input>
-            = "FOR-EACH{" whitespace()? oc:css_selector_list() whitespace()? iterate_marker() whitespace()? sp:pipeline() whitespace()?  "}" { Command::ForEach(oc, sp) }
+            = "FOR" "-EACH"? "{" whitespace()? oc:css_selector_list() whitespace()? iterate_marker() whitespace()? sp:pipeline() whitespace()?  "}" { Command::ForEach(oc, sp) }
         rule replace_command() -> Command<'input>
             = ("REPLACE"/"MAP") "{" whitespace()? oc:css_selector_list() whitespace()? assign_marker() whitespace()? sp:element_creating_pipeline() whitespace()? "}" { Command::Replace(oc, sp)}
         rule clear_attr_command() -> Command<'input>

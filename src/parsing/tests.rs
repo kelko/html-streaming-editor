@@ -256,6 +256,23 @@ fn parse_single_add_comment_by_string_with_ascii_arrow() {
 }
 
 #[test]
+fn parse_single_for_using_set_attr() {
+    let parsed = super::grammar::command("FOR{li ↦ SET-ATTR{data-test ↤ 'some text'}}");
+    assert_eq!(
+        parsed,
+        Ok(Command::ForEach(
+            CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_element(
+                "li"
+            ))]),
+            Pipeline::new(vec![Command::SetAttribute(
+                String::from("data-test"),
+                ValueSource::StringValue(String::from("some text"))
+            )]),
+        ))
+    );
+}
+
+#[test]
 fn parse_single_for_each_using_set_attr() {
     let parsed = super::grammar::command("FOR-EACH{li ↦ SET-ATTR{data-test ↤ 'some text'}}");
     assert_eq!(
