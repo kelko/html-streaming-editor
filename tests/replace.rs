@@ -70,8 +70,7 @@ fn replace_ul_with_sourced_html() -> Result<(), StreamingEditorError> {
         <li>1</li>
         <li>2</li>
         <li>3</li>
-    </ul>
-    <ul id="second">
+    </ul><ul id="second">
         <li>a</li>
         <li><!-- Some Comment -->b</li>
         <li><em class="intense">c</em></li>

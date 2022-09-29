@@ -81,7 +81,7 @@ impl<'a> HtmlStreamingEditor<'a> {
             .context(ParsingInputFailedSnafu)?;
         let root_element = HtmlContent::import(dom).context(LoadingParsedHtmlFailedSnafu)?;
         let result = pipeline
-            .run_on(vec![rctree::Node::clone(&root_element)])
+            .run_on(vec![root_element])
             .context(RunningPipelineFailedSnafu)?;
 
         debug!("Final Result: {:#?}", &result);

@@ -141,7 +141,14 @@ impl<'a> Command<'a> {
         selector: &CssSelectorList<'a>,
     ) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
         trace!("Running ONLY command using selector: {:#?}", selector);
-        Ok(selector.query(input))
+
+        let mut matching_elements = selector.query(input);
+
+        for element in &mut matching_elements {
+            element.detach()
+        }
+
+        Ok(matching_elements)
     }
 
     fn without(
