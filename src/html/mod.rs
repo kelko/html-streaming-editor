@@ -9,6 +9,14 @@ use tl::{HTMLTag, NodeHandle, Parser, VDom};
 #[cfg(test)]
 mod tests;
 
+#[derive(Debug, Snafu)]
+pub enum StreamingEditorError {
+    #[snafu(display("Nothing Imported from tl"))]
+    NothingImported { backtrace: Backtrace },
+    #[snafu(display("Node not resolved by Parser"))]
+    InvalidParserState { backtrace: Backtrace },
+}
+
 const HTML_VOID_ELEMENTS: [&str; 16] = [
     "area", "base", "br", "col", "command", "embed", "hr", "img", "input", "keygen", "link",
     "meta", "param", "source", "track", "wbr",
@@ -110,7 +118,7 @@ impl HtmlContent {
         }
     }
 
-    pub(crate) fn import(dom: VDom) -> Result<Node<HtmlContent>, ()> {
+    pub(crate) fn import(dom: VDom) -> Result<Node<HtmlContent>, StreamingEditorError> {
         let parser = dom.parser();
         let mut converted = dom
             .children()
@@ -133,11 +141,14 @@ impl HtmlContent {
         if let Some(root_result) = converted.pop() {
             root_result
         } else {
-            Err(())
+            NothingImportedSnafu {}.fail()
         }
     }
 
-    fn convert_tag(tag: &HTMLTag, parser: &Parser) -> Result<Node<HtmlContent>, ()> {
+    fn convert_tag(
+        tag: &HTMLTag,
+        parser: &Parser,
+    ) -> Result<Node<HtmlContent>, StreamingEditorError> {
         let name = String::from(tag.name().as_utf8_str());
         let mut attributes = BTreeMap::new();
 
@@ -161,7 +172,10 @@ impl HtmlContent {
         Ok(converted)
     }
 
-    fn convert_node(node_handle: &NodeHandle, parser: &Parser) -> Result<Node<HtmlContent>, ()> {
+    fn convert_node(
+        node_handle: &NodeHandle,
+        parser: &Parser,
+    ) -> Result<Node<HtmlContent>, StreamingEditorError> {
         if let Some(node) = node_handle.get(parser) {
             return match node {
                 tl::Node::Tag(tag) => Self::convert_tag(tag, parser),
@@ -170,14 +184,16 @@ impl HtmlContent {
             };
         }
 
-        Err(())
+        InvalidParserStateSnafu {}.fail()
     }
 
-    fn convert_text(text: impl Into<String>) -> Result<Node<HtmlContent>, ()> {
+    fn convert_text(text: impl Into<String>) -> Result<Node<HtmlContent>, StreamingEditorError> {
         Ok(Node::new(HtmlContent::Text(text.into())))
     }
 
-    fn convert_comment(comment: impl Into<String>) -> Result<Node<HtmlContent>, ()> {
+    fn convert_comment(
+        comment: impl Into<String>,
+    ) -> Result<Node<HtmlContent>, StreamingEditorError> {
         let comment = comment.into();
         let comment = comment.trim_start_matches("<!--");
         let comment = comment.trim_end_matches("-->");

@@ -51,6 +51,11 @@ pub enum StreamingEditorError {
         #[snafu(backtrace)]
         source: crate::pipeline::PipelineError,
     },
+    #[snafu(display("Failed to convert parsed HTML into memory model"))]
+    LoadingParsedHtmlFailed {
+        #[snafu(backtrace)]
+        source: crate::html::StreamingEditorError,
+    },
 }
 
 pub struct HtmlStreamingEditor<'a> {
@@ -74,7 +79,7 @@ impl<'a> HtmlStreamingEditor<'a> {
 
         let dom = tl::parse(&string_content, tl::ParserOptions::default())
             .context(ParsingInputFailedSnafu)?;
-        let root_element = HtmlContent::import(dom).unwrap();
+        let root_element = HtmlContent::import(dom).context(LoadingParsedHtmlFailedSnafu)?;
         let result = pipeline
             .run_on(vec![rctree::Node::clone(&root_element)])
             .context(RunningPipelineFailedSnafu)?;
