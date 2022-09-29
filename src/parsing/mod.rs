@@ -108,6 +108,8 @@ parser! {
             = "ADD-ELEMENT{" whitespace()? (assign_marker() whitespace()?)? sp:element_creating_pipeline() whitespace()?  "}" { Command::AddElement(sp) }
         rule create_element_command() -> Command<'input>
             = ("CREATE-ELEMENT"/"NEW") "{" whitespace()? n:identifier() whitespace()? "}" { Command::CreateElement(String::from(n))}
+        rule read_from_command() -> Command<'input>
+            = ("READ-FROM"/"SOURCE") "{" whitespace()? f:string_value() whitespace()? "}" { Command::ReadFrom(String::from(f)) }
         pub(super) rule command() -> Command<'input>
             = only_command()
             / without_command()
@@ -122,6 +124,7 @@ parser! {
             / replace_command()
         rule element_source_command() -> Command<'input>
             = create_element_command()
+            / read_from_command()
         rule element_manipulating_pipeline() -> Vec<Command<'input>>
             = " | " p:(command() ** " | ") { p }
         rule element_creating_pipeline() -> Pipeline<'input>

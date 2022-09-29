@@ -1,6 +1,8 @@
 use log::trace;
-use snafu::{ResultExt, Snafu};
+use snafu::{Backtrace, ResultExt, Snafu};
 use std::fmt::Debug;
+use std::fs::File;
+use std::io::{BufReader, Read};
 use std::ops::Add;
 
 use crate::html::{HtmlContent, HtmlTag};
@@ -9,24 +11,31 @@ use crate::{CssSelectorList, Pipeline};
 
 #[derive(Debug, Snafu)]
 pub enum CommandError {
-    #[snafu(display("Failed run WITHOUT"))]
-    WithoutFailed {
+    #[snafu(display("Failed to remove HTML node"))]
+    RemovingNodeFailed {
         #[snafu(backtrace)]
-        source: WithoutError,
+        source: crate::html::IndexError,
     },
+    #[snafu(display("Sub-Pipeline failed"))]
     SubpipelineFailed {
         #[snafu(backtrace)]
         #[snafu(source(from(PipelineError, Box::new)))]
         source: Box<PipelineError>,
     },
-}
-
-#[derive(Debug, Snafu)]
-pub enum WithoutError {
-    #[snafu(display("Failed to remove HTML node"))]
-    RemovingNodeFailed {
+    #[snafu(display("Failed to read input from"))]
+    ReadingInputFailed {
+        source: std::io::Error,
+        backtrace: Backtrace,
+    },
+    #[snafu(display("Failed to parse input HTML"))]
+    ParsingInputFailed {
+        source: tl::ParseError,
+        backtrace: Backtrace,
+    },
+    #[snafu(display("Failed to convert parsed HTML into memory model"))]
+    LoadingParsedHtmlFailed {
         #[snafu(backtrace)]
-        source: crate::html::IndexError,
+        source: crate::html::StreamingEditorError,
     },
 }
 
@@ -99,9 +108,7 @@ impl<'a> Command<'a> {
     ) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
         match self {
             Command::Only(selector) => Self::only(input, selector),
-            Command::Without(selector) => {
-                Self::without(input, selector).context(WithoutFailedSnafu)
-            }
+            Command::Without(selector) => Self::without(input, selector),
             Command::ClearAttribute(attribute) => Self::clear_attr(input, attribute),
             Command::ClearContent => Self::clear_content(input),
             Command::SetAttribute(attribute, value_source) => {
@@ -114,7 +121,7 @@ impl<'a> Command<'a> {
             Command::AddElement(pipeline) => Self::add_element(input, pipeline),
             Command::CreateElement(element_name) => Self::create_element(element_name),
             Command::Replace(selector, pipeline) => Self::replace(input, selector, pipeline),
-            Command::ReadFrom(_) => todo!(),
+            Command::ReadFrom(file_path) => Self::read_from(file_path),
         }
     }
 
@@ -140,7 +147,7 @@ impl<'a> Command<'a> {
     fn without(
         input: &Vec<rctree::Node<HtmlContent>>,
         selector: &CssSelectorList<'a>,
-    ) -> Result<Vec<rctree::Node<HtmlContent>>, WithoutError> {
+    ) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
         trace!("Running WITHOUT command using selector: {:#?}", selector);
         let findings = selector.query(input);
 
@@ -162,7 +169,7 @@ impl<'a> Command<'a> {
         for mut element_for_replacement in queried_elements {
             for new_element in &mut created_elements {
                 let copy = new_element.make_deep_copy();
-                element_for_replacement.insert_after(copy);
+                element_for_replacement.insert_before(copy);
             }
             element_for_replacement.detach();
         }
@@ -299,6 +306,22 @@ impl<'a> Command<'a> {
         Ok(vec![rctree::Node::new(HtmlContent::Tag(HtmlTag::of_name(
             name.clone(),
         )))])
+    }
+
+    fn read_from(file_path: &String) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
+        let file = File::open(file_path).context(ReadingInputFailedSnafu)?;
+        let mut buffered_reader = BufReader::new(file);
+
+        let mut string_content = String::new();
+        buffered_reader
+            .read_to_string(&mut string_content)
+            .context(ReadingInputFailedSnafu)?;
+
+        let dom = tl::parse(&string_content, tl::ParserOptions::default())
+            .context(ParsingInputFailedSnafu)?;
+        let mut root_element = HtmlContent::import(dom).context(LoadingParsedHtmlFailedSnafu)?;
+
+        Ok(vec![root_element.make_deep_copy()])
     }
 }
 

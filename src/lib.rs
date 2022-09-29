@@ -36,6 +36,11 @@ pub enum StreamingEditorError {
         source: tl::ParseError,
         backtrace: Backtrace,
     },
+    #[snafu(display("Failed to convert parsed HTML into memory model"))]
+    LoadingParsedHtmlFailed {
+        #[snafu(backtrace)]
+        source: crate::html::StreamingEditorError,
+    },
     #[snafu(display("Failed to parse pipeline"))]
     ParsingPipelineFailed {
         source: peg::error::ParseError<LineCol>,
@@ -50,11 +55,6 @@ pub enum StreamingEditorError {
     RunningPipelineFailed {
         #[snafu(backtrace)]
         source: crate::pipeline::PipelineError,
-    },
-    #[snafu(display("Failed to convert parsed HTML into memory model"))]
-    LoadingParsedHtmlFailed {
-        #[snafu(backtrace)]
-        source: crate::html::StreamingEditorError,
     },
 }
 
