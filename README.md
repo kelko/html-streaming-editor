@@ -74,11 +74,18 @@ Example
 --------
 
 ```shell
-# fetches all elements with CSS class "content" inside a <header> element
-hse -i index.html 'ONLY{header .content}'
-```
+# fetches all elements with CSS class "content" inside a <main> element
+hse -i index.html 'ONLY{main .content}'
 
-```shell
 # fetches the `<main>` or element with CSS class `main`, but without any `<script>` defined inside
 hse -i index.html 'ONLY{main, .main} | WITHOUT{script}'
+
+# replaces all elements with `placeholder` class with the <div class="content"> from a second HTML file 
+hse -i index.html 'REPLACE{.placeholder ↤ READ-FROM{"other.html"} | ONLY{div.content} }'
+
+# add a new <meta name="version" value=""> element to <head> with git version info 
+hse -i index.html "FOR{head ↦ ADD-ELEMENT{ CREATE-ELEMENT{meta} | SET-ATTR{name ↤ 'version'} | SET-ATTR{value ↤ '`git describe --tags`'}  } }"
+
+# add a new comment to <body> with git version info
+hse -i index.html "FOR{body ↦ ADD-COMMENT{'`git describe --tags`'}}"
 ```
