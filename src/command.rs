@@ -83,6 +83,9 @@ pub enum Command<'a> {
     /// creates an HTML element of given type
     /// Returns the created element as result.
     CreateElement(String),
+    /// reads a different file into memory
+    /// Returns the content of that file as result.
+    ReadFrom(String),
 }
 
 impl<'a> Command<'a> {
@@ -111,6 +114,7 @@ impl<'a> Command<'a> {
             Command::AddElement(pipeline) => Self::add_element(input, pipeline),
             Command::CreateElement(element_name) => Self::create_element(element_name),
             Command::Replace(selector, pipeline) => Self::replace(input, selector, pipeline),
+            Command::ReadFrom(_) => todo!(),
         }
     }
 

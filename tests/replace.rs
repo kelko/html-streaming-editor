@@ -44,3 +44,42 @@ fn replace_ul_with_created_div() -> Result<(), StreamingEditorError> {
 
     Ok(())
 }
+
+#[test]
+fn replace_ul_with_sourced_html() -> Result<(), StreamingEditorError> {
+    let command = "REPLACE{ul ↤ READ-FROM{'tests/source.html'} | ONLY{ul}}";
+
+    let mut input = Box::new(HTML_INPUT.as_bytes());
+    let mut output = Vec::new();
+    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+
+    let _ = hse.run(command)?;
+    let result_string = String::from_utf8(output).unwrap();
+
+    assert_eq!(
+        result_string,
+        String::from(
+            r#"<html>
+    <head></head>
+    <body>
+        <h1>Title</h1>
+        <p id="first-para">Some first text</p>
+        <p id="second-para">Some more text, even with an <img src=""></p>
+        <p id="third-para">Third text of <abbr>HTML</abbr>, but no <abbr>CSS</abbr></p>
+        <ul id="first">
+        <li>1</li>
+        <li>2</li>
+        <li>3</li>
+    </ul>
+    <ul id="second">
+        <li>a</li>
+        <li><!-- Some Comment -->b</li>
+        <li><em class="intense">c</em></li>
+    </ul>
+    </body>
+</html>"#
+        )
+    );
+
+    Ok(())
+}

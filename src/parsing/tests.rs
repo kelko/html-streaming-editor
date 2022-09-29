@@ -329,6 +329,28 @@ fn parse_single_add_element_using_create() {
 }
 
 #[test]
+fn parse_single_add_element_using_read_from() {
+    let parsed = super::grammar::command("ADD-ELEMENT{READ-FROM{'tests/source.html'}}");
+    assert_eq!(
+        parsed,
+        Ok(Command::AddElement(Pipeline::new(vec![Command::ReadFrom(
+            String::from("tests/source.html")
+        )])))
+    );
+}
+
+#[test]
+fn parse_single_add_element_using_source() {
+    let parsed = super::grammar::command("ADD-ELEMENT{SOURCE{'tests/source.html'}}");
+    assert_eq!(
+        parsed,
+        Ok(Command::AddElement(Pipeline::new(vec![Command::ReadFrom(
+            String::from("tests/source.html")
+        )])))
+    );
+}
+
+#[test]
 fn parse_single_add_element_with_arrow_using_create() {
     let parsed = super::grammar::command("ADD-ELEMENT{ ↤ CREATE-ELEMENT{div}}");
     assert_eq!(

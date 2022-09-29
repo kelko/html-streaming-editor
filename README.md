@@ -48,12 +48,8 @@ Currently supported:
 - `ADD-COMMENT`: appends a new comment child
 - `ADD-ELEMENT`: appends a new tag/element child
 - `REPLACE`: replace all elements matching a CSS selector with new elements (alias: `MAP`)
-- `CREATE-ELEMENT`: creates a new, empty element, mainly in combination with `ADD-ELEMENT` or `REPLACE-WITH` (alias: `NEW`)
-
-
-Planned commands:
-
-- `READ-FROM`: reads a DOM from a different file, mainly in combination with `ADD-ELEMENT` or `REPLACE-WITH` (alias: `SOURCE`) 
+- `CREATE-ELEMENT`: creates a new, empty element, mainly in combination with `ADD-ELEMENT` or `REPLACE` (alias: `NEW`)
+- `READ-FROM`: reads a DOM from a different file, mainly in combination with `ADD-ELEMENT` or `REPLACE` (alias: `SOURCE`) 
 
 Binary
 -------

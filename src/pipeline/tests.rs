@@ -498,3 +498,36 @@ fn run_on_single_replace_from_create() {
         String::from(r#"<body><p></p><div class="stay">This will be kept</div></body>"#)
     );
 }
+
+//noinspection DuplicatedCode
+#[test]
+fn run_on_single_replace_from_read_from() {
+    let pipeline = Pipeline::new(vec![Command::Replace(
+        CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_class(
+            "replace-me",
+        ))]),
+        Pipeline::new(vec![Command::ReadFrom(String::from(
+            "tests/single_div.html",
+        ))]),
+    )]);
+
+    let dom = tl::parse(
+        r#"<body><div class="replace-me">Some Content</div><div class="stay">This will be kept</div></body>"#,
+        tl::ParserOptions::default(),
+    )
+        .unwrap();
+    let starting_elements = HtmlContent::import(dom).unwrap();
+
+    let mut result = pipeline
+        .run_on(vec![rctree::Node::clone(&starting_elements)])
+        .unwrap();
+
+    assert_eq!(result.len(), 1);
+    let first_result = result.pop().unwrap();
+    assert_eq!(
+        first_result.outer_html(),
+        String::from(
+            r#"<body><div class="new">This is new</div><div class="stay">This will be kept</div></body>"#
+        )
+    );
+}
