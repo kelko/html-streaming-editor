@@ -179,8 +179,9 @@ impl HtmlContent {
 
     fn convert_comment(comment: impl Into<String>) -> Result<Node<HtmlContent>, ()> {
         let comment = comment.into();
-        let comment = comment.trim_start_matches("<!-- ");
-        let comment = comment.trim_end_matches(" -->");
+        let comment = comment.trim_start_matches("<!--");
+        let comment = comment.trim_end_matches("-->");
+        let comment = comment.trim();
         Ok(Node::new(HtmlContent::Comment(comment.into())))
     }
 

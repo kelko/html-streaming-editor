@@ -273,3 +273,27 @@ fn convert_single_vdom_works() {
 
     assert_eq!(converted.outer_html(), expected.outer_html());
 }
+
+#[test]
+fn convert_empty_comments_works() {
+    let dom = tl::parse(
+        "<body>Hello <!-- -->World</body>",
+        tl::ParserOptions::default(),
+    )
+    .unwrap();
+
+    let converted = HtmlContent::import(dom).unwrap();
+
+    let mut body = rctree::Node::<HtmlContent>::new(HtmlContent::Tag(HtmlTag::of_name("body")));
+    body.append(rctree::Node::<HtmlContent>::new(HtmlContent::Text(
+        String::from("Hello "),
+    )));
+    body.append(rctree::Node::<HtmlContent>::new(HtmlContent::Comment(
+        String::new(),
+    )));
+    body.append(rctree::Node::<HtmlContent>::new(HtmlContent::Text(
+        String::from("World"),
+    )));
+
+    assert_eq!(converted.outer_html(), body.outer_html());
+}
