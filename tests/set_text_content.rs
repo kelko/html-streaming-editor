@@ -52,3 +52,25 @@ fn overwrite_third_p_content() -> Result<(), StreamingEditorError> {
 
     Ok(())
 }
+
+#[test]
+fn set_escape_needing_content() -> Result<(), StreamingEditorError> {
+    let command =
+        "ONLY{#first-para} | SET-TEXT-CONTENT{'Some is > others < & you never know which'}";
+
+    let mut input = Box::new(HTML_INPUT.as_bytes());
+    let mut output = Vec::new();
+    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+
+    let _ = hse.run(command)?;
+    let result_string = String::from_utf8(output).unwrap();
+
+    assert_eq!(
+        result_string,
+        String::from(
+            r#"<p id="first-para">Some is &gt; others &lt; &amp; you never know which</p>"#
+        )
+    );
+
+    Ok(())
+}

@@ -58,3 +58,24 @@ fn add_to_ul() -> Result<(), StreamingEditorError> {
 
     Ok(())
 }
+
+#[test]
+fn add_double_dash_will_be_escaped() -> Result<(), StreamingEditorError> {
+    let command = "ONLY{#first-para} | ADD-COMMENT{'Actually -- is illegal in comments'}";
+
+    let mut input = Box::new(HTML_INPUT.as_bytes());
+    let mut output = Vec::new();
+    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+
+    let _ = hse.run(command)?;
+    let result_string = String::from_utf8(output).unwrap();
+
+    assert_eq!(
+        result_string,
+        String::from(
+            r#"<p id="first-para">Some first text<!-- Actually \x2D\x2D is illegal in comments --></p>"#
+        )
+    );
+
+    Ok(())
+}

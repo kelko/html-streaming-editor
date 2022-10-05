@@ -3,7 +3,7 @@ use rctree::{Children, Node};
 use snafu::{Backtrace, Snafu};
 use std::collections::BTreeMap;
 
-use crate::{CssSelector, ValueSource};
+use crate::CssSelector;
 use tl::{HTMLTag, NodeHandle, Parser, VDom};
 
 #[cfg(test)]
@@ -267,12 +267,11 @@ impl HtmlContent {
         }
     }
 
-    pub(crate) fn set_attribute(&mut self, attribute: &String, value_source: &ValueSource) {
+    pub(crate) fn set_attribute(&mut self, attribute: &String, value: String) {
         match self {
             HtmlContent::Comment(_) | HtmlContent::Text(_) => (),
             HtmlContent::Tag(tag) => {
-                tag.attributes
-                    .insert(attribute.clone(), value_source.render());
+                tag.attributes.insert(attribute.clone(), value);
             }
         }
     }

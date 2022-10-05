@@ -33,3 +33,24 @@ fn add_to_first_p_content() -> Result<(), StreamingEditorError> {
 
     Ok(())
 }
+
+#[test]
+fn add_escape_needing_content() -> Result<(), StreamingEditorError> {
+    let command = "ONLY{#first-para} | ADD-TEXT-CONTENT{' is > others < & you never know which'}";
+
+    let mut input = Box::new(HTML_INPUT.as_bytes());
+    let mut output = Vec::new();
+    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+
+    let _ = hse.run(command)?;
+    let result_string = String::from_utf8(output).unwrap();
+
+    assert_eq!(
+        result_string,
+        String::from(
+            r#"<p id="first-para">Some first text is &gt; others &lt; &amp; you never know which</p>"#
+        )
+    );
+
+    Ok(())
+}

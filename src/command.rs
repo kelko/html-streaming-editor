@@ -1,3 +1,4 @@
+use html_escape::{encode_double_quoted_attribute, encode_text};
 use log::trace;
 use snafu::{Backtrace, ResultExt, Snafu};
 use std::fmt::Debug;
@@ -227,7 +228,10 @@ impl<'a> Command<'a> {
         for node in input {
             let mut working_copy = rctree::Node::clone(node);
             let mut data = working_copy.borrow_mut();
-            data.set_attribute(attribute, value_source);
+            let rendered_value = value_source.render();
+            let rendered_value = String::from(encode_double_quoted_attribute(&rendered_value));
+            let rendered_value = rendered_value.replace("\n", "\\n");
+            data.set_attribute(attribute, rendered_value);
         }
 
         Ok(input.clone())
@@ -249,7 +253,9 @@ impl<'a> Command<'a> {
             }
 
             let mut working_copy = rctree::Node::clone(node);
-            working_copy.append(rctree::Node::new(HtmlContent::Text(value_source.render())));
+            let rendered_value = value_source.render();
+            let rendered_value = String::from(encode_text(&rendered_value));
+            working_copy.append(rctree::Node::new(HtmlContent::Text(rendered_value)));
         }
 
         Ok(input.clone())
@@ -266,7 +272,9 @@ impl<'a> Command<'a> {
 
         for node in input {
             let mut working_copy = rctree::Node::clone(node);
-            working_copy.append(rctree::Node::new(HtmlContent::Text(value_source.render())));
+            let rendered_value = value_source.render();
+            let rendered_value = String::from(encode_text(&rendered_value));
+            working_copy.append(rctree::Node::new(HtmlContent::Text(rendered_value)));
         }
 
         Ok(input.clone())
@@ -283,9 +291,9 @@ impl<'a> Command<'a> {
 
         for node in input {
             let mut working_copy = rctree::Node::clone(node);
-            working_copy.append(rctree::Node::new(HtmlContent::Comment(
-                value_source.render(),
-            )));
+            let rendered_value = value_source.render();
+            let rendered_value = rendered_value.replace("--", "\\x2D\\x2D");
+            working_copy.append(rctree::Node::new(HtmlContent::Comment(rendered_value)));
         }
 
         Ok(input.clone())
