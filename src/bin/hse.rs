@@ -1,30 +1,37 @@
 extern crate clap;
 
+use clap::Parser;
 use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Write};
-
-use clap::clap_app;
+use std::path::PathBuf;
 
 use html_streaming_editor::{report, HtmlStreamingEditor};
+
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+struct Cli {
+    /// File name of the Input. `-` for stdin (default)
+    #[arg(short, long, value_name = "INPUT")]
+    input: Option<PathBuf>,
+
+    /// File name of the Output. `-` for stdout (default)
+    #[arg(short, long, value_name = "OUTPUT")]
+    output: Option<PathBuf>,
+
+    /// Single string with the command pipeline to perform
+    pipeline: String,
+}
 
 fn main() {
     pretty_env_logger::init();
 
-    let options = clap_app!(hse =>
-        (version: "0.4.0")
-        (author: ":kelko:")
-        (about: "Html Streaming Editor")
-        (@arg input: -i --input +takes_value "File name of the Input. `-` for stdin (default)")
-        (@arg output: -o --output +takes_value "File name of the Output. `-` for stdout (default)")
-        (@arg COMMANDS: +required "Single string with the command pipeline to perform")
-    )
-    .get_matches();
+    let cli = Cli::parse();
 
-    let input_path = options.value_of("input").unwrap_or("-").to_string();
-    let output_path = options.value_of("output").unwrap_or("-").to_string();
-    let commands = options.value_of("COMMANDS").expect("COMMANDS must be set");
+    let input_path = cli.input.unwrap_or(PathBuf::from("-"));
+    let output_path = cli.output.unwrap_or(PathBuf::from("-"));
+    let pipeline_definition = cli.pipeline;
 
-    let mut input_reader: Box<dyn BufRead> = if input_path == "-" {
+    let mut input_reader: Box<dyn BufRead> = if input_path.to_str() == Some("-") {
         Box::new(std::io::stdin().lock())
     } else {
         let input_file = if let Ok(file) = File::open(input_path) {
@@ -37,7 +44,7 @@ fn main() {
         Box::new(BufReader::new(input_file))
     };
 
-    let mut output_writer: Box<dyn Write> = if output_path == "-" {
+    let mut output_writer: Box<dyn Write> = if output_path.to_str() == Some("-") {
         Box::new(std::io::stdout().lock())
     } else {
         let output_file = if let Ok(file) = File::create(output_path) {
@@ -51,7 +58,7 @@ fn main() {
     };
 
     let editor = HtmlStreamingEditor::new(&mut input_reader, &mut output_writer);
-    match editor.run(commands) {
+    match editor.run(&pipeline_definition) {
         Ok(_) => (),
         Err(e) => report(&e),
     }
