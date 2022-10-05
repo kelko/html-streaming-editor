@@ -279,8 +279,28 @@ impl HtmlContent {
 }
 
 pub(crate) trait HtmlRenderable {
+    /// Returns the markup of all child elements
+    ///
+    /// ## Limitations
+    /// - The tag attributes are written in alphabetical order
+    /// - Spaces within the tag are not preserved (i.e. `<img      src="">` may become `<img src="">`)
+    /// - Does no escaping to change as little as possible of the input HTML. Input has to be correctly escaped
+    ///
+    /// Equivalent to [Element#innerHTML](https://developer.mozilla.org/en-US/docs/Web/API/Element/innerHTML) in browsers
     fn inner_html(&self) -> String;
+    /// Returns the markup building up this element an all children
+    ///
+    /// ## Limitations
+    /// - The tag attributes are written in alphabetical order
+    /// - Spaces within the tag are not preserved (i.e. `<img      src="">` may become `<img src="">`)
+    /// - Does no escaping to change as little as possible of the input HTML. Input has to be correctly escaped
+    ///
+    /// Equivalent to [Element#outerHTML](https://developer.mozilla.org/en-US/docs/Web/API/Element/outerHTML) in browsers
     fn outer_html(&self) -> String;
+    /// Returns the contained (non-comment) text of this element, excluding any markup.
+    /// - Does no escaping to change as little as possible of the input HTML. Input has to be correctly escaped
+    ///
+    /// Equivalent to [Element#outerHTML](https://developer.mozilla.org/en-US/docs/Web/API/Node/textContent) in browsers
     fn text_content(&self) -> String;
 }
 
