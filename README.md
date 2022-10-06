@@ -32,6 +32,16 @@ Some `COMMAND` use sub-pipelines. There are two kind of `COMMANDS` with this:
  
 The `SELECTOR` is a [CSS selector](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors).
 
+Pipeline Types
+-----------------
+
+There are three types of pipelines:
+
+- element processing pipeline: The default. You have some input HTML which you run through the pipeline
+- element creating sub-pipeline: special sub-pipeline wherever a commands adds one or more elements into the HTML tree (or into a different place of said tree)
+- string value creating sub-pipeline: special sub-pipeline wherever a commands set a string value (text content, comment, attribute value)
+
+
 Commands
 -------------
 
@@ -50,7 +60,19 @@ Currently supported:
 - `REPLACE`: replace all elements matching a CSS selector with new elements (alias: `MAP`)
 - `CREATE-ELEMENT`: creates a new, empty element, mainly in combination with `ADD-ELEMENT` or `REPLACE` (alias: `NEW`)
 - `FROM-FILE`: reads a DOM from a different file, mainly in combination with `ADD-ELEMENT` or `REPLACE` (alias: `SOURCE`)
-- `FROM-REPLACED`: returns children matching the CSS selector of those elements meant to be replaced, only  combination with or `REPLACE` (alias: `KEEP`)
+- `FROM-REPLACED`: returns children matching the CSS selector of those elements meant to be replaced, only combination with or `REPLACE` (alias: `KEEP`)
+
+
+Not Yet implemented:
+- "string value producing pipelines": Sub-Pipelines for `SET-ATTR`, `ADD-TEXT-CONTENT`, `ADD-COMMENT` and `SET-TEXT-CONTENT` to create the string value from other parts of the HTML
+- `USE-ELEMENT`: returns the currently selected element for a sub-pipeline, mainly in combination with "string value producing pipelines"
+- `USE-PARENT`: returns the parent of the currently selected element for a sub-pipeline, mainly in combination with "string value producing pipelines"
+- `USE-ROOT`: returns the parent of the currently selected element for a sub-pipeline, mainly in combination with "string value producing pipelines"
+- `GET-TEXT-CONTENT`: returns the text content of the currently selected element for a string-value producing pipelines
+- `GET-ATTR`: returns the value of an attribute of the currently selected element for a string-value producing pipelines
+- `TO-LOWER`: all-lower the current string value of the pipeline
+- `TO-UPPER`: all-caps the current string value of the pipeline
+- `REGEX-REPLACE`: runs a RegEx-based value replacements on the current string value of the pipeline
 
 Binary
 -------
