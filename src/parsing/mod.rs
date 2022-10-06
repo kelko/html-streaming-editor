@@ -91,7 +91,7 @@ parser! {
         rule for_each_command() -> Command<'input>
             = "FOR" "-EACH"? "{" whitespace()? oc:css_selector_list() whitespace()? iterate_marker() whitespace()? sp:pipeline() whitespace()?  "}" { Command::ForEach(oc, sp) }
         rule replace_command() -> Command<'input>
-            = ("REPLACE"/"MAP") "{" whitespace()? oc:css_selector_list() whitespace()? assign_marker() whitespace()? sp:element_creating_pipeline() whitespace()? "}" { Command::Replace(oc, sp)}
+            = ("REPLACE"/"MAP") "{" whitespace()? oc:css_selector_list() whitespace()? assign_marker() whitespace()? sp:element_subselect_or_creating_pipeline() whitespace()? "}" { Command::Replace(oc, sp)}
         rule clear_attr_command() -> Command<'input>
             = "CLEAR-ATTR{" whitespace()? a:identifier() whitespace()? "}" { Command::ClearAttribute(String::from(a)) }
         rule clear_content_command() -> Command<'input>
@@ -108,8 +108,10 @@ parser! {
             = "ADD-ELEMENT{" whitespace()? (assign_marker() whitespace()?)? sp:element_creating_pipeline() whitespace()?  "}" { Command::AddElement(sp) }
         rule create_element_command() -> Command<'input>
             = ("CREATE-ELEMENT"/"NEW") "{" whitespace()? n:identifier() whitespace()? "}" { Command::CreateElement(String::from(n))}
-        rule read_from_command() -> Command<'input>
-            = ("READ-FROM"/"SOURCE") "{" whitespace()? f:string_value() whitespace()? "}" { Command::ReadFrom(String::from(f)) }
+        rule from_file_command() -> Command<'input>
+            = ("FROM-FILE"/"SOURCE") "{" whitespace()? f:string_value() whitespace()? "}" { Command::FromFile(String::from(f)) }
+        rule from_replaced_command() -> Command<'input>
+            = ("FROM-REPLACED"/"KEEP") "{" whitespace()? oc:css_selector_list() whitespace()? "}" { Command::FromReplaced(oc) }
         pub(super) rule command() -> Command<'input>
             = only_command()
             / without_command()
@@ -122,13 +124,18 @@ parser! {
             / add_comment_command()
             / add_element_command()
             / replace_command()
-        rule element_source_command() -> Command<'input>
+        rule element_creating_category() -> Command<'input>
             = create_element_command()
-            / read_from_command()
+            / from_file_command()
+        rule element_subselect_or_creating_category() -> Command<'input>
+            = from_replaced_command()
+            / element_creating_category()
         rule element_manipulating_pipeline() -> Vec<Command<'input>>
             = " | " p:(command() ** " | ") { p }
         rule element_creating_pipeline() -> Pipeline<'input>
-            = s:element_source_command() p:element_manipulating_pipeline()? { Pipeline::new(s + p) }
+            = s:element_creating_category() p:element_manipulating_pipeline()? { Pipeline::new(s + p) }
+        rule element_subselect_or_creating_pipeline() -> Pipeline<'input>
+            = s:element_subselect_or_creating_category() p:element_manipulating_pipeline()? { Pipeline::new(s + p) }
         pub rule pipeline() -> Pipeline<'input>
             = p:(command() ** " | ") { Pipeline::new(p) }
   }

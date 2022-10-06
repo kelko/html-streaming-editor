@@ -501,12 +501,12 @@ fn run_on_single_replace_from_create() {
 
 //noinspection DuplicatedCode
 #[test]
-fn run_on_single_replace_from_read_from() {
+fn run_on_single_replace_using_from_file() {
     let pipeline = Pipeline::new(vec![Command::Replace(
         CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_class(
             "replace-me",
         ))]),
-        Pipeline::new(vec![Command::ReadFrom(String::from(
+        Pipeline::new(vec![Command::FromFile(String::from(
             "tests/single_div.html",
         ))]),
     )]);
@@ -528,6 +528,39 @@ fn run_on_single_replace_from_read_from() {
         first_result.outer_html(),
         String::from(
             r#"<body><div class="new">This is new</div><div class="stay">This will be kept</div></body>"#
+        )
+    );
+}
+
+//noinspection DuplicatedCode
+#[test]
+fn run_on_single_replace_using_from_replaced() {
+    let pipeline = Pipeline::new(vec![Command::Replace(
+        CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_class(
+            "replace-me",
+        ))]),
+        Pipeline::new(vec![Command::FromReplaced(CssSelectorList::new(vec![
+            CssSelectorPath::single(CssSelector::for_element("p")),
+        ]))]),
+    )]);
+
+    let dom = tl::parse(
+        r#"<body><div class="replace-me">Some <aside>mixed <p>Content</p> with multiple </aside><p>levels</p></div><div class="stay">This will be kept</div></body>"#,
+        tl::ParserOptions::default(),
+    )
+        .unwrap();
+    let starting_elements = HtmlContent::import(dom).unwrap();
+
+    let mut result = pipeline
+        .run_on(vec![rctree::Node::clone(&starting_elements)])
+        .unwrap();
+
+    assert_eq!(result.len(), 1);
+    let first_result = result.pop().unwrap();
+    assert_eq!(
+        first_result.outer_html(),
+        String::from(
+            r#"<body><p>Content</p><p>levels</p><div class="stay">This will be kept</div></body>"#
         )
     );
 }

@@ -95,7 +95,10 @@ pub enum Command<'a> {
     CreateElement(String),
     /// reads a different file into memory
     /// Returns the content of that file as result.
-    ReadFrom(String),
+    FromFile(String),
+    /// Starting at the element being replaced run a sub-query
+    /// Returns all sub-elements that match the given CSS selector.
+    FromReplaced(CssSelectorList<'a>),
 }
 
 impl<'a> Command<'a> {
@@ -122,7 +125,8 @@ impl<'a> Command<'a> {
             Command::AddElement(pipeline) => Self::add_element(input, pipeline),
             Command::CreateElement(element_name) => Self::create_element(element_name),
             Command::Replace(selector, pipeline) => Self::replace(input, selector, pipeline),
-            Command::ReadFrom(file_path) => Self::read_from(file_path),
+            Command::FromFile(file_path) => Self::from_file(file_path),
+            Command::FromReplaced(selector) => Self::from_replaced(input, selector),
         }
     }
 
@@ -157,6 +161,7 @@ impl<'a> Command<'a> {
         selector: &CssSelectorList<'a>,
     ) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
         trace!("Running WITHOUT command using selector: {:#?}", selector);
+
         let findings = selector.query(input);
 
         for mut node in findings {
@@ -171,10 +176,14 @@ impl<'a> Command<'a> {
         selector: &CssSelectorList<'a>,
         pipeline: &Pipeline,
     ) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
+        trace!("Running REPLACE command using selector: {:#?}", selector);
+
         let queried_elements = selector.query(input);
-        let mut created_elements = pipeline.run_on(vec![]).context(SubpipelineFailedSnafu)?;
 
         for mut element_for_replacement in queried_elements {
+            let mut created_elements = pipeline
+                .run_on(vec![rctree::Node::clone(&element_for_replacement)])
+                .context(SubpipelineFailedSnafu)?;
             for new_element in &mut created_elements {
                 let copy = new_element.make_deep_copy();
                 element_for_replacement.insert_before(copy);
@@ -303,6 +312,8 @@ impl<'a> Command<'a> {
         input: &Vec<rctree::Node<HtmlContent>>,
         pipeline: &Pipeline,
     ) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
+        trace!("Running ADD-ELEMENT command");
+
         for node in input {
             if let Some(new_element) = pipeline
                 .run_on(vec![])
@@ -318,12 +329,16 @@ impl<'a> Command<'a> {
     }
 
     fn create_element(name: &String) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
+        trace!("Running CREATE-ELEMENT command using name: {:#?}", name);
+
         Ok(vec![rctree::Node::new(HtmlContent::Tag(HtmlTag::of_name(
             name.clone(),
         )))])
     }
 
-    fn read_from(file_path: &String) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
+    fn from_file(file_path: &String) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
+        trace!("Running FROM-FILE command using file: {:#?}", file_path);
+
         let file = File::open(file_path).context(ReadingInputFailedSnafu)?;
         let mut buffered_reader = BufReader::new(file);
 
@@ -337,6 +352,15 @@ impl<'a> Command<'a> {
         let mut root_element = HtmlContent::import(dom).context(LoadingParsedHtmlFailedSnafu)?;
 
         Ok(vec![root_element.make_deep_copy()])
+    }
+
+    fn from_replaced(
+        input: &Vec<rctree::Node<HtmlContent>>,
+        selector: &CssSelectorList<'a>,
+    ) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
+        trace!("Running FROM-REPLACED command");
+
+        Self::only(input, selector)
     }
 }
 

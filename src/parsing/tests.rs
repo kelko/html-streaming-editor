@@ -329,11 +329,11 @@ fn parse_single_add_element_using_create() {
 }
 
 #[test]
-fn parse_single_add_element_using_read_from() {
-    let parsed = super::grammar::command("ADD-ELEMENT{READ-FROM{'tests/source.html'}}");
+fn parse_single_add_element_using_from_file() {
+    let parsed = super::grammar::command("ADD-ELEMENT{FROM-FILE{'tests/source.html'}}");
     assert_eq!(
         parsed,
-        Ok(Command::AddElement(Pipeline::new(vec![Command::ReadFrom(
+        Ok(Command::AddElement(Pipeline::new(vec![Command::FromFile(
             String::from("tests/source.html")
         )])))
     );
@@ -344,7 +344,7 @@ fn parse_single_add_element_using_source() {
     let parsed = super::grammar::command("ADD-ELEMENT{SOURCE{'tests/source.html'}}");
     assert_eq!(
         parsed,
-        Ok(Command::AddElement(Pipeline::new(vec![Command::ReadFrom(
+        Ok(Command::AddElement(Pipeline::new(vec![Command::FromFile(
             String::from("tests/source.html")
         )])))
     );
@@ -398,6 +398,40 @@ fn parse_single_replace_with_ascii_arrow_using_create() {
                 "replace-me"
             ))]),
             Pipeline::new(vec![Command::CreateElement(String::from("p"))])
+        )),
+    );
+}
+
+//noinspection DuplicatedCode
+#[test]
+fn parse_single_replace_using_from_replaced() {
+    let parsed = super::grammar::command("REPLACE{.replace-me ↤ FROM-REPLACED{p} }");
+    assert_eq!(
+        parsed,
+        Ok(Command::Replace(
+            CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_class(
+                "replace-me"
+            ))]),
+            Pipeline::new(vec![Command::FromReplaced(CssSelectorList::new(vec![
+                CssSelectorPath::single(CssSelector::for_element("p"))
+            ]))])
+        )),
+    );
+}
+
+//noinspection DuplicatedCode
+#[test]
+fn parse_single_replace_using_from_replaced_alias_keep() {
+    let parsed = super::grammar::command("REPLACE{.replace-me ↤ KEEP{p} }");
+    assert_eq!(
+        parsed,
+        Ok(Command::Replace(
+            CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_class(
+                "replace-me"
+            ))]),
+            Pipeline::new(vec![Command::FromReplaced(CssSelectorList::new(vec![
+                CssSelectorPath::single(CssSelector::for_element("p"))
+            ]))])
         )),
     );
 }

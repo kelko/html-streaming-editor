@@ -49,7 +49,8 @@ Currently supported:
 - `ADD-ELEMENT`: appends a new tag/element child
 - `REPLACE`: replace all elements matching a CSS selector with new elements (alias: `MAP`)
 - `CREATE-ELEMENT`: creates a new, empty element, mainly in combination with `ADD-ELEMENT` or `REPLACE` (alias: `NEW`)
-- `READ-FROM`: reads a DOM from a different file, mainly in combination with `ADD-ELEMENT` or `REPLACE` (alias: `SOURCE`) 
+- `FROM-FILE`: reads a DOM from a different file, mainly in combination with `ADD-ELEMENT` or `REPLACE` (alias: `SOURCE`)
+- `FROM-REPLACED`: returns children matching the CSS selector of those elements meant to be replaced, only  combination with or `REPLACE` (alias: `KEEP`)
 
 Binary
 -------
@@ -81,7 +82,7 @@ hse -i index.html 'ONLY{main .content}'
 hse -i index.html 'ONLY{main, .main} | WITHOUT{script}'
 
 # replaces all elements with `placeholder` class with the <div class="content"> from a second HTML file 
-hse -i index.html 'REPLACE{.placeholder ↤ READ-FROM{"other.html"} | ONLY{div.content} }'
+hse -i index.html 'REPLACE{.placeholder ↤ FROM-FILE{"other.html"} | ONLY{div.content} }'
 
 # add a new <meta name="version" value=""> element to <head> with git version info 
 hse -i index.html "FOR{head ↦ ADD-ELEMENT{ CREATE-ELEMENT{meta} | SET-ATTR{name ↤ 'version'} | SET-ATTR{content ↤ '`git describe --tags`'}  } }"
