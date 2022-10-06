@@ -56,13 +56,13 @@ impl ValueSource {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Command<'a> {
-    /// Find all nodes, beginning at the input, that match the given CSS selector
+    /// Find all nodes, beginning at the input, that match the given CSS selector and detach them
     /// and return only those
-    Only(CssSelectorList<'a>),
+    ExtractElement(CssSelectorList<'a>),
     /// Find all nodes, beginning at the input, that match the given CSS selector
     /// and remove them from their parent nodes.
     /// Returns the input as result.
-    Without(CssSelectorList<'a>),
+    RemoveElement(CssSelectorList<'a>),
     /// runs a sub-pipeline on each element matching the given CSS selector
     /// Returns the input as result.
     ForEach(CssSelectorList<'a>, Pipeline<'a>),
@@ -111,8 +111,8 @@ impl<'a> Command<'a> {
         input: &Vec<rctree::Node<HtmlContent>>,
     ) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
         match self {
-            Command::Only(selector) => Self::only(input, selector),
-            Command::Without(selector) => Self::without(input, selector),
+            Command::ExtractElement(selector) => Self::extract_element(input, selector),
+            Command::RemoveElement(selector) => Self::remove_element(input, selector),
             Command::ClearAttribute(attribute) => Self::clear_attr(input, attribute),
             Command::ClearContent => Self::clear_content(input),
             Command::SetAttribute(attribute, value_source) => {
@@ -141,11 +141,14 @@ impl<'a> Command<'a> {
         Ok(input.clone())
     }
 
-    fn only(
+    fn extract_element(
         input: &Vec<rctree::Node<HtmlContent>>,
         selector: &CssSelectorList<'a>,
     ) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
-        trace!("Running ONLY command using selector: {:#?}", selector);
+        trace!(
+            "Running EXTRACT-ELEMENT command using selector: {:#?}",
+            selector
+        );
 
         let mut matching_elements = selector.query(input);
 
@@ -156,7 +159,7 @@ impl<'a> Command<'a> {
         Ok(matching_elements)
     }
 
-    fn without(
+    fn remove_element(
         input: &Vec<rctree::Node<HtmlContent>>,
         selector: &CssSelectorList<'a>,
     ) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
@@ -360,7 +363,7 @@ impl<'a> Command<'a> {
     ) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
         trace!("Running FROM-REPLACED command");
 
-        Self::only(input, selector)
+        Self::extract_element(input, selector)
     }
 }
 

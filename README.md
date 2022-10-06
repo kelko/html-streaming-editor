@@ -47,8 +47,8 @@ Commands
 
 Currently supported:
 
-- `ONLY`: remove everything not matching the CSS selector (alias: `SELECT`)
-- `WITHOUT`: remove everything matching the CSS selector (alias: `FILTER`)
+- `EXTRACT-ELEMENT`: remove everything not matching the CSS selector (alias: `ONLY`)
+- `REMOVE-ELEMENT`: remove everything matching the CSS selector (alias: `WITHOUT`)
 - `FOR-EACH`: run a sub-pipeline on all sub-elements matching a CSS selector but return the previously selected elements (alias: `FOR`)
 - `CLEAR-ATTR`: removes a given attribute from the previously selected elements  
 - `CLEAR-CONTENT`: clears all children from the previously selected elements
@@ -65,9 +65,10 @@ Currently supported:
 
 Not Yet implemented:
 - "string value producing pipelines": Sub-Pipelines for `SET-ATTR`, `ADD-TEXT-CONTENT`, `ADD-COMMENT` and `SET-TEXT-CONTENT` to create the string value from other parts of the HTML
-- `USE-ELEMENT`: returns the currently selected element for a sub-pipeline, mainly in combination with "string value producing pipelines"
-- `USE-PARENT`: returns the parent of the currently selected element for a sub-pipeline, mainly in combination with "string value producing pipelines"
-- `USE-ROOT`: returns the parent of the currently selected element for a sub-pipeline, mainly in combination with "string value producing pipelines"
+- `USE-ELEMENT`: returns the currently selected element for a sub-pipeline, mainly in combination with "string value producing pipelines" (alias: `THIS`)
+- `USE-PARENT`: returns the parent of the currently selected element for a sub-pipeline, mainly in combination with "string value producing pipelines" (alias: `PARENT`)
+- `USE-ROOT`: returns the parent of the currently selected element for a sub-pipeline, mainly in combination with "string value producing pipelines" (alias: `ROOT`)
+- `SELECT-ELEMENT`: runs a sub-query on the currently selected element for further processing, without detaching target element from HTML tree unlike `EXTRACT-ELEMENT` (alias: `QUERY`)
 - `GET-TEXT-CONTENT`: returns the text content of the currently selected element for a string-value producing pipelines
 - `GET-ATTR`: returns the value of an attribute of the currently selected element for a string-value producing pipelines
 - `TO-LOWER`: all-lower the current string value of the pipeline
@@ -104,10 +105,10 @@ hse -i index.html 'ONLY{main .content}'
 hse -i index.html 'ONLY{main, .main} | WITHOUT{script}'
 
 # replaces all elements with `placeholder` class with the <div class="content"> from a second HTML file 
-hse -i index.html 'REPLACE{.placeholder ↤ FROM-FILE{"other.html"} | ONLY{div.content} }'
+hse -i index.html 'REPLACE{.placeholder ↤ SOURCE{"other.html"} | ONLY{div.content} }'
 
 # add a new <meta name="version" value=""> element to <head> with git version info 
-hse -i index.html "FOR{head ↦ ADD-ELEMENT{ CREATE-ELEMENT{meta} | SET-ATTR{name ↤ 'version'} | SET-ATTR{content ↤ '`git describe --tags`'}  } }"
+hse -i index.html "FOR{head ↦ ADD-ELEMENT{ NEW{meta} | SET-ATTR{name ↤ 'version'} | SET-ATTR{content ↤ '`git describe --tags`'}  } }"
 
 # add a new comment to <body> with git version info
 hse -i index.html "FOR{body ↦ ADD-COMMENT{'`git describe --tags`'}}"

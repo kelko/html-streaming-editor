@@ -47,7 +47,7 @@ fn replace_ul_with_created_div() -> Result<(), StreamingEditorError> {
 
 #[test]
 fn replace_ul_with_sourced_html() -> Result<(), StreamingEditorError> {
-    let command = "REPLACE{ul ↤ FROM-FILE{'tests/source.html'} | ONLY{ul}}";
+    let command = "REPLACE{ul ↤ FROM-FILE{'tests/source.html'} | EXTRACT-ELEMENT{ul}}";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
     let mut output = Vec::new();

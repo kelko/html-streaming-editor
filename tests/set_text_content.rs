@@ -17,7 +17,7 @@ const HTML_INPUT: &str = r#"<html>
 
 #[test]
 fn overwrite_first_p_content() -> Result<(), StreamingEditorError> {
-    let command = "ONLY{#first-para} | SET-TEXT-CONTENT{'Some new, boring text'}";
+    let command = "EXTRACT-ELEMENT{#first-para} | SET-TEXT-CONTENT{'Some new, boring text'}";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
     let mut output = Vec::new();
@@ -36,7 +36,7 @@ fn overwrite_first_p_content() -> Result<(), StreamingEditorError> {
 
 #[test]
 fn overwrite_third_p_content() -> Result<(), StreamingEditorError> {
-    let command = "ONLY{#third-para} | SET-TEXT-CONTENT{'Simple Text'}";
+    let command = "EXTRACT-ELEMENT{#third-para} | SET-TEXT-CONTENT{'Simple Text'}";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
     let mut output = Vec::new();
@@ -56,7 +56,7 @@ fn overwrite_third_p_content() -> Result<(), StreamingEditorError> {
 #[test]
 fn set_escape_needing_content() -> Result<(), StreamingEditorError> {
     let command =
-        "ONLY{#first-para} | SET-TEXT-CONTENT{'Some is > others < & you never know which'}";
+        "EXTRACT-ELEMENT{#first-para} | SET-TEXT-CONTENT{'Some is > others < & you never know which'}";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
     let mut output = Vec::new();

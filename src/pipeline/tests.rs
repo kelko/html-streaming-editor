@@ -21,7 +21,7 @@ const TEST_HTML_DOCUMENT: &str = r#"<html>
 
 #[test]
 fn run_on_single_only() {
-    let pipeline = Pipeline::new(vec![Command::Only(CssSelectorList::new(vec![
+    let pipeline = Pipeline::new(vec![Command::ExtractElement(CssSelectorList::new(vec![
         CssSelectorPath::new(
             CssSelector::for_element("h1"),
             vec![CssSelectorStep::adjacent_sibling(CssSelector::for_element(
@@ -47,7 +47,7 @@ fn run_on_single_only() {
 
 #[test]
 fn run_on_single_without() {
-    let pipeline = Pipeline::new(vec![Command::Without(CssSelectorList::new(vec![
+    let pipeline = Pipeline::new(vec![Command::RemoveElement(CssSelectorList::new(vec![
         CssSelectorPath::new(
             CssSelector::for_element("h1"),
             vec![CssSelectorStep::adjacent_sibling(CssSelector::for_element(

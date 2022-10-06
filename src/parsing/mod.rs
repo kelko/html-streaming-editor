@@ -84,10 +84,10 @@ parser! {
             = "\"" s:$([^'"']+) "\"" { s }
             / "'" s:$([^'\'']+) "'" { s }
             / "?" s:$([^'?']+) "?" { s }
-        rule only_command() -> Command<'input>
-            = ("ONLY" / "SELECT") "{" whitespace()?  oc:css_selector_list() whitespace()? "}" { Command::Only(oc) }
-        rule without_command() -> Command<'input>
-            = ("WITHOUT" / "FILTER") "{" whitespace()? oc:css_selector_list() whitespace()? "}" { Command::Without(oc) }
+        rule extract_element_command() -> Command<'input>
+            = ("EXTRACT-ELEMENT" / "ONLY") "{" whitespace()?  oc:css_selector_list() whitespace()? "}" { Command::ExtractElement(oc) }
+        rule remove_element_command() -> Command<'input>
+            = ("REMOVE-ELEMENT" / "WITHOUT") "{" whitespace()? oc:css_selector_list() whitespace()? "}" { Command::RemoveElement(oc) }
         rule for_each_command() -> Command<'input>
             = "FOR" "-EACH"? "{" whitespace()? oc:css_selector_list() whitespace()? iterate_marker() whitespace()? sp:pipeline() whitespace()?  "}" { Command::ForEach(oc, sp) }
         rule replace_command() -> Command<'input>
@@ -113,8 +113,8 @@ parser! {
         rule from_replaced_command() -> Command<'input>
             = ("FROM-REPLACED"/"KEEP") "{" whitespace()? oc:css_selector_list() whitespace()? "}" { Command::FromReplaced(oc) }
         pub(super) rule command() -> Command<'input>
-            = only_command()
-            / without_command()
+            = extract_element_command()
+            / remove_element_command()
             / for_each_command()
             / clear_attr_command()
             / clear_content_command()

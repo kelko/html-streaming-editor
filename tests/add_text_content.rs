@@ -17,7 +17,7 @@ const HTML_INPUT: &str = r#"<html>
 
 #[test]
 fn add_to_first_p_content() -> Result<(), StreamingEditorError> {
-    let command = "ONLY{#first-para} | ADD-TEXT-CONTENT{'... expanded by other text'}";
+    let command = "EXTRACT-ELEMENT{#first-para} | ADD-TEXT-CONTENT{'... expanded by other text'}";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
     let mut output = Vec::new();
@@ -36,7 +36,8 @@ fn add_to_first_p_content() -> Result<(), StreamingEditorError> {
 
 #[test]
 fn add_escape_needing_content() -> Result<(), StreamingEditorError> {
-    let command = "ONLY{#first-para} | ADD-TEXT-CONTENT{' is > others < & you never know which'}";
+    let command =
+        "EXTRACT-ELEMENT{#first-para} | ADD-TEXT-CONTENT{' is > others < & you never know which'}";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
     let mut output = Vec::new();

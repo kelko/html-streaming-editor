@@ -17,7 +17,7 @@ const HTML_INPUT: &str = r#"<html>
 
 #[test]
 fn add_simple_div_to_first_p_content() -> Result<(), StreamingEditorError> {
-    let command = "ONLY{#first-para} | ADD-ELEMENT{ CREATE-ELEMENT{div} }";
+    let command = "EXTRACT-ELEMENT{#first-para} | ADD-ELEMENT{ CREATE-ELEMENT{div} }";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
     let mut output = Vec::new();
@@ -36,7 +36,7 @@ fn add_simple_div_to_first_p_content() -> Result<(), StreamingEditorError> {
 
 #[test]
 fn add_two_divs_to_first_p_content() -> Result<(), StreamingEditorError> {
-    let command = "ONLY{#first-para} | ADD-ELEMENT{ CREATE-ELEMENT{div} } | ADD-ELEMENT{ CREATE-ELEMENT{div} }";
+    let command = "EXTRACT-ELEMENT{#first-para} | ADD-ELEMENT{ CREATE-ELEMENT{div} } | ADD-ELEMENT{ CREATE-ELEMENT{div} }";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
     let mut output = Vec::new();
@@ -55,7 +55,8 @@ fn add_two_divs_to_first_p_content() -> Result<(), StreamingEditorError> {
 
 #[test]
 fn add_div_with_attr_to_first_p_content() -> Result<(), StreamingEditorError> {
-    let command = "ONLY{#first-para} | ADD-ELEMENT{ CREATE-ELEMENT{div} | SET-ATTR{id ↤ 'new'} }";
+    let command =
+        "EXTRACT-ELEMENT{#first-para} | ADD-ELEMENT{ CREATE-ELEMENT{div} | SET-ATTR{id ↤ 'new'} }";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
     let mut output = Vec::new();

@@ -61,44 +61,44 @@ fn parse_value_questionmarked_cant_have_questionmarks() {
 }
 
 #[test]
-fn parse_single_only() {
+fn parse_single_extract_element() {
+    let parsed = super::grammar::command("EXTRACT-ELEMENT{a}");
+    assert_eq!(
+        parsed,
+        Ok(Command::ExtractElement(CssSelectorList::new(vec![
+            CssSelectorPath::single(CssSelector::for_element("a"))
+        ])))
+    );
+}
+
+#[test]
+fn parse_single_extract_element_alias_only() {
     let parsed = super::grammar::command("ONLY{a}");
     assert_eq!(
         parsed,
-        Ok(Command::Only(CssSelectorList::new(vec![
+        Ok(Command::ExtractElement(CssSelectorList::new(vec![
             CssSelectorPath::single(CssSelector::for_element("a"))
         ])))
     );
 }
 
 #[test]
-fn parse_single_select_alias() {
-    let parsed = super::grammar::command("SELECT{a}");
+fn parse_single_remove_element() {
+    let parsed = super::grammar::command("REMOVE-ELEMENT{a}");
     assert_eq!(
         parsed,
-        Ok(Command::Only(CssSelectorList::new(vec![
+        Ok(Command::RemoveElement(CssSelectorList::new(vec![
             CssSelectorPath::single(CssSelector::for_element("a"))
         ])))
     );
 }
 
 #[test]
-fn parse_single_without() {
+fn parse_single_remove_element_alias_without() {
     let parsed = super::grammar::command("WITHOUT{a}");
     assert_eq!(
         parsed,
-        Ok(Command::Without(CssSelectorList::new(vec![
-            CssSelectorPath::single(CssSelector::for_element("a"))
-        ])))
-    );
-}
-
-#[test]
-fn parse_single_filter_alias() {
-    let parsed = super::grammar::command("FILTER{a}");
-    assert_eq!(
-        parsed,
-        Ok(Command::Without(CssSelectorList::new(vec![
+        Ok(Command::RemoveElement(CssSelectorList::new(vec![
             CssSelectorPath::single(CssSelector::for_element("a"))
         ])))
     );
@@ -106,14 +106,14 @@ fn parse_single_filter_alias() {
 
 #[test]
 fn parse_two_grammar() {
-    let parsed = super::grammar::pipeline("ONLY{a} | WITHOUT{b}");
+    let parsed = super::grammar::pipeline("EXTRACT-ELEMENT{a} | REMOVE-ELEMENT{b}");
     assert_eq!(
         parsed,
         Ok(Pipeline::new(vec![
-            Command::Only(CssSelectorList::new(vec![CssSelectorPath::single(
+            Command::ExtractElement(CssSelectorList::new(vec![CssSelectorPath::single(
                 CssSelector::for_element("a")
             )])),
-            Command::Without(CssSelectorList::new(vec![CssSelectorPath::single(
+            Command::RemoveElement(CssSelectorList::new(vec![CssSelectorPath::single(
                 CssSelector::for_element("b")
             )])),
         ]))

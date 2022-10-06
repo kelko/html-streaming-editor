@@ -17,7 +17,7 @@ const HTML_INPUT: &str = r#"<html>
 
 #[test]
 fn add_to_first_p_content() -> Result<(), StreamingEditorError> {
-    let command = "ONLY{#first-para} | ADD-COMMENT{'followed by a comment'}";
+    let command = "EXTRACT-ELEMENT{#first-para} | ADD-COMMENT{'followed by a comment'}";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
     let mut output = Vec::new();
@@ -36,7 +36,7 @@ fn add_to_first_p_content() -> Result<(), StreamingEditorError> {
 
 #[test]
 fn add_to_ul() -> Result<(), StreamingEditorError> {
-    let command = "ONLY{ul} | ADD-COMMENT{'Foo'}";
+    let command = "EXTRACT-ELEMENT{ul} | ADD-COMMENT{'Foo'}";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
     let mut output = Vec::new();
@@ -61,7 +61,8 @@ fn add_to_ul() -> Result<(), StreamingEditorError> {
 
 #[test]
 fn add_double_dash_will_be_escaped() -> Result<(), StreamingEditorError> {
-    let command = "ONLY{#first-para} | ADD-COMMENT{'Actually -- is illegal in comments'}";
+    let command =
+        "EXTRACT-ELEMENT{#first-para} | ADD-COMMENT{'Actually -- is illegal in comments'}";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
     let mut output = Vec::new();

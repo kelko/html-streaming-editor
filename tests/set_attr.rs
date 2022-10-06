@@ -17,7 +17,7 @@ const HTML_INPUT: &str = r#"<html>
 
 #[test]
 fn overwrite_first_p_id() -> Result<(), StreamingEditorError> {
-    let command = "ONLY{#first-para} | SET-ATTR{id ↤ 'new-id'}";
+    let command = "EXTRACT-ELEMENT{#first-para} | SET-ATTR{id ↤ 'new-id'}";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
     let mut output = Vec::new();
@@ -36,7 +36,7 @@ fn overwrite_first_p_id() -> Result<(), StreamingEditorError> {
 
 #[test]
 fn add_attr_to_first_p() -> Result<(), StreamingEditorError> {
-    let command = r#"ONLY{#first-para} | SET-ATTR{data-test ↤ "some value"}"#;
+    let command = r#"EXTRACT-ELEMENT{#first-para} | SET-ATTR{data-test ↤ "some value"}"#;
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
     let mut output = Vec::new();
@@ -55,7 +55,7 @@ fn add_attr_to_first_p() -> Result<(), StreamingEditorError> {
 
 #[test]
 fn set_attr_with_double_quotes() -> Result<(), StreamingEditorError> {
-    let command = r#"ONLY{#first-para} | SET-ATTR{data-test ↤ 'some "value"'}"#;
+    let command = r#"EXTRACT-ELEMENT{#first-para} | SET-ATTR{data-test ↤ 'some "value"'}"#;
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
     let mut output = Vec::new();
@@ -76,7 +76,7 @@ fn set_attr_with_double_quotes() -> Result<(), StreamingEditorError> {
 
 #[test]
 fn set_attr_with_line_break() -> Result<(), StreamingEditorError> {
-    let command = "ONLY{#first-para} | SET-ATTR{data-test ↤ 'some \nvalue'}";
+    let command = "EXTRACT-ELEMENT{#first-para} | SET-ATTR{data-test ↤ 'some \nvalue'}";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
     let mut output = Vec::new();

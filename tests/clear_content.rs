@@ -17,7 +17,7 @@ const HTML_INPUT: &str = r#"<html>
 
 #[test]
 fn clear_first_p_content() -> Result<(), StreamingEditorError> {
-    let command = "ONLY{#first-para} | CLEAR-CONTENT";
+    let command = "EXTRACT-ELEMENT{#first-para} | CLEAR-CONTENT";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
     let mut output = Vec::new();
