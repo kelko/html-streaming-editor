@@ -49,7 +49,7 @@ Currently supported:
 
 - `EXTRACT-ELEMENT`: remove everything not matching the CSS selector (alias: `ONLY`)
 - `REMOVE-ELEMENT`: remove everything matching the CSS selector (alias: `WITHOUT`)
-- `FOR-EACH`: run a sub-pipeline on all sub-elements matching a CSS selector but return the previously selected elements (alias: `FOR`)
+- `FOR-EACH`: run a sub-pipeline on all sub-elements matching a CSS selector but return the previously selected elements (alias: `WITH`)
 - `CLEAR-ATTR`: removes a given attribute from the previously selected elements  
 - `CLEAR-CONTENT`: clears all children from the previously selected elements
 - `SET-ATTR`: Sets a given attribute to a specified value
@@ -108,8 +108,8 @@ hse -i index.html 'ONLY{main, .main} | WITHOUT{script}'
 hse -i index.html 'REPLACE{.placeholder ↤ SOURCE{"other.html"} | ONLY{div.content} }'
 
 # add a new <meta name="version" value=""> element to <head> with git version info 
-hse -i index.html "FOR{head ↦ ADD-ELEMENT{ NEW{meta} | SET-ATTR{name ↤ 'version'} | SET-ATTR{content ↤ '`git describe --tags`'}  } }"
+hse -i index.html "WITH{head ↦ ADD-ELEMENT{ NEW{meta} | SET-ATTR{name ↤ 'version'} | SET-ATTR{content ↤ '`git describe --tags`'}  } }"
 
 # add a new comment to <body> with git version info
-hse -i index.html "FOR{body ↦ ADD-COMMENT{'`git describe --tags`'}}"
+hse -i index.html "WITH{body ↦ ADD-COMMENT{'`git describe --tags`'}}"
 ```

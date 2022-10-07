@@ -89,7 +89,7 @@ parser! {
         rule remove_element_command() -> Command<'input>
             = ("REMOVE-ELEMENT" / "WITHOUT") "{" whitespace()? oc:css_selector_list() whitespace()? "}" { Command::RemoveElement(oc) }
         rule for_each_command() -> Command<'input>
-            = "FOR" "-EACH"? "{" whitespace()? oc:css_selector_list() whitespace()? iterate_marker() whitespace()? sp:pipeline() whitespace()?  "}" { Command::ForEach(oc, sp) }
+            = ("FOR-EACH"/"WITH") "{" whitespace()? oc:css_selector_list() whitespace()? iterate_marker() whitespace()? sp:pipeline() whitespace()?  "}" { Command::ForEach(oc, sp) }
         rule replace_command() -> Command<'input>
             = ("REPLACE"/"MAP") "{" whitespace()? oc:css_selector_list() whitespace()? assign_marker() whitespace()? sp:element_subselect_or_creating_pipeline() whitespace()? "}" { Command::Replace(oc, sp)}
         rule clear_attr_command() -> Command<'input>
