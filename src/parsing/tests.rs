@@ -1,4 +1,15 @@
-use crate::{Command, CssSelector, CssSelectorList, CssSelectorPath, Pipeline, ValueSource};
+use crate::element_creating::{ElementCreatingCommand, ElementCreatingPipeline};
+use crate::element_processing::{ElementProcessingCommand, ElementProcessingPipeline};
+use crate::string_creating::{
+    ElementSelectingCommand, StringValueCreatingPipeline, ValueExtractingCommand,
+};
+use crate::{CssSelector, CssSelectorList, CssSelectorPath, ValueSource};
+
+const EXEMPLARY_SUB_PIPELINE_DEFINITION: &str = "USE-ELEMENT | GET-ATTR{data-test}";
+const EXEMPLARY_SUB_PIPELINE_MODEL: StringValueCreatingPipeline = StringValueCreatingPipeline::new(
+    ElementSelectingCommand::UseElement,
+    ValueExtractingCommand::GetAttribute("data-test"),
+);
 
 #[test]
 fn parse_value_simple_doublequotes() {
@@ -62,45 +73,45 @@ fn parse_value_questionmarked_cant_have_questionmarks() {
 
 #[test]
 fn parse_single_extract_element() {
-    let parsed = super::grammar::command("EXTRACT-ELEMENT{a}");
+    let parsed = super::grammar::element_processing_command("EXTRACT-ELEMENT{a}");
     assert_eq!(
         parsed,
-        Ok(Command::ExtractElement(CssSelectorList::new(vec![
-            CssSelectorPath::single(CssSelector::for_element("a"))
-        ])))
+        Ok(ElementProcessingCommand::ExtractElement(
+            CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_element("a"))])
+        ))
     );
 }
 
 #[test]
 fn parse_single_extract_element_alias_only() {
-    let parsed = super::grammar::command("ONLY{a}");
+    let parsed = super::grammar::element_processing_command("ONLY{a}");
     assert_eq!(
         parsed,
-        Ok(Command::ExtractElement(CssSelectorList::new(vec![
-            CssSelectorPath::single(CssSelector::for_element("a"))
-        ])))
+        Ok(ElementProcessingCommand::ExtractElement(
+            CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_element("a"))])
+        ))
     );
 }
 
 #[test]
 fn parse_single_remove_element() {
-    let parsed = super::grammar::command("REMOVE-ELEMENT{a}");
+    let parsed = super::grammar::element_processing_command("REMOVE-ELEMENT{a}");
     assert_eq!(
         parsed,
-        Ok(Command::RemoveElement(CssSelectorList::new(vec![
-            CssSelectorPath::single(CssSelector::for_element("a"))
-        ])))
+        Ok(ElementProcessingCommand::RemoveElement(
+            CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_element("a"))])
+        ))
     );
 }
 
 #[test]
 fn parse_single_remove_element_alias_without() {
-    let parsed = super::grammar::command("WITHOUT{a}");
+    let parsed = super::grammar::element_processing_command("WITHOUT{a}");
     assert_eq!(
         parsed,
-        Ok(Command::RemoveElement(CssSelectorList::new(vec![
-            CssSelectorPath::single(CssSelector::for_element("a"))
-        ])))
+        Ok(ElementProcessingCommand::RemoveElement(
+            CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_element("a"))])
+        ))
     );
 }
 
@@ -109,198 +120,255 @@ fn parse_two_grammar() {
     let parsed = super::grammar::pipeline("EXTRACT-ELEMENT{a} | REMOVE-ELEMENT{b}");
     assert_eq!(
         parsed,
-        Ok(Pipeline::new(vec![
-            Command::ExtractElement(CssSelectorList::new(vec![CssSelectorPath::single(
-                CssSelector::for_element("a")
-            )])),
-            Command::RemoveElement(CssSelectorList::new(vec![CssSelectorPath::single(
-                CssSelector::for_element("b")
-            )])),
+        Ok(ElementProcessingPipeline::new(vec![
+            ElementProcessingCommand::ExtractElement(CssSelectorList::new(vec![
+                CssSelectorPath::single(CssSelector::for_element("a"))
+            ])),
+            ElementProcessingCommand::RemoveElement(CssSelectorList::new(vec![
+                CssSelectorPath::single(CssSelector::for_element("b"))
+            ])),
         ]))
     );
 }
 
 #[test]
 fn parse_single_clear_attr() {
-    let parsed = super::grammar::command("CLEAR-ATTR{a}");
-    assert_eq!(parsed, Ok(Command::ClearAttribute(String::from("a"))));
+    let parsed = super::grammar::element_processing_command("CLEAR-ATTR{a}");
+    assert_eq!(parsed, Ok(ElementProcessingCommand::ClearAttribute("a")));
 }
 
 #[test]
 fn parse_single_clear_content() {
-    let parsed = super::grammar::command("CLEAR-CONTENT");
-    assert_eq!(parsed, Ok(Command::ClearContent));
+    let parsed = super::grammar::element_processing_command("CLEAR-CONTENT");
+    assert_eq!(parsed, Ok(ElementProcessingCommand::ClearContent));
 }
 
 #[test]
 fn parse_single_set_attr_by_string() {
-    let parsed = super::grammar::command("SET-ATTR{data-test ↤ 'some text'}");
+    let parsed = super::grammar::element_processing_command("SET-ATTR{data-test ↤ 'some text'}");
     assert_eq!(
         parsed,
-        Ok(Command::SetAttribute(
-            String::from("data-test"),
-            ValueSource::StringValue(String::from("some text"))
+        Ok(ElementProcessingCommand::SetAttribute(
+            "data-test",
+            ValueSource::StringValue("some text")
         ))
     );
 }
 
 #[test]
 fn parse_single_set_attr_by_string_with_ascii_arrow() {
-    let parsed = super::grammar::command("SET-ATTR{data-test <= 'some text'}");
+    let parsed = super::grammar::element_processing_command("SET-ATTR{data-test <= 'some text'}");
     assert_eq!(
         parsed,
-        Ok(Command::SetAttribute(
-            String::from("data-test"),
-            ValueSource::StringValue(String::from("some text"))
+        Ok(ElementProcessingCommand::SetAttribute(
+            "data-test",
+            ValueSource::StringValue("some text")
+        ))
+    );
+}
+
+#[test]
+fn parse_single_set_attr_by_sub_pipeline() {
+    let constructed_pipeline = format!(
+        "SET-ATTR{{data-test ↤ {} }}",
+        EXEMPLARY_SUB_PIPELINE_DEFINITION
+    );
+    let parsed = super::grammar::element_processing_command(&constructed_pipeline);
+
+    assert_eq!(
+        parsed,
+        Ok(ElementProcessingCommand::SetAttribute(
+            "data-test",
+            ValueSource::SubPipeline(EXEMPLARY_SUB_PIPELINE_MODEL.clone())
         ))
     );
 }
 
 #[test]
 fn parse_single_set_text_content_by_string() {
-    let parsed = super::grammar::command("SET-TEXT-CONTENT{'some text'}");
+    let parsed = super::grammar::element_processing_command("SET-TEXT-CONTENT{'some text'}");
     assert_eq!(
         parsed,
-        Ok(Command::SetTextContent(ValueSource::StringValue(
-            String::from("some text")
-        )))
+        Ok(ElementProcessingCommand::SetTextContent(
+            ValueSource::StringValue("some text")
+        ))
     );
 }
 
 #[test]
 fn parse_single_set_text_content_by_string_with_arrow() {
-    let parsed = super::grammar::command("SET-TEXT-CONTENT{ ↤ 'some text'}");
+    let parsed = super::grammar::element_processing_command("SET-TEXT-CONTENT{ ↤ 'some text'}");
     assert_eq!(
         parsed,
-        Ok(Command::SetTextContent(ValueSource::StringValue(
-            String::from("some text")
-        )))
+        Ok(ElementProcessingCommand::SetTextContent(
+            ValueSource::StringValue("some text")
+        ))
+    );
+}
+
+#[test]
+fn parse_single_set_text_content_by_sub_pipeline() {
+    let constructed_pipeline = format!(
+        "SET-TEXT-CONTENT{{ {} }}",
+        EXEMPLARY_SUB_PIPELINE_DEFINITION
+    );
+    let parsed = super::grammar::element_processing_command(&constructed_pipeline);
+
+    assert_eq!(
+        parsed,
+        Ok(ElementProcessingCommand::SetTextContent(
+            ValueSource::SubPipeline(EXEMPLARY_SUB_PIPELINE_MODEL.clone())
+        ))
     );
 }
 
 #[test]
 fn parse_single_set_text_content_by_string_with_ascii_arrow() {
-    let parsed = super::grammar::command("SET-TEXT-CONTENT{ <= 'some text'}");
+    let parsed = super::grammar::element_processing_command("SET-TEXT-CONTENT{ <= 'some text'}");
     assert_eq!(
         parsed,
-        Ok(Command::SetTextContent(ValueSource::StringValue(
-            String::from("some text")
-        )))
+        Ok(ElementProcessingCommand::SetTextContent(
+            ValueSource::StringValue("some text")
+        ))
     );
 }
 
 #[test]
 fn parse_single_add_text_content_by_string() {
-    let parsed = super::grammar::command("ADD-TEXT-CONTENT{'some text'}");
+    let parsed = super::grammar::element_processing_command("ADD-TEXT-CONTENT{'some text'}");
     assert_eq!(
         parsed,
-        Ok(Command::AddTextContent(ValueSource::StringValue(
-            String::from("some text")
-        )))
+        Ok(ElementProcessingCommand::AddTextContent(
+            ValueSource::StringValue("some text")
+        ))
     );
 }
 
 #[test]
 fn parse_single_add_text_content_by_string_with_arrow() {
-    let parsed = super::grammar::command("ADD-TEXT-CONTENT{ ↤ 'some text'}");
+    let parsed = super::grammar::element_processing_command("ADD-TEXT-CONTENT{ ↤ 'some text'}");
     assert_eq!(
         parsed,
-        Ok(Command::AddTextContent(ValueSource::StringValue(
-            String::from("some text")
-        )))
+        Ok(ElementProcessingCommand::AddTextContent(
+            ValueSource::StringValue("some text")
+        ))
+    );
+}
+
+#[test]
+fn parse_single_add_text_content_by_sub_pipeline() {
+    let constructed_pipeline = format!(
+        "ADD-TEXT-CONTENT{{ {} }}",
+        EXEMPLARY_SUB_PIPELINE_DEFINITION
+    );
+    let parsed = super::grammar::element_processing_command(&constructed_pipeline);
+
+    assert_eq!(
+        parsed,
+        Ok(ElementProcessingCommand::AddTextContent(
+            ValueSource::SubPipeline(EXEMPLARY_SUB_PIPELINE_MODEL.clone())
+        ))
     );
 }
 
 #[test]
 fn parse_single_add_text_content_by_string_with_ascii_arrow() {
-    let parsed = super::grammar::command("ADD-TEXT-CONTENT{ <= 'some text'}");
+    let parsed = super::grammar::element_processing_command("ADD-TEXT-CONTENT{ <= 'some text'}");
     assert_eq!(
         parsed,
-        Ok(Command::AddTextContent(ValueSource::StringValue(
-            String::from("some text")
-        )))
+        Ok(ElementProcessingCommand::AddTextContent(
+            ValueSource::StringValue("some text")
+        ))
     );
 }
 
 #[test]
 fn parse_single_add_comment_by_string() {
-    let parsed = super::grammar::command("ADD-COMMENT{'some text'}");
+    let parsed = super::grammar::element_processing_command("ADD-COMMENT{'some text'}");
     assert_eq!(
         parsed,
-        Ok(Command::AddComment(ValueSource::StringValue(String::from(
-            "some text"
-        ))))
+        Ok(ElementProcessingCommand::AddComment(
+            ValueSource::StringValue("some text")
+        ))
     );
 }
 
 #[test]
 fn parse_single_add_comment_by_string_with_arrow() {
-    let parsed = super::grammar::command("ADD-COMMENT{ ↤ 'some text'}");
+    let parsed = super::grammar::element_processing_command("ADD-COMMENT{ ↤ 'some text'}");
     assert_eq!(
         parsed,
-        Ok(Command::AddComment(ValueSource::StringValue(String::from(
-            "some text"
-        ))))
+        Ok(ElementProcessingCommand::AddComment(
+            ValueSource::StringValue("some text")
+        ))
     );
 }
 
 #[test]
 fn parse_single_add_comment_by_string_with_ascii_arrow() {
-    let parsed = super::grammar::command("ADD-COMMENT{ <= 'some text'}");
+    let parsed = super::grammar::element_processing_command("ADD-COMMENT{ <= 'some text'}");
     assert_eq!(
         parsed,
-        Ok(Command::AddComment(ValueSource::StringValue(String::from(
-            "some text"
-        ))))
+        Ok(ElementProcessingCommand::AddComment(
+            ValueSource::StringValue("some text")
+        ))
     );
 }
 
+//noinspection DuplicatedCode
 #[test]
-fn parse_single_for_using_set_attr() {
-    let parsed = super::grammar::command("FOR{li ↦ SET-ATTR{data-test ↤ 'some text'}}");
+fn parse_single_for_each_alias_with_using_set_attr() {
+    let parsed =
+        super::grammar::element_processing_command("WITH{li ↦ SET-ATTR{data-test ↤ 'some text'}}");
     assert_eq!(
         parsed,
-        Ok(Command::ForEach(
+        Ok(ElementProcessingCommand::ForEach(
             CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_element(
                 "li"
             ))]),
-            Pipeline::new(vec![Command::SetAttribute(
-                String::from("data-test"),
-                ValueSource::StringValue(String::from("some text"))
+            ElementProcessingPipeline::new(vec![ElementProcessingCommand::SetAttribute(
+                "data-test",
+                ValueSource::StringValue("some text")
             )]),
         ))
     );
 }
 
+//noinspection DuplicatedCode
 #[test]
 fn parse_single_for_each_using_set_attr() {
-    let parsed = super::grammar::command("FOR-EACH{li ↦ SET-ATTR{data-test ↤ 'some text'}}");
+    let parsed = super::grammar::element_processing_command(
+        "FOR-EACH{li ↦ SET-ATTR{data-test ↤ 'some text'}}",
+    );
     assert_eq!(
         parsed,
-        Ok(Command::ForEach(
+        Ok(ElementProcessingCommand::ForEach(
             CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_element(
                 "li"
             ))]),
-            Pipeline::new(vec![Command::SetAttribute(
-                String::from("data-test"),
-                ValueSource::StringValue(String::from("some text"))
+            ElementProcessingPipeline::new(vec![ElementProcessingCommand::SetAttribute(
+                "data-test",
+                ValueSource::StringValue("some text")
             )]),
         ))
     );
 }
 
+//noinspection DuplicatedCode
 #[test]
 fn parse_single_for_each_with_ascii_arrow_using_set_attr() {
-    let parsed = super::grammar::command("FOR-EACH{li => SET-ATTR{data-test ↤ 'some text'}}");
+    let parsed = super::grammar::element_processing_command(
+        "FOR-EACH{li => SET-ATTR{data-test ↤ 'some text'}}",
+    );
     assert_eq!(
         parsed,
-        Ok(Command::ForEach(
+        Ok(ElementProcessingCommand::ForEach(
             CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_element(
                 "li"
             ))]),
-            Pipeline::new(vec![Command::SetAttribute(
-                String::from("data-test"),
-                ValueSource::StringValue(String::from("some text"))
+            ElementProcessingPipeline::new(vec![ElementProcessingCommand::SetAttribute(
+                "data-test",
+                ValueSource::StringValue("some text")
             )]),
         ))
     );
@@ -308,81 +376,90 @@ fn parse_single_for_each_with_ascii_arrow_using_set_attr() {
 
 #[test]
 fn parse_single_add_element_using_new_alias() {
-    let parsed = super::grammar::command("ADD-ELEMENT{NEW{div}}");
+    let parsed = super::grammar::element_processing_command("ADD-ELEMENT{NEW{div}}");
     assert_eq!(
         parsed,
-        Ok(Command::AddElement(Pipeline::new(vec![
-            Command::CreateElement(String::from("div"))
-        ])))
+        Ok(ElementProcessingCommand::AddElement(
+            ElementCreatingPipeline::new(ElementCreatingCommand::CreateElement("div"), None)
+        ))
     );
 }
 
 #[test]
 fn parse_single_add_element_using_create() {
-    let parsed = super::grammar::command("ADD-ELEMENT{CREATE-ELEMENT{div}}");
+    let parsed = super::grammar::element_processing_command("ADD-ELEMENT{CREATE-ELEMENT{div}}");
     assert_eq!(
         parsed,
-        Ok(Command::AddElement(Pipeline::new(vec![
-            Command::CreateElement(String::from("div"))
-        ])))
+        Ok(ElementProcessingCommand::AddElement(
+            ElementCreatingPipeline::new(ElementCreatingCommand::CreateElement("div"), None)
+        ))
     );
 }
 
 #[test]
 fn parse_single_add_element_using_from_file() {
-    let parsed = super::grammar::command("ADD-ELEMENT{FROM-FILE{'tests/source.html'}}");
+    let parsed =
+        super::grammar::element_processing_command("ADD-ELEMENT{FROM-FILE{'tests/source.html'}}");
     assert_eq!(
         parsed,
-        Ok(Command::AddElement(Pipeline::new(vec![Command::FromFile(
-            String::from("tests/source.html")
-        )])))
+        Ok(ElementProcessingCommand::AddElement(
+            ElementCreatingPipeline::new(
+                ElementCreatingCommand::FromFile("tests/source.html"),
+                None
+            )
+        ))
     );
 }
 
 #[test]
 fn parse_single_add_element_using_source() {
-    let parsed = super::grammar::command("ADD-ELEMENT{SOURCE{'tests/source.html'}}");
+    let parsed =
+        super::grammar::element_processing_command("ADD-ELEMENT{SOURCE{'tests/source.html'}}");
     assert_eq!(
         parsed,
-        Ok(Command::AddElement(Pipeline::new(vec![Command::FromFile(
-            String::from("tests/source.html")
-        )])))
+        Ok(ElementProcessingCommand::AddElement(
+            ElementCreatingPipeline::new(
+                ElementCreatingCommand::FromFile("tests/source.html"),
+                None
+            )
+        ))
     );
 }
 
 #[test]
 fn parse_single_add_element_with_arrow_using_create() {
-    let parsed = super::grammar::command("ADD-ELEMENT{ ↤ CREATE-ELEMENT{div}}");
+    let parsed = super::grammar::element_processing_command("ADD-ELEMENT{ ↤ CREATE-ELEMENT{div}}");
     assert_eq!(
         parsed,
-        Ok(Command::AddElement(Pipeline::new(vec![
-            Command::CreateElement(String::from("div"))
-        ])))
+        Ok(ElementProcessingCommand::AddElement(
+            ElementCreatingPipeline::new(ElementCreatingCommand::CreateElement("div"), None)
+        ))
     );
 }
 
 #[test]
 fn parse_single_add_element_with_ascii_arrow_using_create() {
-    let parsed = super::grammar::command("ADD-ELEMENT{ <= CREATE-ELEMENT{div}}");
+    let parsed = super::grammar::element_processing_command("ADD-ELEMENT{ <= CREATE-ELEMENT{div}}");
     assert_eq!(
         parsed,
-        Ok(Command::AddElement(Pipeline::new(vec![
-            Command::CreateElement(String::from("div"))
-        ])))
+        Ok(ElementProcessingCommand::AddElement(
+            ElementCreatingPipeline::new(ElementCreatingCommand::CreateElement("div"), None)
+        ))
     );
 }
 
 //noinspection DuplicatedCode
 #[test]
 fn parse_single_replace_using_create() {
-    let parsed = super::grammar::command("REPLACE{.replace-me ↤ CREATE-ELEMENT{p} }");
+    let parsed =
+        super::grammar::element_processing_command("REPLACE{.replace-me ↤ CREATE-ELEMENT{p} }");
     assert_eq!(
         parsed,
-        Ok(Command::Replace(
+        Ok(ElementProcessingCommand::Replace(
             CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_class(
                 "replace-me"
             ))]),
-            Pipeline::new(vec![Command::CreateElement(String::from("p"))])
+            ElementCreatingPipeline::new(ElementCreatingCommand::CreateElement("p"), None)
         )),
     );
 }
@@ -390,14 +467,15 @@ fn parse_single_replace_using_create() {
 //noinspection DuplicatedCode
 #[test]
 fn parse_single_replace_with_ascii_arrow_using_create() {
-    let parsed = super::grammar::command("REPLACE{.replace-me <= CREATE-ELEMENT{p} }");
+    let parsed =
+        super::grammar::element_processing_command("REPLACE{.replace-me <= CREATE-ELEMENT{p} }");
     assert_eq!(
         parsed,
-        Ok(Command::Replace(
+        Ok(ElementProcessingCommand::Replace(
             CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_class(
                 "replace-me"
             ))]),
-            Pipeline::new(vec![Command::CreateElement(String::from("p"))])
+            ElementCreatingPipeline::new(ElementCreatingCommand::CreateElement("p"), None)
         )),
     );
 }
@@ -405,16 +483,20 @@ fn parse_single_replace_with_ascii_arrow_using_create() {
 //noinspection DuplicatedCode
 #[test]
 fn parse_single_replace_using_from_replaced() {
-    let parsed = super::grammar::command("REPLACE{.replace-me ↤ FROM-REPLACED{p} }");
+    let parsed =
+        super::grammar::element_processing_command("REPLACE{.replace-me ↤ FROM-REPLACED{p} }");
     assert_eq!(
         parsed,
-        Ok(Command::Replace(
+        Ok(ElementProcessingCommand::Replace(
             CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_class(
                 "replace-me"
             ))]),
-            Pipeline::new(vec![Command::FromReplaced(CssSelectorList::new(vec![
-                CssSelectorPath::single(CssSelector::for_element("p"))
-            ]))])
+            ElementCreatingPipeline::new(
+                ElementCreatingCommand::FromReplaced(CssSelectorList::new(vec![
+                    CssSelectorPath::single(CssSelector::for_element("p"))
+                ])),
+                None
+            )
         )),
     );
 }
@@ -422,16 +504,89 @@ fn parse_single_replace_using_from_replaced() {
 //noinspection DuplicatedCode
 #[test]
 fn parse_single_replace_using_from_replaced_alias_keep() {
-    let parsed = super::grammar::command("REPLACE{.replace-me ↤ KEEP{p} }");
+    let parsed = super::grammar::element_processing_command("REPLACE{.replace-me ↤ KEEP{p} }");
     assert_eq!(
         parsed,
-        Ok(Command::Replace(
+        Ok(ElementProcessingCommand::Replace(
             CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_class(
                 "replace-me"
             ))]),
-            Pipeline::new(vec![Command::FromReplaced(CssSelectorList::new(vec![
-                CssSelectorPath::single(CssSelector::for_element("p"))
-            ]))])
+            ElementCreatingPipeline::new(
+                ElementCreatingCommand::FromReplaced(CssSelectorList::new(vec![
+                    CssSelectorPath::single(CssSelector::for_element("p"))
+                ])),
+                None
+            )
+        )),
+    );
+}
+
+//noinspection DuplicatedCode
+#[test]
+fn parse_string_creating_pipeline_use_element_get_attr() {
+    let parsed = super::grammar::string_creating_pipeline("USE-ELEMENT | GET-ATTR{data-test}");
+    assert_eq!(
+        parsed,
+        Ok(StringValueCreatingPipeline::new(
+            ElementSelectingCommand::UseElement,
+            ValueExtractingCommand::GetAttribute("data-test"),
+        )),
+    );
+}
+
+//noinspection DuplicatedCode
+#[test]
+fn parse_string_creating_pipeline_use_parent_get_attr() {
+    let parsed = super::grammar::string_creating_pipeline("USE-PARENT | GET-ATTR{data-test}");
+    assert_eq!(
+        parsed,
+        Ok(StringValueCreatingPipeline::new(
+            ElementSelectingCommand::UseParent,
+            ValueExtractingCommand::GetAttribute("data-test"),
+        )),
+    );
+}
+
+//noinspection DuplicatedCode
+#[test]
+fn parse_string_creating_pipeline_query_parent_get_attr() {
+    let parsed =
+        super::grammar::string_creating_pipeline("QUERY-PARENT{div} | GET-ATTR{data-test}");
+    assert_eq!(
+        parsed,
+        Ok(StringValueCreatingPipeline::new(
+            ElementSelectingCommand::QueryParent(CssSelectorList::new(vec![
+                CssSelectorPath::single(CssSelector::for_element("div"))
+            ])),
+            ValueExtractingCommand::GetAttribute("data-test"),
+        )),
+    );
+}
+
+//noinspection DuplicatedCode
+#[test]
+fn parse_string_creating_pipeline_query_root_get_attr() {
+    let parsed = super::grammar::string_creating_pipeline("QUERY-ROOT{div} | GET-ATTR{data-test}");
+    assert_eq!(
+        parsed,
+        Ok(StringValueCreatingPipeline::new(
+            ElementSelectingCommand::QueryRoot(CssSelectorList::new(vec![
+                CssSelectorPath::single(CssSelector::for_element("div"))
+            ])),
+            ValueExtractingCommand::GetAttribute("data-test"),
+        )),
+    );
+}
+
+//noinspection DuplicatedCode
+#[test]
+fn parse_string_creating_pipeline_use_element_get_text_content() {
+    let parsed = super::grammar::string_creating_pipeline("USE-ELEMENT | GET-TEXT-CONTENT");
+    assert_eq!(
+        parsed,
+        Ok(StringValueCreatingPipeline::new(
+            ElementSelectingCommand::UseElement,
+            ValueExtractingCommand::GetTextContent
         )),
     );
 }

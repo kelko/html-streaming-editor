@@ -1,7 +1,10 @@
+use crate::element_creating::{ElementCreatingCommand, ElementCreatingPipeline};
 use crate::html::HtmlRenderable;
+use crate::string_creating::{ElementSelectingCommand, ValueExtractingCommand};
 use crate::{
-    Command, CssSelector, CssSelectorList, CssSelectorPath, CssSelectorStep, HtmlContent, Pipeline,
-    ValueSource,
+    element_processing::{command::ElementProcessingCommand, pipeline::ElementProcessingPipeline},
+    CssSelector, CssSelectorList, CssSelectorPath, CssSelectorStep, HtmlContent,
+    StringValueCreatingPipeline, ValueSource,
 };
 
 const TEST_HTML_DOCUMENT: &str = r#"<html>
@@ -21,14 +24,14 @@ const TEST_HTML_DOCUMENT: &str = r#"<html>
 
 #[test]
 fn run_on_single_only() {
-    let pipeline = Pipeline::new(vec![Command::ExtractElement(CssSelectorList::new(vec![
-        CssSelectorPath::new(
+    let pipeline = ElementProcessingPipeline::new(vec![ElementProcessingCommand::ExtractElement(
+        CssSelectorList::new(vec![CssSelectorPath::new(
             CssSelector::for_element("h1"),
             vec![CssSelectorStep::adjacent_sibling(CssSelector::for_element(
                 "p",
             ))],
-        ),
-    ]))]);
+        )]),
+    )]);
 
     let dom = tl::parse(TEST_HTML_DOCUMENT, tl::ParserOptions::default()).unwrap();
     let starting_elements = HtmlContent::import(dom).unwrap();
@@ -47,14 +50,14 @@ fn run_on_single_only() {
 
 #[test]
 fn run_on_single_without() {
-    let pipeline = Pipeline::new(vec![Command::RemoveElement(CssSelectorList::new(vec![
-        CssSelectorPath::new(
+    let pipeline = ElementProcessingPipeline::new(vec![ElementProcessingCommand::RemoveElement(
+        CssSelectorList::new(vec![CssSelectorPath::new(
             CssSelector::for_element("h1"),
             vec![CssSelectorStep::adjacent_sibling(CssSelector::for_element(
                 "p",
             ))],
-        ),
-    ]))]);
+        )]),
+    )]);
 
     let dom = tl::parse(TEST_HTML_DOCUMENT, tl::ParserOptions::default()).unwrap();
     let starting_elements = HtmlContent::import(dom).unwrap();
@@ -85,7 +88,8 @@ fn run_on_single_without() {
 
 #[test]
 fn run_on_single_clear_attr() {
-    let pipeline = Pipeline::new(vec![Command::ClearAttribute(String::from("data-test"))]);
+    let pipeline =
+        ElementProcessingPipeline::new(vec![ElementProcessingCommand::ClearAttribute("data-test")]);
 
     let dom = tl::parse(
         r#"<div data-test="foo" class="bar">Some Content</div>"#,
@@ -108,7 +112,7 @@ fn run_on_single_clear_attr() {
 
 #[test]
 fn run_on_single_clear_content() {
-    let pipeline = Pipeline::new(vec![Command::ClearContent]);
+    let pipeline = ElementProcessingPipeline::new(vec![ElementProcessingCommand::ClearContent]);
 
     let dom = tl::parse(
         r#"<div data-test="foo" class="bar">Some Content</div>"#,
@@ -131,9 +135,9 @@ fn run_on_single_clear_content() {
 
 #[test]
 fn run_on_single_set_attr_from_string_over_existing_attr() {
-    let pipeline = Pipeline::new(vec![Command::SetAttribute(
-        String::from("data-test"),
-        ValueSource::StringValue(String::from("some text")),
+    let pipeline = ElementProcessingPipeline::new(vec![ElementProcessingCommand::SetAttribute(
+        "data-test",
+        ValueSource::StringValue("some text"),
     )]);
 
     let dom = tl::parse(
@@ -157,9 +161,9 @@ fn run_on_single_set_attr_from_string_over_existing_attr() {
 
 #[test]
 fn run_on_single_set_attr_from_string_as_new_attr() {
-    let pipeline = Pipeline::new(vec![Command::SetAttribute(
-        String::from("data-fubar"),
-        ValueSource::StringValue(String::from("some text")),
+    let pipeline = ElementProcessingPipeline::new(vec![ElementProcessingCommand::SetAttribute(
+        "data-fubar",
+        ValueSource::StringValue("some text"),
     )]);
 
     let dom = tl::parse(
@@ -184,10 +188,39 @@ fn run_on_single_set_attr_from_string_as_new_attr() {
 }
 
 #[test]
+fn run_on_single_set_attr_from_other_attr_as_new_attr() {
+    let pipeline = ElementProcessingPipeline::new(vec![ElementProcessingCommand::SetAttribute(
+        "data-fubar",
+        ValueSource::SubPipeline(StringValueCreatingPipeline::new(
+            ElementSelectingCommand::UseElement,
+            ValueExtractingCommand::GetAttribute("data-test"),
+        )),
+    )]);
+
+    let dom = tl::parse(
+        r#"<div data-test="foo" class="bar">Some Content</div>"#,
+        tl::ParserOptions::default(),
+    )
+    .unwrap();
+    let starting_elements = HtmlContent::import(dom).unwrap();
+
+    let mut result = pipeline
+        .run_on(vec![rctree::Node::clone(&starting_elements)])
+        .unwrap();
+
+    assert_eq!(result.len(), 1);
+    let first_result = result.pop().unwrap();
+    assert_eq!(
+        first_result.outer_html(),
+        String::from(r#"<div class="bar" data-fubar="foo" data-test="foo">Some Content</div>"#)
+    );
+}
+
+#[test]
 fn run_on_single_set_text_content_from_string_for_tag() {
-    let pipeline = Pipeline::new(vec![Command::SetTextContent(ValueSource::StringValue(
-        String::from("Other Content"),
-    ))]);
+    let pipeline = ElementProcessingPipeline::new(vec![ElementProcessingCommand::SetTextContent(
+        ValueSource::StringValue("Other Content"),
+    )]);
 
     let dom = tl::parse(
         r#"<div data-test="foo" class="bar">Some Content</div>"#,
@@ -210,9 +243,9 @@ fn run_on_single_set_text_content_from_string_for_tag() {
 
 #[test]
 fn run_on_single_set_text_content_from_string_for_empty_tag() {
-    let pipeline = Pipeline::new(vec![Command::SetTextContent(ValueSource::StringValue(
-        String::from("Other Content"),
-    ))]);
+    let pipeline = ElementProcessingPipeline::new(vec![ElementProcessingCommand::SetTextContent(
+        ValueSource::StringValue("Other Content"),
+    )]);
 
     let dom = tl::parse(
         r#"<div data-test="foo" class="bar"></div>"#,
@@ -234,10 +267,38 @@ fn run_on_single_set_text_content_from_string_for_empty_tag() {
 }
 
 #[test]
+fn run_on_single_set_text_content_from_attr_for_empty_tag() {
+    let pipeline = ElementProcessingPipeline::new(vec![ElementProcessingCommand::SetTextContent(
+        ValueSource::SubPipeline(StringValueCreatingPipeline::new(
+            ElementSelectingCommand::UseElement,
+            ValueExtractingCommand::GetAttribute("data-test"),
+        )),
+    )]);
+
+    let dom = tl::parse(
+        r#"<div data-test="foo" class="bar"></div>"#,
+        tl::ParserOptions::default(),
+    )
+    .unwrap();
+    let starting_elements = HtmlContent::import(dom).unwrap();
+
+    let mut result = pipeline
+        .run_on(vec![rctree::Node::clone(&starting_elements)])
+        .unwrap();
+
+    assert_eq!(result.len(), 1);
+    let first_result = result.pop().unwrap();
+    assert_eq!(
+        first_result.outer_html(),
+        String::from(r#"<div class="bar" data-test="foo">foo</div>"#)
+    );
+}
+
+#[test]
 fn run_on_single_set_text_content_from_string_for_tag_with_multiple_children() {
-    let pipeline = Pipeline::new(vec![Command::SetTextContent(ValueSource::StringValue(
-        String::from("Other Content"),
-    ))]);
+    let pipeline = ElementProcessingPipeline::new(vec![ElementProcessingCommand::SetTextContent(
+        ValueSource::StringValue("Other Content"),
+    )]);
 
     let dom = tl::parse(
         r#"<div data-test="foo" class="bar">Some <em>special</em> Content. <!-- rightly so --></div>"#,
@@ -260,9 +321,9 @@ fn run_on_single_set_text_content_from_string_for_tag_with_multiple_children() {
 
 #[test]
 fn run_on_single_add_text_content_from_string_for_tag() {
-    let pipeline = Pipeline::new(vec![Command::AddTextContent(ValueSource::StringValue(
-        String::from("Other Content"),
-    ))]);
+    let pipeline = ElementProcessingPipeline::new(vec![ElementProcessingCommand::AddTextContent(
+        ValueSource::StringValue("Other Content"),
+    )]);
 
     let dom = tl::parse(
         r#"<div data-test="foo" class="bar">Some Content</div>"#,
@@ -285,9 +346,37 @@ fn run_on_single_add_text_content_from_string_for_tag() {
 
 #[test]
 fn run_on_single_add_text_content_from_string_for_empty_tag() {
-    let pipeline = Pipeline::new(vec![Command::AddTextContent(ValueSource::StringValue(
-        String::from("Other Content"),
-    ))]);
+    let pipeline = ElementProcessingPipeline::new(vec![ElementProcessingCommand::AddTextContent(
+        ValueSource::SubPipeline(StringValueCreatingPipeline::new(
+            ElementSelectingCommand::UseElement,
+            ValueExtractingCommand::GetAttribute("data-test"),
+        )),
+    )]);
+
+    let dom = tl::parse(
+        r#"<div data-test="foo" class="bar"></div>"#,
+        tl::ParserOptions::default(),
+    )
+    .unwrap();
+    let starting_elements = HtmlContent::import(dom).unwrap();
+
+    let mut result = pipeline
+        .run_on(vec![rctree::Node::clone(&starting_elements)])
+        .unwrap();
+
+    assert_eq!(result.len(), 1);
+    let first_result = result.pop().unwrap();
+    assert_eq!(
+        first_result.outer_html(),
+        String::from(r#"<div class="bar" data-test="foo">foo</div>"#)
+    );
+}
+
+#[test]
+fn run_on_single_add_text_content_from_attr_for_empty_tag() {
+    let pipeline = ElementProcessingPipeline::new(vec![ElementProcessingCommand::AddTextContent(
+        ValueSource::StringValue("Other Content"),
+    )]);
 
     let dom = tl::parse(
         r#"<div data-test="foo" class="bar"></div>"#,
@@ -310,9 +399,9 @@ fn run_on_single_add_text_content_from_string_for_empty_tag() {
 
 #[test]
 fn run_on_single_add_text_content_from_string_for_tag_with_multiple_children() {
-    let pipeline = Pipeline::new(vec![Command::AddTextContent(ValueSource::StringValue(
-        String::from("Other Content"),
-    ))]);
+    let pipeline = ElementProcessingPipeline::new(vec![ElementProcessingCommand::AddTextContent(
+        ValueSource::StringValue("Other Content"),
+    )]);
 
     let dom = tl::parse(
         r#"<div data-test="foo" class="bar">Some <em>special</em> Content. <!-- rightly so --></div>"#,
@@ -337,9 +426,9 @@ fn run_on_single_add_text_content_from_string_for_tag_with_multiple_children() {
 
 #[test]
 fn run_on_single_add_comment_from_string_for_tag() {
-    let pipeline = Pipeline::new(vec![Command::AddComment(ValueSource::StringValue(
-        String::from("Other Content"),
-    ))]);
+    let pipeline = ElementProcessingPipeline::new(vec![ElementProcessingCommand::AddComment(
+        ValueSource::StringValue("Other Content"),
+    )]);
 
     let dom = tl::parse(
         r#"<div data-test="foo" class="bar">Some Content</div>"#,
@@ -364,9 +453,9 @@ fn run_on_single_add_comment_from_string_for_tag() {
 
 #[test]
 fn run_on_single_add_comment_from_string_for_empty_tag() {
-    let pipeline = Pipeline::new(vec![Command::AddComment(ValueSource::StringValue(
-        String::from("Other Content"),
-    ))]);
+    let pipeline = ElementProcessingPipeline::new(vec![ElementProcessingCommand::AddComment(
+        ValueSource::StringValue("Other Content"),
+    )]);
 
     let dom = tl::parse(
         r#"<div data-test="foo" class="bar"></div>"#,
@@ -388,10 +477,38 @@ fn run_on_single_add_comment_from_string_for_empty_tag() {
 }
 
 #[test]
+fn run_on_single_add_comment_from_attr_for_empty_tag() {
+    let pipeline = ElementProcessingPipeline::new(vec![ElementProcessingCommand::AddComment(
+        ValueSource::SubPipeline(StringValueCreatingPipeline::new(
+            ElementSelectingCommand::UseElement,
+            ValueExtractingCommand::GetAttribute("data-test"),
+        )),
+    )]);
+
+    let dom = tl::parse(
+        r#"<div data-test="foo" class="bar"></div>"#,
+        tl::ParserOptions::default(),
+    )
+    .unwrap();
+    let starting_elements = HtmlContent::import(dom).unwrap();
+
+    let mut result = pipeline
+        .run_on(vec![rctree::Node::clone(&starting_elements)])
+        .unwrap();
+
+    assert_eq!(result.len(), 1);
+    let first_result = result.pop().unwrap();
+    assert_eq!(
+        first_result.outer_html(),
+        String::from(r#"<div class="bar" data-test="foo"><!-- foo --></div>"#)
+    );
+}
+
+#[test]
 fn run_on_single_add_comment_from_string_for_tag_with_multiple_children() {
-    let pipeline = Pipeline::new(vec![Command::AddComment(ValueSource::StringValue(
-        String::from("Other Content"),
-    ))]);
+    let pipeline = ElementProcessingPipeline::new(vec![ElementProcessingCommand::AddComment(
+        ValueSource::StringValue("Other Content"),
+    )]);
 
     let dom = tl::parse(
         r#"<div data-test="foo" class="bar"><!-- rightly so -->Some <em>special</em> Content.</div>"#,
@@ -416,13 +533,13 @@ fn run_on_single_add_comment_from_string_for_tag_with_multiple_children() {
 
 #[test]
 fn run_on_single_for_each_on_ul() {
-    let pipeline = Pipeline::new(vec![Command::ForEach(
+    let pipeline = ElementProcessingPipeline::new(vec![ElementProcessingCommand::ForEach(
         CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_element(
             "li",
         ))]),
-        Pipeline::new(vec![Command::SetAttribute(
-            String::from("data-test"),
-            ValueSource::StringValue(String::from("x")),
+        ElementProcessingPipeline::new(vec![ElementProcessingCommand::SetAttribute(
+            "data-test",
+            ValueSource::StringValue("x"),
         )]),
     )]);
 
@@ -447,9 +564,9 @@ fn run_on_single_for_each_on_ul() {
 
 #[test]
 fn run_on_single_add_element_from_create_for_tag() {
-    let pipeline = Pipeline::new(vec![Command::AddElement(Pipeline::new(vec![
-        Command::CreateElement(String::from("div")),
-    ]))]);
+    let pipeline = ElementProcessingPipeline::new(vec![ElementProcessingCommand::AddElement(
+        ElementCreatingPipeline::new(ElementCreatingCommand::CreateElement("div"), None),
+    )]);
 
     let dom = tl::parse(
         r#"<div data-test="foo" class="bar">Some Content</div>"#,
@@ -473,11 +590,11 @@ fn run_on_single_add_element_from_create_for_tag() {
 //noinspection DuplicatedCode
 #[test]
 fn run_on_single_replace_from_create() {
-    let pipeline = Pipeline::new(vec![Command::Replace(
+    let pipeline = ElementProcessingPipeline::new(vec![ElementProcessingCommand::Replace(
         CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_class(
             "replace-me",
         ))]),
-        Pipeline::new(vec![Command::CreateElement(String::from("p"))]),
+        ElementCreatingPipeline::new(ElementCreatingCommand::CreateElement("p"), None),
     )]);
 
     let dom = tl::parse(
@@ -502,13 +619,14 @@ fn run_on_single_replace_from_create() {
 //noinspection DuplicatedCode
 #[test]
 fn run_on_single_replace_using_from_file() {
-    let pipeline = Pipeline::new(vec![Command::Replace(
+    let pipeline = ElementProcessingPipeline::new(vec![ElementProcessingCommand::Replace(
         CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_class(
             "replace-me",
         ))]),
-        Pipeline::new(vec![Command::FromFile(String::from(
-            "tests/single_div.html",
-        ))]),
+        ElementCreatingPipeline::new(
+            ElementCreatingCommand::FromFile("tests/single_div.html"),
+            None,
+        ),
     )]);
 
     let dom = tl::parse(
@@ -535,13 +653,16 @@ fn run_on_single_replace_using_from_file() {
 //noinspection DuplicatedCode
 #[test]
 fn run_on_single_replace_using_from_replaced() {
-    let pipeline = Pipeline::new(vec![Command::Replace(
+    let pipeline = ElementProcessingPipeline::new(vec![ElementProcessingCommand::Replace(
         CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_class(
             "replace-me",
         ))]),
-        Pipeline::new(vec![Command::FromReplaced(CssSelectorList::new(vec![
-            CssSelectorPath::single(CssSelector::for_element("p")),
-        ]))]),
+        ElementCreatingPipeline::new(
+            ElementCreatingCommand::FromReplaced(CssSelectorList::new(vec![
+                CssSelectorPath::single(CssSelector::for_element("p")),
+            ])),
+            None,
+        ),
     )]);
 
     let dom = tl::parse(

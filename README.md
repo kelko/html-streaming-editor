@@ -61,19 +61,20 @@ Currently supported:
 - `CREATE-ELEMENT`: creates a new, empty element, mainly in combination with `ADD-ELEMENT` or `REPLACE` (alias: `NEW`)
 - `FROM-FILE`: reads a DOM from a different file, mainly in combination with `ADD-ELEMENT` or `REPLACE` (alias: `SOURCE`)
 - `FROM-REPLACED`: returns children matching the CSS selector of those elements meant to be replaced, only combination with or `REPLACE` (alias: `KEEP`)
-
-
-Not Yet implemented:
-- "string value producing pipelines": Sub-Pipelines for `SET-ATTR`, `ADD-TEXT-CONTENT`, `ADD-COMMENT` and `SET-TEXT-CONTENT` to create the string value from other parts of the HTML
 - `USE-ELEMENT`: returns the currently selected element for a sub-pipeline, mainly in combination with "string value producing pipelines" (alias: `THIS`)
 - `USE-PARENT`: returns the parent of the currently selected element for a sub-pipeline, mainly in combination with "string value producing pipelines" (alias: `PARENT`)
-- `USE-ROOT`: returns the parent of the currently selected element for a sub-pipeline, mainly in combination with "string value producing pipelines" (alias: `ROOT`)
-- `SELECT-ELEMENT`: runs a sub-query on the currently selected element for further processing, without detaching target element from HTML tree unlike `EXTRACT-ELEMENT` (alias: `QUERY`)
-- `GET-TEXT-CONTENT`: returns the text content of the currently selected element for a string-value producing pipelines
+- `QUERY-PARENT`: runs a query on the parent of the currently selected element for a sub-pipeline, without detaching target element from HTML tree unlike `EXTRACT-ELEMENT`
+- `QUERY-ROOT`: runs a query on the root of the currently selected element for a sub-pipeline, without detaching target element from HTML tree unlike `EXTRACT-ELEMENT`
 - `GET-ATTR`: returns the value of an attribute of the currently selected element for a string-value producing pipelines
+- `GET-TEXT-CONTENT`: returns the text content of the currently selected element for a string-value producing pipelines
+
+Not Yet implemented:
+
+- `QUERY-ELEMENT`: runs a query on the currently selected element for a sub-pipeline, without detaching target element from HTML tree unlike `EXTRACT-ELEMENT`
 - `TO-LOWER`: all-lower the current string value of the pipeline
 - `TO-UPPER`: all-caps the current string value of the pipeline
 - `REGEX-REPLACE`: runs a RegEx-based value replacements on the current string value of the pipeline
+
 
 Binary
 -------

@@ -1,7 +1,9 @@
 use html_streaming_editor::*;
 
 const HTML_INPUT: &str = r#"<html>
-    <head></head>
+    <head>
+        <meta name="test" content="some value">
+    </head>
     <body>
         <h1>Title</h1>
         <p id="first-para">Some first text</p>
@@ -88,6 +90,81 @@ fn set_attr_with_line_break() -> Result<(), StreamingEditorError> {
     assert_eq!(
         result_string,
         String::from(r#"<p data-test="some \nvalue" id="first-para">Some first text</p>"#)
+    );
+
+    Ok(())
+}
+
+#[test]
+fn set_attr_from_other_attr() -> Result<(), StreamingEditorError> {
+    let command = "EXTRACT-ELEMENT{#first-para} | SET-ATTR{data-test ↤ USE-ELEMENT | GET-ATTR{id}}";
+
+    let mut input = Box::new(HTML_INPUT.as_bytes());
+    let mut output = Vec::new();
+    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+
+    let _ = hse.run(command)?;
+    let result_string = String::from_utf8(output).unwrap();
+
+    assert_eq!(
+        result_string,
+        String::from(r#"<p data-test="first-para" id="first-para">Some first text</p>"#)
+    );
+
+    Ok(())
+}
+
+#[test]
+fn set_attr_from_attr_of_sibling() -> Result<(), StreamingEditorError> {
+    let command =
+        "FOR-EACH{#first-para ↦ SET-ATTR{data-test ↤ QUERY-PARENT{#second-para} | GET-ATTR{id}}} | EXTRACT-ELEMENT{#first-para}";
+
+    let mut input = Box::new(HTML_INPUT.as_bytes());
+    let mut output = Vec::new();
+    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+
+    let _ = hse.run(command)?;
+    let result_string = String::from_utf8(output).unwrap();
+
+    assert_eq!(
+        result_string,
+        String::from(r#"<p data-test="second-para" id="first-para">Some first text</p>"#)
+    );
+
+    Ok(())
+}
+
+#[test]
+fn set_attr_from_attr_of_head_meta() -> Result<(), StreamingEditorError> {
+    let command = "FOR-EACH{#first-para ↦ SET-ATTR{data-test ↤ QUERY-ROOT{meta[name='test']} | GET-ATTR{content}}}";
+
+    let mut input = Box::new(HTML_INPUT.as_bytes());
+    let mut output = Vec::new();
+    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+
+    let _ = hse.run(command)?;
+    let result_string = String::from_utf8(output).unwrap();
+
+    assert_eq!(
+        result_string,
+        String::from(
+            r#"<html>
+    <head>
+        <meta content="some value" name="test">
+    </head>
+    <body>
+        <h1>Title</h1>
+        <p data-test="some value" id="first-para">Some first text</p>
+        <p id="second-para">Some more text, even with an <img src=""></p>
+        <p id="third-para">Third text of <abbr>HTML</abbr>, but no <abbr>CSS</abbr></p>
+        <ul id="list">
+            <li id="item-1">1</li>
+            <li id="item-2">2</li>
+            <li id="item-3">3</li>
+        </ul>
+    </body>
+</html>"#
+        )
     );
 
     Ok(())

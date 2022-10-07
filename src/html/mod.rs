@@ -10,6 +10,7 @@ use tl::{HTMLTag, NodeHandle, Parser, VDom};
 mod tests;
 
 #[derive(Debug, Snafu)]
+#[snafu(visibility(pub(crate)))]
 pub enum StreamingEditorError {
     #[snafu(display("Nothing Imported from tl"))]
     NothingImported { backtrace: Backtrace },
@@ -267,11 +268,24 @@ impl HtmlContent {
         }
     }
 
-    pub(crate) fn set_attribute(&mut self, attribute: &String, value: String) {
+    pub(crate) fn set_attribute(&mut self, attribute: impl Into<String>, value: impl Into<String>) {
         match self {
             HtmlContent::Comment(_) | HtmlContent::Text(_) => (),
             HtmlContent::Tag(tag) => {
-                tag.attributes.insert(attribute.clone(), value);
+                tag.attributes.insert(attribute.into(), value.into());
+            }
+        }
+    }
+
+    pub(crate) fn get_attribute(&self, attribute: &String) -> Option<String> {
+        match self {
+            HtmlContent::Comment(_) | HtmlContent::Text(_) => None,
+            HtmlContent::Tag(tag) => {
+                if let Some(value) = tag.attributes.get(attribute) {
+                    Some(value.clone())
+                } else {
+                    None
+                }
             }
         }
     }
@@ -327,6 +341,7 @@ impl HtmlRenderable for Node<HtmlContent> {
 }
 
 #[derive(Debug, Snafu)]
+#[snafu(visibility(pub(crate)))]
 pub enum IndexError {
     #[snafu(display("Index seems out of date. NodeHandle couldn't be found in Parser"))]
     OutdatedIndex { backtrace: Backtrace },
