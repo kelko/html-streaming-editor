@@ -63,6 +63,7 @@ Currently supported:
 - `FROM-REPLACED`: returns children matching the CSS selector of those elements meant to be replaced, only combination with or `REPLACE` (alias: `KEEP`)
 - `USE-ELEMENT`: returns the currently selected element for a sub-pipeline, mainly in combination with "string value producing pipelines" (alias: `THIS`)
 - `USE-PARENT`: returns the parent of the currently selected element for a sub-pipeline, mainly in combination with "string value producing pipelines" (alias: `PARENT`)
+- `QUERY-ELEMENT`: runs a query on the currently selected element for a sub-pipeline, without detaching target element from HTML tree unlike `EXTRACT-ELEMENT`
 - `QUERY-PARENT`: runs a query on the parent of the currently selected element for a sub-pipeline, without detaching target element from HTML tree unlike `EXTRACT-ELEMENT`
 - `QUERY-ROOT`: runs a query on the root of the currently selected element for a sub-pipeline, without detaching target element from HTML tree unlike `EXTRACT-ELEMENT`
 - `GET-ATTR`: returns the value of an attribute of the currently selected element for a string-value producing pipelines
@@ -70,7 +71,6 @@ Currently supported:
 
 Not Yet implemented:
 
-- `QUERY-ELEMENT`: runs a query on the currently selected element for a sub-pipeline, without detaching target element from HTML tree unlike `EXTRACT-ELEMENT`
 - `TO-LOWER`: all-lower the current string value of the pipeline
 - `TO-UPPER`: all-caps the current string value of the pipeline
 - `REGEX-REPLACE`: runs a RegEx-based value replacements on the current string value of the pipeline

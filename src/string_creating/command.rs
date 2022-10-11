@@ -7,6 +7,8 @@ pub enum ElementSelectingCommand<'a> {
     UseElement,
     /// Returns the parent of the previously selected element (if exists)
     UseParent,
+    /// Run a CSS selector on the previously selected element
+    QueryElement(CssSelectorList<'a>),
     /// Run a CSS selector on the parent of the previously selected element (if exists)
     QueryParent(CssSelectorList<'a>),
     /// Run a CSS selector on the root of the tree the previously selected element belongs to
@@ -26,6 +28,7 @@ impl<'a> ElementSelectingCommand<'a> {
         match self {
             ElementSelectingCommand::UseElement => Self::use_element(input),
             ElementSelectingCommand::UseParent => Self::use_parent(input),
+            ElementSelectingCommand::QueryElement(selector) => Self::query_element(input, selector),
             ElementSelectingCommand::QueryParent(selector) => Self::query_parent(input, selector),
             ElementSelectingCommand::QueryRoot(selector) => Self::query_root(input, selector),
         }
@@ -41,6 +44,13 @@ impl<'a> ElementSelectingCommand<'a> {
         }
 
         Ok(vec![])
+    }
+
+    fn query_element(
+        input: &Node<HtmlContent>,
+        selector: &CssSelectorList<'a>,
+    ) -> Result<Vec<Node<HtmlContent>>, CommandError> {
+        Ok(selector.query(&vec![rctree::Node::clone(input)]))
     }
 
     fn query_parent(
@@ -170,6 +180,52 @@ mod test {
             r#"<div id="parent" data-test="foo"><div class="bar" data-test="fubar"></div></div>"#,
         );
         let command = ElementSelectingCommand::UseParent;
+
+        let result = command.execute(&root).unwrap();
+
+        assert_eq!(result.len(), 0);
+    }
+
+    #[test]
+    fn querying_element_returns_matching_element() {
+        let root = load_html(
+            r#"<div class="bar" data-test="fubar"><aside class="test-source" data-test="foo"></aside></div>"#,
+        );
+        let command = ElementSelectingCommand::QueryElement(CssSelectorList::new(vec![
+            CssSelectorPath::single(CssSelector::for_class("test-source")),
+        ]));
+
+        let mut result = command.execute(&root).unwrap();
+
+        assert_eq!(result.len(), 1);
+        let first_result = result.pop().unwrap();
+        assert_eq!(first_result, root.first_child().unwrap());
+    }
+
+    #[test]
+    fn querying_element_returns_multiple_matching_elements() {
+        let root = load_html(
+            r#"<div class="bar" data-test="fubar"><aside class="test-source" data-test="foo"></aside><div><p class="test-source"></p></div></div>"#,
+        );
+        let command = ElementSelectingCommand::QueryElement(CssSelectorList::new(vec![
+            CssSelectorPath::single(CssSelector::for_class("test-source")),
+        ]));
+
+        let result = command.execute(&root).unwrap();
+
+        assert_eq!(result.len(), 2);
+        assert!(result.contains(&root.first_child().unwrap()));
+        assert!(result.contains(&root.last_child().unwrap().first_child().unwrap()));
+    }
+
+    #[test]
+    fn query_element_returns_empty_on_querying_nonexistent_el() {
+        let root = load_html(
+            r#"<div class="bar" data-test="fubar"><aside data-test="foo"></aside></div>"#,
+        );
+        let command = ElementSelectingCommand::QueryElement(CssSelectorList::new(vec![
+            CssSelectorPath::single(CssSelector::for_class("test-source")),
+        ]));
 
         let result = command.execute(&root).unwrap();
 

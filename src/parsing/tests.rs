@@ -521,7 +521,6 @@ fn parse_single_replace_using_from_replaced_alias_keep() {
     );
 }
 
-//noinspection DuplicatedCode
 #[test]
 fn parse_string_creating_pipeline_use_element_get_attr() {
     let parsed = super::grammar::string_creating_pipeline("USE-ELEMENT | GET-ATTR{data-test}");
@@ -534,14 +533,41 @@ fn parse_string_creating_pipeline_use_element_get_attr() {
     );
 }
 
-//noinspection DuplicatedCode
+#[test]
+fn parse_use_element() {
+    let parsed = super::grammar::element_selecting_command("USE-ELEMENT");
+    assert_eq!(parsed, Ok(ElementSelectingCommand::UseElement));
+}
+
+#[test]
+fn parse_use_element_alias_this() {
+    let parsed = super::grammar::element_selecting_command("THIS");
+    assert_eq!(parsed, Ok(ElementSelectingCommand::UseElement));
+}
+
 #[test]
 fn parse_use_parent() {
     let parsed = super::grammar::element_selecting_command("USE-PARENT");
     assert_eq!(parsed, Ok(ElementSelectingCommand::UseParent));
 }
 
-//noinspection DuplicatedCode
+#[test]
+fn parse_use_parent_alias_parent() {
+    let parsed = super::grammar::element_selecting_command("PARENT");
+    assert_eq!(parsed, Ok(ElementSelectingCommand::UseParent));
+}
+
+#[test]
+fn parse_query_element() {
+    let parsed = super::grammar::element_selecting_command("QUERY-ELEMENT{div}");
+    assert_eq!(
+        parsed,
+        Ok(ElementSelectingCommand::QueryElement(CssSelectorList::new(
+            vec![CssSelectorPath::single(CssSelector::for_element("div"))]
+        ))),
+    );
+}
+
 #[test]
 fn parse_query_parent() {
     let parsed = super::grammar::element_selecting_command("QUERY-PARENT{div}");
@@ -553,7 +579,6 @@ fn parse_query_parent() {
     );
 }
 
-//noinspection DuplicatedCode
 #[test]
 fn parse_query_root() {
     let parsed = super::grammar::element_selecting_command("QUERY-ROOT{div}");
@@ -565,7 +590,6 @@ fn parse_query_root() {
     );
 }
 
-//noinspection DuplicatedCode
 #[test]
 fn parse_get_attr() {
     let parsed = super::grammar::value_extracting_command("GET-ATTR{data-test}");
@@ -575,7 +599,6 @@ fn parse_get_attr() {
     );
 }
 
-//noinspection DuplicatedCode
 #[test]
 fn parse_get_text_content() {
     let parsed = super::grammar::value_extracting_command("GET-TEXT-CONTENT");

@@ -153,6 +153,8 @@ parser! {
             = ("USE-ELEMENT"/"THIS") { ElementSelectingCommand::UseElement }
         rule use_parent_command() -> ElementSelectingCommand<'input>
             = ("USE-PARENT"/"PARENT") { ElementSelectingCommand::UseParent }
+        rule query_element_command() -> ElementSelectingCommand<'input>
+            = "QUERY-ELEMENT{" whitespace()? oc:css_selector_list() whitespace()? "}" { ElementSelectingCommand::QueryElement(oc) }
         rule query_parent_command() -> ElementSelectingCommand<'input>
             = "QUERY-PARENT{" whitespace()? oc:css_selector_list() whitespace()? "}" { ElementSelectingCommand::QueryParent(oc) }
         rule query_root_command() -> ElementSelectingCommand<'input>
@@ -160,6 +162,7 @@ parser! {
         pub(super) rule element_selecting_command() -> ElementSelectingCommand<'input>
             = use_element_command()
             / use_parent_command()
+            / query_element_command()
             / query_parent_command()
             / query_root_command()
         rule get_attr_command() -> ValueExtractingCommand<'input>
