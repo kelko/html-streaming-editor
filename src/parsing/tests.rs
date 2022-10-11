@@ -536,57 +536,48 @@ fn parse_string_creating_pipeline_use_element_get_attr() {
 
 //noinspection DuplicatedCode
 #[test]
-fn parse_string_creating_pipeline_use_parent_get_attr() {
-    let parsed = super::grammar::string_creating_pipeline("USE-PARENT | GET-ATTR{data-test}");
+fn parse_use_parent() {
+    let parsed = super::grammar::element_selecting_command("USE-PARENT");
+    assert_eq!(parsed, Ok(ElementSelectingCommand::UseParent));
+}
+
+//noinspection DuplicatedCode
+#[test]
+fn parse_query_parent() {
+    let parsed = super::grammar::element_selecting_command("QUERY-PARENT{div}");
     assert_eq!(
         parsed,
-        Ok(StringValueCreatingPipeline::new(
-            ElementSelectingCommand::UseParent,
-            ValueExtractingCommand::GetAttribute("data-test"),
-        )),
+        Ok(ElementSelectingCommand::QueryParent(CssSelectorList::new(
+            vec![CssSelectorPath::single(CssSelector::for_element("div"))]
+        ))),
     );
 }
 
 //noinspection DuplicatedCode
 #[test]
-fn parse_string_creating_pipeline_query_parent_get_attr() {
-    let parsed =
-        super::grammar::string_creating_pipeline("QUERY-PARENT{div} | GET-ATTR{data-test}");
+fn parse_query_root() {
+    let parsed = super::grammar::element_selecting_command("QUERY-ROOT{div}");
     assert_eq!(
         parsed,
-        Ok(StringValueCreatingPipeline::new(
-            ElementSelectingCommand::QueryParent(CssSelectorList::new(vec![
-                CssSelectorPath::single(CssSelector::for_element("div"))
-            ])),
-            ValueExtractingCommand::GetAttribute("data-test"),
-        )),
+        Ok(ElementSelectingCommand::QueryRoot(CssSelectorList::new(
+            vec![CssSelectorPath::single(CssSelector::for_element("div"))]
+        ))),
     );
 }
 
 //noinspection DuplicatedCode
 #[test]
-fn parse_string_creating_pipeline_query_root_get_attr() {
-    let parsed = super::grammar::string_creating_pipeline("QUERY-ROOT{div} | GET-ATTR{data-test}");
+fn parse_get_attr() {
+    let parsed = super::grammar::value_extracting_command("GET-ATTR{data-test}");
     assert_eq!(
         parsed,
-        Ok(StringValueCreatingPipeline::new(
-            ElementSelectingCommand::QueryRoot(CssSelectorList::new(vec![
-                CssSelectorPath::single(CssSelector::for_element("div"))
-            ])),
-            ValueExtractingCommand::GetAttribute("data-test"),
-        )),
+        Ok(ValueExtractingCommand::GetAttribute("data-test")),
     );
 }
 
 //noinspection DuplicatedCode
 #[test]
-fn parse_string_creating_pipeline_use_element_get_text_content() {
-    let parsed = super::grammar::string_creating_pipeline("USE-ELEMENT | GET-TEXT-CONTENT");
-    assert_eq!(
-        parsed,
-        Ok(StringValueCreatingPipeline::new(
-            ElementSelectingCommand::UseElement,
-            ValueExtractingCommand::GetTextContent
-        )),
-    );
+fn parse_get_text_content() {
+    let parsed = super::grammar::value_extracting_command("GET-TEXT-CONTENT");
+    assert_eq!(parsed, Ok(ValueExtractingCommand::GetTextContent));
 }

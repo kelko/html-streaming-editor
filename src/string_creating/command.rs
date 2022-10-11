@@ -112,6 +112,290 @@ impl<'a> ValueExtractingCommand<'a> {
     }
 
     fn get_text_content(input: &Vec<Node<HtmlContent>>) -> Result<Vec<String>, CommandError> {
-        Ok(input.iter().map(|n| n.text_content()).collect::<Vec<_>>())
+        Ok(input
+            .iter()
+            .filter_map(|n| {
+                let content = n.text_content();
+                if content.is_empty() {
+                    None
+                } else {
+                    Some(content)
+                }
+            })
+            .collect::<Vec<_>>())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::string_creating::{ElementSelectingCommand, ValueExtractingCommand};
+    use crate::{CssSelector, CssSelectorList, CssSelectorPath, HtmlContent};
+
+    fn load_html(html: &str) -> rctree::Node<HtmlContent> {
+        let dom = tl::parse(html, tl::ParserOptions::default()).unwrap();
+
+        HtmlContent::import(dom).unwrap()
+    }
+
+    #[test]
+    fn use_element_returns_self() {
+        let root = load_html(r#"<div data-test="foo" class="bar"></div>"#);
+        let command = ElementSelectingCommand::UseElement;
+
+        let mut result = command.execute(&root).unwrap();
+
+        assert_eq!(result.len(), 1);
+        let first_result = result.pop().unwrap();
+        assert_eq!(first_result, root);
+    }
+
+    #[test]
+    fn use_parent_returns_parent_on_existing_parent() {
+        let root = load_html(
+            r#"<div id="parent" data-test="foo"><div class="bar" data-test="fubar"></div></div>"#,
+        );
+        let target_node = root.first_child().unwrap();
+        let command = ElementSelectingCommand::UseParent;
+
+        let mut result = command.execute(&target_node).unwrap();
+
+        assert_eq!(result.len(), 1);
+        let first_result = result.pop().unwrap();
+        assert_eq!(first_result, root);
+    }
+
+    #[test]
+    fn use_parent_returns_empty_on_root() {
+        let root = load_html(
+            r#"<div id="parent" data-test="foo"><div class="bar" data-test="fubar"></div></div>"#,
+        );
+        let command = ElementSelectingCommand::UseParent;
+
+        let result = command.execute(&root).unwrap();
+
+        assert_eq!(result.len(), 0);
+    }
+
+    #[test]
+    fn querying_parent_returns_matching_element() {
+        let root = load_html(
+            r#"<div id="parent"><div class="bar" data-test="fubar"></div><aside class="test-source" data-test="foo"></aside></div>"#,
+        );
+        let target_node = root.first_child().unwrap();
+        let command = ElementSelectingCommand::QueryParent(CssSelectorList::new(vec![
+            CssSelectorPath::single(CssSelector::for_class("test-source")),
+        ]));
+
+        let mut result = command.execute(&target_node).unwrap();
+
+        assert_eq!(result.len(), 1);
+        let first_result = result.pop().unwrap();
+        assert_eq!(first_result, target_node.next_sibling().unwrap());
+    }
+
+    #[test]
+    fn querying_parent_returns_multiple_matching_elements() {
+        let root = load_html(
+            r#"<div id="parent"><div class="bar" data-test="fubar"></div><aside class="test-source" data-test="foo"><p class="test-source"></p></aside></div>"#,
+        );
+        let target_node = root.first_child().unwrap();
+        let command = ElementSelectingCommand::QueryParent(CssSelectorList::new(vec![
+            CssSelectorPath::single(CssSelector::for_class("test-source")),
+        ]));
+
+        let result = command.execute(&target_node).unwrap();
+
+        assert_eq!(result.len(), 2);
+        assert!(result.contains(&target_node.next_sibling().unwrap()));
+        assert!(result.contains(&target_node.next_sibling().unwrap().first_child().unwrap()));
+    }
+
+    #[test]
+    fn query_parent_returns_empty_on_root() {
+        let root = load_html(
+            r#"<div id="parent"><div class="bar" data-test="fubar"></div><aside class="test-source" data-test="foo"></aside></div>"#,
+        );
+        let command = ElementSelectingCommand::QueryParent(CssSelectorList::new(vec![
+            CssSelectorPath::single(CssSelector::for_class("test-source")),
+        ]));
+
+        let result = command.execute(&root).unwrap();
+
+        assert_eq!(result.len(), 0);
+    }
+
+    #[test]
+    fn query_parent_returns_empty_on_querying_nonexistent_el() {
+        let root = load_html(
+            r#"<div id="parent"><div class="bar" data-test="fubar"></div><aside data-test="foo"></aside></div>"#,
+        );
+        let target_node = root.first_child().unwrap();
+        let command = ElementSelectingCommand::QueryParent(CssSelectorList::new(vec![
+            CssSelectorPath::single(CssSelector::for_class("test-source")),
+        ]));
+
+        let result = command.execute(&target_node).unwrap();
+
+        assert_eq!(result.len(), 0);
+    }
+
+    #[test]
+    fn query_parent_returns_empty_on_matching_element_outside_parent() {
+        let root = load_html(
+            r#"<div><div id="parent"><div class="bar" data-test="fubar"></div><aside data-test="foo"></aside></div><aside class="test-source"></aside></div>"#,
+        );
+        let target_node = root.first_child().unwrap().first_child().unwrap();
+        let command = ElementSelectingCommand::QueryParent(CssSelectorList::new(vec![
+            CssSelectorPath::single(CssSelector::for_class("test-source")),
+        ]));
+
+        let result = command.execute(&target_node).unwrap();
+
+        assert_eq!(result.len(), 0);
+    }
+
+    #[test]
+    fn query_root_returns_matching_element() {
+        let root = load_html(
+            r#"<div id="root"><div><div><div class="bar" data-test="fubar"></div></div></div><aside class="test-source" data-test="foo"></aside></div>"#,
+        );
+        let target_node = root
+            .first_child()
+            .unwrap()
+            .first_child()
+            .unwrap()
+            .first_child()
+            .unwrap();
+        let command = ElementSelectingCommand::QueryRoot(CssSelectorList::new(vec![
+            CssSelectorPath::single(CssSelector::for_class("test-source")),
+        ]));
+
+        let mut result = command.execute(&target_node).unwrap();
+
+        assert_eq!(result.len(), 1);
+        let first_result = result.pop().unwrap();
+        assert_eq!(first_result, root.last_child().unwrap());
+    }
+
+    #[test]
+    fn query_root_returns_multiple_matching_elements() {
+        let root = load_html(
+            r#"<div id="root"><div><div><div class="bar" data-test="fubar"></div><aside class="test-source"></aside></div></div><aside class="test-source" data-test="foo"></aside></div>"#,
+        );
+        let target_node = root
+            .first_child()
+            .unwrap()
+            .first_child()
+            .unwrap()
+            .first_child()
+            .unwrap();
+        let command = ElementSelectingCommand::QueryRoot(CssSelectorList::new(vec![
+            CssSelectorPath::single(CssSelector::for_class("test-source")),
+        ]));
+
+        let result = command.execute(&target_node).unwrap();
+
+        assert_eq!(result.len(), 2);
+        assert!(result.contains(&root.last_child().unwrap()));
+        assert!(result.contains(&target_node.next_sibling().unwrap()));
+    }
+
+    #[test]
+    fn query_root_on_root_queries_itself() {
+        let root = load_html(
+            r#"<div data-test="fubar" class="bar"><aside class="test-source" data-test="foo"></aside></div>"#,
+        );
+        let command = ElementSelectingCommand::QueryRoot(CssSelectorList::new(vec![
+            CssSelectorPath::single(CssSelector::for_class("test-source")),
+        ]));
+
+        let mut result = command.execute(&root).unwrap();
+
+        assert_eq!(result.len(), 1);
+        let first_result = result.pop().unwrap();
+        assert_eq!(first_result, root.last_child().unwrap());
+    }
+
+    #[test]
+    fn query_root_return_empty_on_nonexistent_el() {
+        let root = load_html(
+            r#"<div id="root"><div><div><div class="bar" data-test="fubar"></div></div></div><aside data-test="foo"></aside></div>"#,
+        );
+        let target_node = root
+            .first_child()
+            .unwrap()
+            .first_child()
+            .unwrap()
+            .first_child()
+            .unwrap();
+        let command = ElementSelectingCommand::QueryRoot(CssSelectorList::new(vec![
+            CssSelectorPath::single(CssSelector::for_class("test-source")),
+        ]));
+
+        let result = command.execute(&target_node).unwrap();
+
+        assert_eq!(result.len(), 0);
+    }
+
+    #[test]
+    fn get_attr_returns_value_on_existing_attr() {
+        let root = load_html(r#"<div data-test="foo" class="bar"></div>"#);
+        let command = ValueExtractingCommand::GetAttribute("data-test");
+
+        let mut result = command.execute(&vec![root]).unwrap();
+
+        assert_eq!(result.len(), 1);
+        let first_result = result.pop().unwrap();
+        assert_eq!(first_result, String::from("foo"));
+    }
+
+    #[test]
+    fn get_attr_returns_empty_on_missing_attr() {
+        let root = load_html(r#"<div class="bar"></div>"#);
+        let command = ValueExtractingCommand::GetAttribute("data-test");
+
+        let result = command.execute(&vec![root]).unwrap();
+
+        assert_eq!(result.len(), 0);
+    }
+
+    #[test]
+    fn get_attr_returns_empty_on_empty_input() {
+        let command = ValueExtractingCommand::GetAttribute("data-test");
+
+        let result = command.execute(&vec![]).unwrap();
+
+        assert_eq!(result.len(), 0);
+    }
+
+    #[test]
+    fn get_text_content_returns_correct_value_on_existing_content() {
+        let root = load_html(r#"<div>The content</div>"#);
+        let command = ValueExtractingCommand::GetTextContent;
+
+        let mut result = command.execute(&vec![root]).unwrap();
+
+        assert_eq!(result.len(), 1);
+        let first_result = result.pop().unwrap();
+        assert_eq!(first_result, String::from("The content"));
+    }
+
+    #[test]
+    fn get_text_content_returns_empty_string_on_empty_content() {
+        let root = load_html(r#"<div></div>"#);
+        let command = ValueExtractingCommand::GetTextContent;
+
+        let result = command.execute(&vec![root]).unwrap();
+
+        assert_eq!(result.len(), 0);
+    }
+
+    #[test]
+    fn get_text_content_returns_empty_string_on_empty_input() {
+        let command = ValueExtractingCommand::GetTextContent;
+
+        let result = command.execute(&vec![]).unwrap();
+
+        assert_eq!(result.len(), 0);
     }
 }
