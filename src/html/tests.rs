@@ -28,25 +28,25 @@ fn build_tag_with_attr() -> rctree::Node<HtmlContent> {
 }
 
 fn build_tag_with_comment() -> rctree::Node<HtmlContent> {
-    let mut unit_of_test = build_tag();
+    let unit_of_test = build_tag();
     unit_of_test.append(build_comment());
 
     unit_of_test
 }
 
 fn build_tag_with_text() -> rctree::Node<HtmlContent> {
-    let mut unit_of_test = build_tag();
+    let unit_of_test = build_tag();
     unit_of_test.append(build_text());
 
     unit_of_test
 }
 
 fn build_tag_with_complex_content() -> rctree::Node<HtmlContent> {
-    let mut unit_of_test = build_tag();
+    let unit_of_test = build_tag();
     unit_of_test.append(build_text());
     unit_of_test.append(build_comment());
 
-    let mut child_tag = build_tag_with_attr();
+    let child_tag = build_tag_with_attr();
     child_tag.append(build_text_with_content("Other Text"));
     unit_of_test.append(child_tag);
 
@@ -251,7 +251,7 @@ fn convert_single_vdom_works() {
         .unwrap();
     let converted = HtmlContent::import(dom).unwrap();
 
-    let mut expected = rctree::Node::<HtmlContent>::new(HtmlContent::Tag(HtmlTag::of_name("html")));
+    let expected = rctree::Node::<HtmlContent>::new(HtmlContent::Tag(HtmlTag::of_name("html")));
     expected.append(rctree::Node::<HtmlContent>::new(HtmlContent::Tag(
         HtmlTag::of_name("head"),
     )));
@@ -259,7 +259,7 @@ fn convert_single_vdom_works() {
         String::from("nothing here"),
     )));
 
-    let mut body = rctree::Node::<HtmlContent>::new(HtmlContent::Tag(HtmlTag {
+    let body = rctree::Node::<HtmlContent>::new(HtmlContent::Tag(HtmlTag {
         name: String::from("body"),
         attributes: BTreeMap::<String, String>::from([
             (String::from("class"), String::from("simple")),
@@ -284,7 +284,7 @@ fn convert_empty_comments_works() {
 
     let converted = HtmlContent::import(dom).unwrap();
 
-    let mut body = rctree::Node::<HtmlContent>::new(HtmlContent::Tag(HtmlTag::of_name("body")));
+    let body = rctree::Node::<HtmlContent>::new(HtmlContent::Tag(HtmlTag::of_name("body")));
     body.append(rctree::Node::<HtmlContent>::new(HtmlContent::Text(
         String::from("Hello "),
     )));

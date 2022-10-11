@@ -163,8 +163,7 @@ impl HtmlContent {
             attributes.insert(String::from(key), value_string);
         }
 
-        let mut converted =
-            Node::<HtmlContent>::new(HtmlContent::Tag(HtmlTag { name, attributes }));
+        let converted = Node::<HtmlContent>::new(HtmlContent::Tag(HtmlTag { name, attributes }));
 
         for child in tag.children().top().iter() {
             converted.append(Self::convert_node(child, parser)?)

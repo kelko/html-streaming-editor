@@ -127,7 +127,7 @@ impl<'a> ElementProcessingCommand<'a> {
 
         let findings = selector.query(input);
 
-        for mut node in findings {
+        for node in findings {
             node.detach();
         }
 
@@ -143,7 +143,7 @@ impl<'a> ElementProcessingCommand<'a> {
 
         let queried_elements = selector.query(input);
 
-        for mut element_for_replacement in queried_elements {
+        for element_for_replacement in queried_elements {
             let mut created_elements = pipeline
                 .run_on(vec![rctree::Node::clone(&element_for_replacement)])
                 .context(SubpipelineFailedSnafu)?;
@@ -165,7 +165,7 @@ impl<'a> ElementProcessingCommand<'a> {
         let attribute = String::from(attr_name);
 
         for node in input {
-            let mut working_copy = rctree::Node::clone(node);
+            let working_copy = rctree::Node::clone(node);
             let mut data = working_copy.borrow_mut();
             data.clear_attribute(&attribute);
         }
@@ -179,7 +179,7 @@ impl<'a> ElementProcessingCommand<'a> {
         trace!("Running CLEAR-CONTENT command");
 
         for node in input {
-            for mut child in node.children() {
+            for child in node.children() {
                 child.detach()
             }
         }
@@ -204,7 +204,7 @@ impl<'a> ElementProcessingCommand<'a> {
             let rendered_value = String::from(encode_double_quoted_attribute(&rendered_value));
             let rendered_value = rendered_value.replace("\n", "\\n");
 
-            let mut working_copy = rctree::Node::clone(node);
+            let working_copy = rctree::Node::clone(node);
             let mut data = working_copy.borrow_mut();
             data.set_attribute(attribute, rendered_value);
         }
@@ -223,7 +223,7 @@ impl<'a> ElementProcessingCommand<'a> {
 
         for node in input {
             // first clear everything that was there before
-            for mut child in node.children() {
+            for child in node.children() {
                 child.detach()
             }
 
@@ -231,7 +231,7 @@ impl<'a> ElementProcessingCommand<'a> {
             let rendered_value = rendered_value.join("");
             let rendered_value = String::from(encode_text(&rendered_value));
 
-            let mut working_copy = rctree::Node::clone(node);
+            let working_copy = rctree::Node::clone(node);
             working_copy.append(rctree::Node::new(HtmlContent::Text(rendered_value)));
         }
 
@@ -252,7 +252,7 @@ impl<'a> ElementProcessingCommand<'a> {
             let rendered_value = rendered_value.join("");
             let rendered_value = String::from(encode_text(&rendered_value));
 
-            let mut working_copy = rctree::Node::clone(node);
+            let working_copy = rctree::Node::clone(node);
             working_copy.append(rctree::Node::new(HtmlContent::Text(rendered_value)));
         }
 
@@ -273,7 +273,7 @@ impl<'a> ElementProcessingCommand<'a> {
             let rendered_value = rendered_value.join("");
             let rendered_value = rendered_value.replace("--", "\\x2D\\x2D");
 
-            let mut working_copy = rctree::Node::clone(node);
+            let working_copy = rctree::Node::clone(node);
             working_copy.append(rctree::Node::new(HtmlContent::Comment(rendered_value)));
         }
 
@@ -292,7 +292,7 @@ impl<'a> ElementProcessingCommand<'a> {
                 .context(SubpipelineFailedSnafu)?
                 .pop()
             {
-                let mut working_copy = rctree::Node::clone(node);
+                let working_copy = rctree::Node::clone(node);
                 working_copy.append(new_element);
             }
         }

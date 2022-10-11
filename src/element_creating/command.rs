@@ -44,7 +44,7 @@ impl<'a> ElementCreatingCommand<'a> {
     fn from_file(file_path: &str) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
         trace!("Running FROM-FILE command using file: {:#?}", file_path);
 
-        let mut root_element = load_html_file(file_path)?;
+        let root_element = load_html_file(file_path)?;
         Ok(vec![root_element.make_deep_copy()])
     }
 
