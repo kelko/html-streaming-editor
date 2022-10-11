@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod tests;
+
 use html_escape::{encode_double_quoted_attribute, encode_text};
 use log::trace;
 use snafu::ResultExt;
