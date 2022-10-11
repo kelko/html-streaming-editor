@@ -40,7 +40,7 @@ parser! {
             / "=>"
         rule number() -> usize
             = n:$(['0'..='9']+) { n.parse().unwrap() }
-        pub(crate) rule identifier() -> &'input str
+        pub(super) rule identifier() -> &'input str
             = i:$(['a'..='z' | 'A'..='Z' | '0'..='9' | '-' | '_' ]+) { i }
         rule css_attribute() -> CssAttributeSelector<'input>
             = "[" a:(identifier()) "]" { CssAttributeSelector::<'input> { attribute: a, operator: CssAttributeComparison::Exist, value: None } }
@@ -85,7 +85,7 @@ parser! {
         pub(crate) rule css_selector_list() -> CssSelectorList<'input>
             = v:(css_selector_path() ++ ",") { CssSelectorList::new(v) }
 
-        pub(crate) rule string_value() -> &'input str
+        pub(super) rule string_value() -> &'input str
             = "\"" s:$([^'"']+) "\"" { s }
             / "'" s:$([^'\'']+) "'" { s }
             / "?" s:$([^'?']+) "?" { s }
@@ -133,21 +133,21 @@ parser! {
             = ("CREATE-ELEMENT"/"NEW") "{" whitespace()? n:identifier() whitespace()? "}" { ElementCreatingCommand::CreateElement(n)}
         rule from_file_command() -> ElementCreatingCommand<'input>
             = ("FROM-FILE"/"SOURCE") "{" whitespace()? f:string_value() whitespace()? "}" { ElementCreatingCommand::FromFile(f) }
-        rule element_creating_category() -> ElementCreatingCommand<'input>
+        rule element_creating_command() -> ElementCreatingCommand<'input>
             = create_element_command()
             / from_file_command()
         rule element_creating_pipeline() -> ElementCreatingPipeline<'input>
-            = s:element_creating_category() p:element_manipulating_pipeline()? { ElementCreatingPipeline::new(s, p) }
-        rule element_manipulating_pipeline() -> Vec<ElementProcessingCommand<'input>>
+            = s:element_creating_command() p:element_manipulating_subpipeline()? { ElementCreatingPipeline::new(s, p) }
+        rule element_manipulating_subpipeline() -> Vec<ElementProcessingCommand<'input>>
             = " | " p:(element_processing_command() ** " | ") { p }
 
         rule from_replaced_command() -> ElementCreatingCommand<'input>
             = ("FROM-REPLACED"/"KEEP") "{" whitespace()? oc:css_selector_list() whitespace()? "}" { ElementCreatingCommand::FromReplaced(oc) }
         rule element_subselect_or_creating_category() -> ElementCreatingCommand<'input>
             = from_replaced_command()
-            / element_creating_category()
+            / element_creating_command()
         rule element_subselect_or_creating_pipeline() -> ElementCreatingPipeline<'input>
-            = s:element_subselect_or_creating_category() p:element_manipulating_pipeline()? { ElementCreatingPipeline::new(s, p) }
+            = s:element_subselect_or_creating_category() p:element_manipulating_subpipeline()? { ElementCreatingPipeline::new(s, p) }
 
         rule use_element_command() -> ElementSelectingCommand<'input>
             = ("USE-ELEMENT"/"THIS") { ElementSelectingCommand::UseElement }
@@ -157,7 +157,7 @@ parser! {
             = "QUERY-PARENT{" whitespace()? oc:css_selector_list() whitespace()? "}" { ElementSelectingCommand::QueryParent(oc) }
         rule query_root_command() -> ElementSelectingCommand<'input>
             = "QUERY-ROOT{" whitespace()? oc:css_selector_list() whitespace()? "}" { ElementSelectingCommand::QueryRoot(oc) }
-        rule element_selecting_command() -> ElementSelectingCommand<'input>
+        pub(super) rule element_selecting_command() -> ElementSelectingCommand<'input>
             = use_element_command()
             / use_parent_command()
             / query_parent_command()
@@ -166,10 +166,10 @@ parser! {
             = "GET-ATTR{" whitespace()? a:identifier() whitespace()? "}" { ValueExtractingCommand::GetAttribute(a) }
         rule get_text_content_command() -> ValueExtractingCommand<'input>
             = "GET-TEXT-CONTENT" { ValueExtractingCommand::GetTextContent }
-        rule value_extracting_command() -> ValueExtractingCommand<'input>
+        pub(super) rule value_extracting_command() -> ValueExtractingCommand<'input>
             = get_attr_command()
             / get_text_content_command()
-        pub(crate) rule string_creating_pipeline() -> StringValueCreatingPipeline<'input>
+        pub(super) rule string_creating_pipeline() -> StringValueCreatingPipeline<'input>
             = s:element_selecting_command() " | " e:value_extracting_command() { StringValueCreatingPipeline::new(s, e) }
 
         pub(crate) rule pipeline() -> ElementProcessingPipeline<'input>
