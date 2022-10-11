@@ -60,3 +60,156 @@ impl<'a> ElementCreatingCommand<'a> {
             .collect::<Vec<_>>())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::element_creating::ElementCreatingCommand;
+    use crate::html::HtmlTag;
+    use crate::{
+        load_inline_html, CssSelector, CssSelectorList, CssSelectorPath, HtmlContent,
+        HtmlRenderable,
+    };
+    use std::collections::BTreeMap;
+
+    #[test]
+    fn create_element_builds_new_element_on_empty_input() {
+        let command = ElementCreatingCommand::CreateElement("div");
+
+        let mut result = command.execute(&vec![]).unwrap();
+
+        assert_eq!(result.len(), 1);
+
+        let first_result = result.pop().unwrap();
+        let first_result = first_result.borrow();
+        assert_eq!(*first_result, HtmlContent::Tag(HtmlTag::of_name("div")));
+    }
+
+    #[test]
+    fn create_element_builds_new_element_ignoring_input() {
+        let command = ElementCreatingCommand::CreateElement("div");
+
+        let root = rctree::Node::new(HtmlContent::Tag(HtmlTag::of_name("html")));
+
+        let mut result = command.execute(&vec![root]).unwrap();
+
+        assert_eq!(result.len(), 1);
+
+        let first_result = result.pop().unwrap();
+        let first_result = first_result.borrow();
+        assert_eq!(*first_result, HtmlContent::Tag(HtmlTag::of_name("div")));
+    }
+
+    #[test]
+    fn from_file_read_file_content() {
+        let command = ElementCreatingCommand::FromFile("tests/source.html");
+        let mut result = command.execute(&vec![]).unwrap();
+
+        assert_eq!(result.len(), 1);
+
+        let first_result = result.pop().unwrap();
+        assert_eq!(
+            first_result.outer_html(),
+            r#"<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>FROM-FILE Source</title>
+</head>
+<body>
+    <div>Some other stuff</div>
+    <ul id="first">
+        <li>1</li>
+        <li>2</li>
+        <li>3</li>
+    </ul>
+    <ul id="second">
+        <li>a</li>
+        <li><!-- Some Comment -->b</li>
+        <li><em class="intense">c</em></li>
+    </ul>
+    <!-- not taken into account -->
+</body>
+</html>"#
+        );
+    }
+
+    #[test]
+    fn from_replaced_returns_matching_descendent_of_input() {
+        let command = ElementCreatingCommand::FromReplaced(CssSelectorList::new(vec![
+            CssSelectorPath::single(CssSelector::for_class("test-source")),
+        ]));
+        let root = load_inline_html(
+            r#"<div id="replaced"><p class="first"></p><aside class="test-source"></aside></div>"#,
+        );
+
+        let mut result = command.execute(&vec![root]).unwrap();
+
+        assert_eq!(result.len(), 1);
+
+        let first_result = result.pop().unwrap();
+        let first_result = first_result.borrow();
+        assert_eq!(
+            *first_result,
+            HtmlContent::Tag(HtmlTag {
+                name: String::from("aside"),
+                attributes: BTreeMap::<String, String>::from([(
+                    String::from("class"),
+                    String::from("test-source")
+                )])
+            })
+        );
+    }
+
+    #[test]
+    fn from_replaced_returns_all_matching_descendents_of_input() {
+        let command = ElementCreatingCommand::FromReplaced(CssSelectorList::new(vec![
+            CssSelectorPath::single(CssSelector::for_class("test-source")),
+        ]));
+        let root = load_inline_html(
+            r#"<div id="replaced">
+    <p class="first">
+        <em class="test-source">Content 1</em>
+    </p>
+    <aside class="test-source">Content 2</aside>
+    <div>
+        <div></div>
+        <div><img src="" class="test-source"></div>
+        <div></div>
+    </div>
+</div>"#,
+        );
+
+        let result = command.execute(&vec![root]).unwrap();
+        let result = result.iter().map(|n| n.outer_html()).collect::<Vec<_>>();
+
+        assert_eq!(result.len(), 3);
+        assert!(result.contains(&String::from(r#"<em class="test-source">Content 1</em>"#)));
+        assert!(result.contains(&String::from(
+            r#"<aside class="test-source">Content 2</aside>"#
+        )));
+        assert!(result.contains(&String::from(r#"<img class="test-source" src="">"#)));
+    }
+
+    #[test]
+    fn from_replaced_returns_empty_on_no_match() {
+        let command = ElementCreatingCommand::FromReplaced(CssSelectorList::new(vec![
+            CssSelectorPath::single(CssSelector::for_class("test-source")),
+        ]));
+        let root =
+            load_inline_html(r#"<div id="replaced"><p class="first"></p><aside></aside></div>"#);
+
+        let result = command.execute(&vec![root]).unwrap();
+
+        assert_eq!(result.len(), 0);
+    }
+
+    #[test]
+    fn from_replaced_returns_empty_on_empty_input() {
+        let command = ElementCreatingCommand::FromReplaced(CssSelectorList::new(vec![
+            CssSelectorPath::single(CssSelector::for_class("test-source")),
+        ]));
+
+        let result = command.execute(&vec![]).unwrap();
+
+        assert_eq!(result.len(), 0);
+    }
+}

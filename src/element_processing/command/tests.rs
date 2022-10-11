@@ -3,7 +3,7 @@ use crate::html::HtmlRenderable;
 use crate::string_creating::{ElementSelectingCommand, ValueExtractingCommand};
 use crate::{
     element_processing::{command::ElementProcessingCommand, pipeline::ElementProcessingPipeline},
-    CssSelector, CssSelectorList, CssSelectorPath, CssSelectorStep, HtmlContent,
+    load_inline_html, CssSelector, CssSelectorList, CssSelectorPath, CssSelectorStep,
     StringValueCreatingPipeline, ValueSource,
 };
 
@@ -32,12 +32,9 @@ fn extract_command() {
             ))],
         )]));
 
-    let dom = tl::parse(TEST_HTML_DOCUMENT, tl::ParserOptions::default()).unwrap();
-    let starting_elements = HtmlContent::import(dom).unwrap();
+    let root = load_inline_html(TEST_HTML_DOCUMENT);
 
-    let mut result = command
-        .execute(&vec![rctree::Node::clone(&starting_elements)])
-        .unwrap();
+    let mut result = command.execute(&vec![rctree::Node::clone(&root)]).unwrap();
 
     assert_eq!(result.len(), 1);
     let first_result = result.pop().unwrap();
@@ -57,11 +54,8 @@ fn remove_command() {
             ))],
         )]));
 
-    let dom = tl::parse(TEST_HTML_DOCUMENT, tl::ParserOptions::default()).unwrap();
-    let starting_elements = HtmlContent::import(dom).unwrap();
-    let mut result = command
-        .execute(&vec![rctree::Node::clone(&starting_elements)])
-        .unwrap();
+    let root = load_inline_html(TEST_HTML_DOCUMENT);
+    let mut result = command.execute(&vec![rctree::Node::clone(&root)]).unwrap();
 
     assert_eq!(result.len(), 1);
     let first_result = result.pop().unwrap();
@@ -90,16 +84,8 @@ fn remove_command() {
 fn clear_attribute() {
     let command = ElementProcessingCommand::ClearAttribute("data-test");
 
-    let dom = tl::parse(
-        r#"<div data-test="foo" class="bar">Some Content</div>"#,
-        tl::ParserOptions::default(),
-    )
-    .unwrap();
-    let starting_elements = HtmlContent::import(dom).unwrap();
-
-    let mut result = command
-        .execute(&vec![rctree::Node::clone(&starting_elements)])
-        .unwrap();
+    let root = load_inline_html(r#"<div data-test="foo" class="bar">Some Content</div>"#);
+    let mut result = command.execute(&vec![rctree::Node::clone(&root)]).unwrap();
 
     assert_eq!(result.len(), 1);
     let first_result = result.pop().unwrap();
@@ -113,16 +99,9 @@ fn clear_attribute() {
 fn clear_content() {
     let command = ElementProcessingCommand::ClearContent;
 
-    let dom = tl::parse(
-        r#"<div data-test="foo" class="bar">Some Content</div>"#,
-        tl::ParserOptions::default(),
-    )
-    .unwrap();
-    let starting_elements = HtmlContent::import(dom).unwrap();
+    let root = load_inline_html(r#"<div data-test="foo" class="bar">Some Content</div>"#);
 
-    let mut result = command
-        .execute(&vec![rctree::Node::clone(&starting_elements)])
-        .unwrap();
+    let mut result = command.execute(&vec![rctree::Node::clone(&root)]).unwrap();
 
     assert_eq!(result.len(), 1);
     let first_result = result.pop().unwrap();
@@ -137,16 +116,9 @@ fn set_attribute_from_string_over_existing_attr() {
     let command =
         ElementProcessingCommand::SetAttribute("data-test", ValueSource::StringValue("some text"));
 
-    let dom = tl::parse(
-        r#"<div data-test="foo" class="bar">Some Content</div>"#,
-        tl::ParserOptions::default(),
-    )
-    .unwrap();
-    let starting_elements = HtmlContent::import(dom).unwrap();
+    let root = load_inline_html(r#"<div data-test="foo" class="bar">Some Content</div>"#);
 
-    let mut result = command
-        .execute(&vec![rctree::Node::clone(&starting_elements)])
-        .unwrap();
+    let mut result = command.execute(&vec![rctree::Node::clone(&root)]).unwrap();
 
     assert_eq!(result.len(), 1);
     let first_result = result.pop().unwrap();
@@ -161,16 +133,9 @@ fn set_attribute_from_string_as_new_attr() {
     let command =
         ElementProcessingCommand::SetAttribute("data-fubar", ValueSource::StringValue("some text"));
 
-    let dom = tl::parse(
-        r#"<div data-test="foo" class="bar">Some Content</div>"#,
-        tl::ParserOptions::default(),
-    )
-    .unwrap();
-    let starting_elements = HtmlContent::import(dom).unwrap();
+    let root = load_inline_html(r#"<div data-test="foo" class="bar">Some Content</div>"#);
 
-    let mut result = command
-        .execute(&vec![rctree::Node::clone(&starting_elements)])
-        .unwrap();
+    let mut result = command.execute(&vec![rctree::Node::clone(&root)]).unwrap();
 
     assert_eq!(result.len(), 1);
     let first_result = result.pop().unwrap();
@@ -192,16 +157,9 @@ fn set_attribute_from_other_attr_as_new_attr() {
         )),
     );
 
-    let dom = tl::parse(
-        r#"<div data-test="foo" class="bar">Some Content</div>"#,
-        tl::ParserOptions::default(),
-    )
-    .unwrap();
-    let starting_elements = HtmlContent::import(dom).unwrap();
+    let root = load_inline_html(r#"<div data-test="foo" class="bar">Some Content</div>"#);
 
-    let mut result = command
-        .execute(&vec![rctree::Node::clone(&starting_elements)])
-        .unwrap();
+    let mut result = command.execute(&vec![rctree::Node::clone(&root)]).unwrap();
 
     assert_eq!(result.len(), 1);
     let first_result = result.pop().unwrap();
@@ -216,16 +174,9 @@ fn set_text_content_from_string_for_tag() {
     let command =
         ElementProcessingCommand::SetTextContent(ValueSource::StringValue("Other Content"));
 
-    let dom = tl::parse(
-        r#"<div data-test="foo" class="bar">Some Content</div>"#,
-        tl::ParserOptions::default(),
-    )
-    .unwrap();
-    let starting_elements = HtmlContent::import(dom).unwrap();
+    let root = load_inline_html(r#"<div data-test="foo" class="bar">Some Content</div>"#);
 
-    let mut result = command
-        .execute(&vec![rctree::Node::clone(&starting_elements)])
-        .unwrap();
+    let mut result = command.execute(&vec![rctree::Node::clone(&root)]).unwrap();
 
     assert_eq!(result.len(), 1);
     let first_result = result.pop().unwrap();
@@ -240,16 +191,9 @@ fn set_text_content_from_string_for_empty_tag() {
     let command =
         ElementProcessingCommand::SetTextContent(ValueSource::StringValue("Other Content"));
 
-    let dom = tl::parse(
-        r#"<div data-test="foo" class="bar"></div>"#,
-        tl::ParserOptions::default(),
-    )
-    .unwrap();
-    let starting_elements = HtmlContent::import(dom).unwrap();
+    let root = load_inline_html(r#"<div data-test="foo" class="bar"></div>"#);
 
-    let mut result = command
-        .execute(&vec![rctree::Node::clone(&starting_elements)])
-        .unwrap();
+    let mut result = command.execute(&vec![rctree::Node::clone(&root)]).unwrap();
 
     assert_eq!(result.len(), 1);
     let first_result = result.pop().unwrap();
@@ -268,16 +212,9 @@ fn set_text_content_from_attr_for_empty_tag() {
         ),
     ));
 
-    let dom = tl::parse(
-        r#"<div data-test="foo" class="bar"></div>"#,
-        tl::ParserOptions::default(),
-    )
-    .unwrap();
-    let starting_elements = HtmlContent::import(dom).unwrap();
+    let root = load_inline_html(r#"<div data-test="foo" class="bar"></div>"#);
 
-    let mut result = command
-        .execute(&vec![rctree::Node::clone(&starting_elements)])
-        .unwrap();
+    let mut result = command.execute(&vec![rctree::Node::clone(&root)]).unwrap();
 
     assert_eq!(result.len(), 1);
     let first_result = result.pop().unwrap();
@@ -292,16 +229,11 @@ fn set_text_content_from_string_for_tag_with_multiple_children() {
     let command =
         ElementProcessingCommand::SetTextContent(ValueSource::StringValue("Other Content"));
 
-    let dom = tl::parse(
+    let root = load_inline_html(
         r#"<div data-test="foo" class="bar">Some <em>special</em> Content. <!-- rightly so --></div>"#,
-        tl::ParserOptions::default(),
-    )
-        .unwrap();
-    let starting_elements = HtmlContent::import(dom).unwrap();
+    );
 
-    let mut result = command
-        .execute(&vec![rctree::Node::clone(&starting_elements)])
-        .unwrap();
+    let mut result = command.execute(&vec![rctree::Node::clone(&root)]).unwrap();
 
     assert_eq!(result.len(), 1);
     let first_result = result.pop().unwrap();
@@ -316,16 +248,9 @@ fn add_text_content_from_string_for_tag() {
     let command =
         ElementProcessingCommand::AddTextContent(ValueSource::StringValue("Other Content"));
 
-    let dom = tl::parse(
-        r#"<div data-test="foo" class="bar">Some Content</div>"#,
-        tl::ParserOptions::default(),
-    )
-    .unwrap();
-    let starting_elements = HtmlContent::import(dom).unwrap();
+    let root = load_inline_html(r#"<div data-test="foo" class="bar">Some Content</div>"#);
 
-    let mut result = command
-        .execute(&vec![rctree::Node::clone(&starting_elements)])
-        .unwrap();
+    let mut result = command.execute(&vec![rctree::Node::clone(&root)]).unwrap();
 
     assert_eq!(result.len(), 1);
     let first_result = result.pop().unwrap();
@@ -344,16 +269,9 @@ fn add_text_content_from_string_for_empty_tag() {
         ),
     ));
 
-    let dom = tl::parse(
-        r#"<div data-test="foo" class="bar"></div>"#,
-        tl::ParserOptions::default(),
-    )
-    .unwrap();
-    let starting_elements = HtmlContent::import(dom).unwrap();
+    let root = load_inline_html(r#"<div data-test="foo" class="bar"></div>"#);
 
-    let mut result = command
-        .execute(&vec![rctree::Node::clone(&starting_elements)])
-        .unwrap();
+    let mut result = command.execute(&vec![rctree::Node::clone(&root)]).unwrap();
 
     assert_eq!(result.len(), 1);
     let first_result = result.pop().unwrap();
@@ -368,16 +286,9 @@ fn add_text_content_from_attr_for_empty_tag() {
     let command =
         ElementProcessingCommand::AddTextContent(ValueSource::StringValue("Other Content"));
 
-    let dom = tl::parse(
-        r#"<div data-test="foo" class="bar"></div>"#,
-        tl::ParserOptions::default(),
-    )
-    .unwrap();
-    let starting_elements = HtmlContent::import(dom).unwrap();
+    let root = load_inline_html(r#"<div data-test="foo" class="bar"></div>"#);
 
-    let mut result = command
-        .execute(&vec![rctree::Node::clone(&starting_elements)])
-        .unwrap();
+    let mut result = command.execute(&vec![rctree::Node::clone(&root)]).unwrap();
 
     assert_eq!(result.len(), 1);
     let first_result = result.pop().unwrap();
@@ -392,16 +303,11 @@ fn add_text_content_from_string_for_tag_with_multiple_children() {
     let command =
         ElementProcessingCommand::AddTextContent(ValueSource::StringValue("Other Content"));
 
-    let dom = tl::parse(
+    let root = load_inline_html(
         r#"<div data-test="foo" class="bar">Some <em>special</em> Content. <!-- rightly so --></div>"#,
-        tl::ParserOptions::default(),
-    )
-        .unwrap();
-    let starting_elements = HtmlContent::import(dom).unwrap();
+    );
 
-    let mut result = command
-        .execute(&vec![rctree::Node::clone(&starting_elements)])
-        .unwrap();
+    let mut result = command.execute(&vec![rctree::Node::clone(&root)]).unwrap();
 
     assert_eq!(result.len(), 1);
     let first_result = result.pop().unwrap();
@@ -417,16 +323,9 @@ fn add_text_content_from_string_for_tag_with_multiple_children() {
 fn add_comment_from_string_for_tag() {
     let command = ElementProcessingCommand::AddComment(ValueSource::StringValue("Other Content"));
 
-    let dom = tl::parse(
-        r#"<div data-test="foo" class="bar">Some Content</div>"#,
-        tl::ParserOptions::default(),
-    )
-    .unwrap();
-    let starting_elements = HtmlContent::import(dom).unwrap();
+    let root = load_inline_html(r#"<div data-test="foo" class="bar">Some Content</div>"#);
 
-    let mut result = command
-        .execute(&vec![rctree::Node::clone(&starting_elements)])
-        .unwrap();
+    let mut result = command.execute(&vec![rctree::Node::clone(&root)]).unwrap();
 
     assert_eq!(result.len(), 1);
     let first_result = result.pop().unwrap();
@@ -442,16 +341,9 @@ fn add_comment_from_string_for_tag() {
 fn add_comment_from_string_for_empty_tag() {
     let command = ElementProcessingCommand::AddComment(ValueSource::StringValue("Other Content"));
 
-    let dom = tl::parse(
-        r#"<div data-test="foo" class="bar"></div>"#,
-        tl::ParserOptions::default(),
-    )
-    .unwrap();
-    let starting_elements = HtmlContent::import(dom).unwrap();
+    let root = load_inline_html(r#"<div data-test="foo" class="bar"></div>"#);
 
-    let mut result = command
-        .execute(&vec![rctree::Node::clone(&starting_elements)])
-        .unwrap();
+    let mut result = command.execute(&vec![rctree::Node::clone(&root)]).unwrap();
 
     assert_eq!(result.len(), 1);
     let first_result = result.pop().unwrap();
@@ -470,16 +362,9 @@ fn add_comment_from_attr_for_empty_tag() {
         ),
     ));
 
-    let dom = tl::parse(
-        r#"<div data-test="foo" class="bar"></div>"#,
-        tl::ParserOptions::default(),
-    )
-    .unwrap();
-    let starting_elements = HtmlContent::import(dom).unwrap();
+    let root = load_inline_html(r#"<div data-test="foo" class="bar"></div>"#);
 
-    let mut result = command
-        .execute(&vec![rctree::Node::clone(&starting_elements)])
-        .unwrap();
+    let mut result = command.execute(&vec![rctree::Node::clone(&root)]).unwrap();
 
     assert_eq!(result.len(), 1);
     let first_result = result.pop().unwrap();
@@ -493,16 +378,11 @@ fn add_comment_from_attr_for_empty_tag() {
 fn add_comment_from_string_for_tag_with_multiple_children() {
     let command = ElementProcessingCommand::AddComment(ValueSource::StringValue("Other Content"));
 
-    let dom = tl::parse(
+    let root = load_inline_html(
         r#"<div data-test="foo" class="bar"><!-- rightly so -->Some <em>special</em> Content.</div>"#,
-        tl::ParserOptions::default(),
-    )
-        .unwrap();
-    let starting_elements = HtmlContent::import(dom).unwrap();
+    );
 
-    let mut result = command
-        .execute(&vec![rctree::Node::clone(&starting_elements)])
-        .unwrap();
+    let mut result = command.execute(&vec![rctree::Node::clone(&root)]).unwrap();
 
     assert_eq!(result.len(), 1);
     let first_result = result.pop().unwrap();
@@ -526,16 +406,9 @@ fn for_each_on_ul() {
         )]),
     );
 
-    let dom = tl::parse(
-        r#"<ul><li>1</li><li>2</li></ul>"#,
-        tl::ParserOptions::default(),
-    )
-    .unwrap();
-    let starting_elements = HtmlContent::import(dom).unwrap();
+    let root = load_inline_html(r#"<ul><li>1</li><li>2</li></ul>"#);
 
-    let mut result = command
-        .execute(&vec![rctree::Node::clone(&starting_elements)])
-        .unwrap();
+    let mut result = command.execute(&vec![rctree::Node::clone(&root)]).unwrap();
 
     assert_eq!(result.len(), 1);
     let first_result = result.pop().unwrap();
@@ -552,16 +425,9 @@ fn add_element_from_create_for_tag() {
         None,
     ));
 
-    let dom = tl::parse(
-        r#"<div data-test="foo" class="bar">Some Content</div>"#,
-        tl::ParserOptions::default(),
-    )
-    .unwrap();
-    let starting_elements = HtmlContent::import(dom).unwrap();
+    let root = load_inline_html(r#"<div data-test="foo" class="bar">Some Content</div>"#);
 
-    let mut result = command
-        .execute(&vec![rctree::Node::clone(&starting_elements)])
-        .unwrap();
+    let mut result = command.execute(&vec![rctree::Node::clone(&root)]).unwrap();
 
     assert_eq!(result.len(), 1);
     let first_result = result.pop().unwrap();
@@ -581,16 +447,11 @@ fn replace_from_create() {
         ElementCreatingPipeline::new(ElementCreatingCommand::CreateElement("p"), None),
     );
 
-    let dom = tl::parse(
+    let root = load_inline_html(
         r#"<body><div class="replace-me">Some Content</div><div class="stay">This will be kept</div></body>"#,
-        tl::ParserOptions::default(),
-    )
-        .unwrap();
-    let starting_elements = HtmlContent::import(dom).unwrap();
+    );
 
-    let mut result = command
-        .execute(&vec![rctree::Node::clone(&starting_elements)])
-        .unwrap();
+    let mut result = command.execute(&vec![rctree::Node::clone(&root)]).unwrap();
 
     assert_eq!(result.len(), 1);
     let first_result = result.pop().unwrap();
@@ -613,16 +474,11 @@ fn replace_using_from_file() {
         ),
     );
 
-    let dom = tl::parse(
+    let root = load_inline_html(
         r#"<body><div class="replace-me">Some Content</div><div class="stay">This will be kept</div></body>"#,
-        tl::ParserOptions::default(),
-    )
-        .unwrap();
-    let starting_elements = HtmlContent::import(dom).unwrap();
+    );
 
-    let mut result = command
-        .execute(&vec![rctree::Node::clone(&starting_elements)])
-        .unwrap();
+    let mut result = command.execute(&vec![rctree::Node::clone(&root)]).unwrap();
 
     assert_eq!(result.len(), 1);
     let first_result = result.pop().unwrap();
@@ -649,16 +505,11 @@ fn replace_using_from_replaced() {
         ),
     );
 
-    let dom = tl::parse(
+    let root = load_inline_html(
         r#"<body><div class="replace-me">Some <aside>mixed <p>Content</p> with multiple </aside><p>levels</p></div><div class="stay">This will be kept</div></body>"#,
-        tl::ParserOptions::default(),
-    )
-        .unwrap();
-    let starting_elements = HtmlContent::import(dom).unwrap();
+    );
 
-    let mut result = command
-        .execute(&vec![rctree::Node::clone(&starting_elements)])
-        .unwrap();
+    let mut result = command.execute(&vec![rctree::Node::clone(&root)]).unwrap();
 
     assert_eq!(result.len(), 1);
     let first_result = result.pop().unwrap();

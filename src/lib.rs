@@ -194,3 +194,10 @@ pub(crate) fn load_html_file(file_path: &str) -> Result<rctree::Node<HtmlContent
 
     HtmlContent::import(dom).context(LoadingParsedCommandHtmlFailedSnafu)
 }
+
+#[cfg(test)]
+pub(crate) fn load_inline_html(html: &str) -> rctree::Node<HtmlContent> {
+    let dom = tl::parse(html, tl::ParserOptions::default()).unwrap();
+
+    HtmlContent::import(dom).unwrap()
+}

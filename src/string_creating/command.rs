@@ -139,17 +139,11 @@ impl<'a> ValueExtractingCommand<'a> {
 #[cfg(test)]
 mod test {
     use crate::string_creating::{ElementSelectingCommand, ValueExtractingCommand};
-    use crate::{CssSelector, CssSelectorList, CssSelectorPath, HtmlContent};
-
-    fn load_html(html: &str) -> rctree::Node<HtmlContent> {
-        let dom = tl::parse(html, tl::ParserOptions::default()).unwrap();
-
-        HtmlContent::import(dom).unwrap()
-    }
+    use crate::{load_inline_html, CssSelector, CssSelectorList, CssSelectorPath};
 
     #[test]
     fn use_element_returns_self() {
-        let root = load_html(r#"<div data-test="foo" class="bar"></div>"#);
+        let root = load_inline_html(r#"<div data-test="foo" class="bar"></div>"#);
         let command = ElementSelectingCommand::UseElement;
 
         let mut result = command.execute(&root).unwrap();
@@ -161,7 +155,7 @@ mod test {
 
     #[test]
     fn use_parent_returns_parent_on_existing_parent() {
-        let root = load_html(
+        let root = load_inline_html(
             r#"<div id="parent" data-test="foo"><div class="bar" data-test="fubar"></div></div>"#,
         );
         let target_node = root.first_child().unwrap();
@@ -176,7 +170,7 @@ mod test {
 
     #[test]
     fn use_parent_returns_empty_on_root() {
-        let root = load_html(
+        let root = load_inline_html(
             r#"<div id="parent" data-test="foo"><div class="bar" data-test="fubar"></div></div>"#,
         );
         let command = ElementSelectingCommand::UseParent;
@@ -188,7 +182,7 @@ mod test {
 
     #[test]
     fn querying_element_returns_matching_element() {
-        let root = load_html(
+        let root = load_inline_html(
             r#"<div class="bar" data-test="fubar"><aside class="test-source" data-test="foo"></aside></div>"#,
         );
         let command = ElementSelectingCommand::QueryElement(CssSelectorList::new(vec![
@@ -204,7 +198,7 @@ mod test {
 
     #[test]
     fn querying_element_returns_multiple_matching_elements() {
-        let root = load_html(
+        let root = load_inline_html(
             r#"<div class="bar" data-test="fubar"><aside class="test-source" data-test="foo"></aside><div><p class="test-source"></p></div></div>"#,
         );
         let command = ElementSelectingCommand::QueryElement(CssSelectorList::new(vec![
@@ -220,7 +214,7 @@ mod test {
 
     #[test]
     fn query_element_returns_empty_on_querying_nonexistent_el() {
-        let root = load_html(
+        let root = load_inline_html(
             r#"<div class="bar" data-test="fubar"><aside data-test="foo"></aside></div>"#,
         );
         let command = ElementSelectingCommand::QueryElement(CssSelectorList::new(vec![
@@ -234,7 +228,7 @@ mod test {
 
     #[test]
     fn querying_parent_returns_matching_element() {
-        let root = load_html(
+        let root = load_inline_html(
             r#"<div id="parent"><div class="bar" data-test="fubar"></div><aside class="test-source" data-test="foo"></aside></div>"#,
         );
         let target_node = root.first_child().unwrap();
@@ -251,7 +245,7 @@ mod test {
 
     #[test]
     fn querying_parent_returns_multiple_matching_elements() {
-        let root = load_html(
+        let root = load_inline_html(
             r#"<div id="parent"><div class="bar" data-test="fubar"></div><aside class="test-source" data-test="foo"><p class="test-source"></p></aside></div>"#,
         );
         let target_node = root.first_child().unwrap();
@@ -268,7 +262,7 @@ mod test {
 
     #[test]
     fn query_parent_returns_empty_on_root() {
-        let root = load_html(
+        let root = load_inline_html(
             r#"<div id="parent"><div class="bar" data-test="fubar"></div><aside class="test-source" data-test="foo"></aside></div>"#,
         );
         let command = ElementSelectingCommand::QueryParent(CssSelectorList::new(vec![
@@ -282,7 +276,7 @@ mod test {
 
     #[test]
     fn query_parent_returns_empty_on_querying_nonexistent_el() {
-        let root = load_html(
+        let root = load_inline_html(
             r#"<div id="parent"><div class="bar" data-test="fubar"></div><aside data-test="foo"></aside></div>"#,
         );
         let target_node = root.first_child().unwrap();
@@ -297,7 +291,7 @@ mod test {
 
     #[test]
     fn query_parent_returns_empty_on_matching_element_outside_parent() {
-        let root = load_html(
+        let root = load_inline_html(
             r#"<div><div id="parent"><div class="bar" data-test="fubar"></div><aside data-test="foo"></aside></div><aside class="test-source"></aside></div>"#,
         );
         let target_node = root.first_child().unwrap().first_child().unwrap();
@@ -312,7 +306,7 @@ mod test {
 
     #[test]
     fn query_root_returns_matching_element() {
-        let root = load_html(
+        let root = load_inline_html(
             r#"<div id="root"><div><div><div class="bar" data-test="fubar"></div></div></div><aside class="test-source" data-test="foo"></aside></div>"#,
         );
         let target_node = root
@@ -335,7 +329,7 @@ mod test {
 
     #[test]
     fn query_root_returns_multiple_matching_elements() {
-        let root = load_html(
+        let root = load_inline_html(
             r#"<div id="root"><div><div><div class="bar" data-test="fubar"></div><aside class="test-source"></aside></div></div><aside class="test-source" data-test="foo"></aside></div>"#,
         );
         let target_node = root
@@ -358,7 +352,7 @@ mod test {
 
     #[test]
     fn query_root_on_root_queries_itself() {
-        let root = load_html(
+        let root = load_inline_html(
             r#"<div data-test="fubar" class="bar"><aside class="test-source" data-test="foo"></aside></div>"#,
         );
         let command = ElementSelectingCommand::QueryRoot(CssSelectorList::new(vec![
@@ -374,7 +368,7 @@ mod test {
 
     #[test]
     fn query_root_return_empty_on_nonexistent_el() {
-        let root = load_html(
+        let root = load_inline_html(
             r#"<div id="root"><div><div><div class="bar" data-test="fubar"></div></div></div><aside data-test="foo"></aside></div>"#,
         );
         let target_node = root
@@ -395,7 +389,7 @@ mod test {
 
     #[test]
     fn get_attr_returns_value_on_existing_attr() {
-        let root = load_html(r#"<div data-test="foo" class="bar"></div>"#);
+        let root = load_inline_html(r#"<div data-test="foo" class="bar"></div>"#);
         let command = ValueExtractingCommand::GetAttribute("data-test");
 
         let mut result = command.execute(&vec![root]).unwrap();
@@ -407,7 +401,7 @@ mod test {
 
     #[test]
     fn get_attr_returns_empty_on_missing_attr() {
-        let root = load_html(r#"<div class="bar"></div>"#);
+        let root = load_inline_html(r#"<div class="bar"></div>"#);
         let command = ValueExtractingCommand::GetAttribute("data-test");
 
         let result = command.execute(&vec![root]).unwrap();
@@ -426,7 +420,7 @@ mod test {
 
     #[test]
     fn get_text_content_returns_correct_value_on_existing_content() {
-        let root = load_html(r#"<div>The content</div>"#);
+        let root = load_inline_html(r#"<div>The content</div>"#);
         let command = ValueExtractingCommand::GetTextContent;
 
         let mut result = command.execute(&vec![root]).unwrap();
@@ -438,7 +432,7 @@ mod test {
 
     #[test]
     fn get_text_content_returns_empty_string_on_empty_content() {
-        let root = load_html(r#"<div></div>"#);
+        let root = load_inline_html(r#"<div></div>"#);
         let command = ValueExtractingCommand::GetTextContent;
 
         let result = command.execute(&vec![root]).unwrap();
