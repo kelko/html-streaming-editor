@@ -492,7 +492,7 @@ fn replace_using_from_file() {
 
 //noinspection DuplicatedCode
 #[test]
-fn replace_using_from_replaced() {
+fn replace_using_query_replaced() {
     let command = ElementProcessingCommand::Replace(
         CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_class(
             "replace-me",

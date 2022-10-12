@@ -482,9 +482,9 @@ fn parse_single_replace_with_ascii_arrow_using_create() {
 
 //noinspection DuplicatedCode
 #[test]
-fn parse_single_replace_using_from_replaced() {
+fn parse_single_replace_using_query_replaced() {
     let parsed =
-        super::grammar::element_processing_command("REPLACE{.replace-me ↤ FROM-REPLACED{p} }");
+        super::grammar::element_processing_command("REPLACE{.replace-me ↤ QUERY-REPLACED{p} }");
     assert_eq!(
         parsed,
         Ok(ElementProcessingCommand::Replace(
@@ -503,7 +503,7 @@ fn parse_single_replace_using_from_replaced() {
 
 //noinspection DuplicatedCode
 #[test]
-fn parse_single_replace_using_from_replaced_alias_keep() {
+fn parse_single_replace_using_query_replaced_alias_keep() {
     let parsed = super::grammar::element_processing_command("REPLACE{.replace-me ↤ KEEP{p} }");
     assert_eq!(
         parsed,

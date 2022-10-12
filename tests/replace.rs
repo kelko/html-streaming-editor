@@ -85,7 +85,7 @@ fn replace_ul_with_sourced_html() -> Result<(), StreamingEditorError> {
 
 #[test]
 fn replace_third_para_with_child_abbr() -> Result<(), StreamingEditorError> {
-    let command = "REPLACE{#third-para ↤ FROM-REPLACED{abbr}}";
+    let command = "REPLACE{#third-para ↤ QUERY-REPLACED{abbr}}";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
     let mut output = Vec::new();

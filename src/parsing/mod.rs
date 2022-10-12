@@ -141,10 +141,10 @@ parser! {
         rule element_manipulating_subpipeline() -> Vec<ElementProcessingCommand<'input>>
             = " | " p:(element_processing_command() ** " | ") { p }
 
-        rule from_replaced_command() -> ElementCreatingCommand<'input>
-            = ("FROM-REPLACED"/"KEEP") "{" whitespace()? oc:css_selector_list() whitespace()? "}" { ElementCreatingCommand::FromReplaced(oc) }
+        rule query_replaced_command() -> ElementCreatingCommand<'input>
+            = ("QUERY-REPLACED"/"KEEP") "{" whitespace()? oc:css_selector_list() whitespace()? "}" { ElementCreatingCommand::FromReplaced(oc) }
         rule element_subselect_or_creating_category() -> ElementCreatingCommand<'input>
-            = from_replaced_command()
+            = query_replaced_command()
             / element_creating_command()
         rule element_subselect_or_creating_pipeline() -> ElementCreatingPipeline<'input>
             = s:element_subselect_or_creating_category() p:element_manipulating_subpipeline()? { ElementCreatingPipeline::new(s, p) }

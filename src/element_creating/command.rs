@@ -29,7 +29,7 @@ impl<'a> ElementCreatingCommand<'a> {
                 Self::create_element(element_name)
             }
             ElementCreatingCommand::FromFile(file_path) => Self::from_file(file_path),
-            ElementCreatingCommand::FromReplaced(selector) => Self::from_replaced(input, selector),
+            ElementCreatingCommand::FromReplaced(selector) => Self::query_replaced(input, selector),
         }
     }
 
@@ -48,11 +48,11 @@ impl<'a> ElementCreatingCommand<'a> {
         Ok(vec![root_element.make_deep_copy()])
     }
 
-    fn from_replaced(
+    fn query_replaced(
         input: &Vec<rctree::Node<HtmlContent>>,
         selector: &CssSelectorList<'a>,
     ) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
-        trace!("Running FROM-REPLACED command");
+        trace!("Running QUERY-REPLACED command");
         Ok(selector
             .query(input)
             .iter()
@@ -133,7 +133,7 @@ mod tests {
     }
 
     #[test]
-    fn from_replaced_returns_matching_descendent_of_input() {
+    fn query_replaced_returns_matching_descendent_of_input() {
         let command = ElementCreatingCommand::FromReplaced(CssSelectorList::new(vec![
             CssSelectorPath::single(CssSelector::for_class("test-source")),
         ]));
@@ -160,7 +160,7 @@ mod tests {
     }
 
     #[test]
-    fn from_replaced_returns_all_matching_descendents_of_input() {
+    fn query_replaced_returns_all_matching_descendents_of_input() {
         let command = ElementCreatingCommand::FromReplaced(CssSelectorList::new(vec![
             CssSelectorPath::single(CssSelector::for_class("test-source")),
         ]));
@@ -190,7 +190,7 @@ mod tests {
     }
 
     #[test]
-    fn from_replaced_returns_empty_on_no_match() {
+    fn query_replaced_returns_empty_on_no_match() {
         let command = ElementCreatingCommand::FromReplaced(CssSelectorList::new(vec![
             CssSelectorPath::single(CssSelector::for_class("test-source")),
         ]));
@@ -203,7 +203,7 @@ mod tests {
     }
 
     #[test]
-    fn from_replaced_returns_empty_on_empty_input() {
+    fn query_replaced_returns_empty_on_empty_input() {
         let command = ElementCreatingCommand::FromReplaced(CssSelectorList::new(vec![
             CssSelectorPath::single(CssSelector::for_class("test-source")),
         ]));
