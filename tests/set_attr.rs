@@ -37,6 +37,24 @@ fn overwrite_first_p_id() -> Result<(), StreamingEditorError> {
 }
 
 #[test]
+fn replace_characters_in_first_id() -> Result<(), StreamingEditorError> {
+    let command = "EXTRACT-ELEMENT{#first-para} | SET-ATTR{id ↤ USE-ELEMENT | GET-ATTR{id} | REGEX-REPLACE{'\\W' ↤ '_'} }";
+    let mut input = Box::new(HTML_INPUT.as_bytes());
+    let mut output = Vec::new();
+    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+
+    let _ = hse.run(command)?;
+    let result_string = String::from_utf8(output).unwrap();
+
+    assert_eq!(
+        result_string,
+        String::from(r#"<p id="first_para">Some first text</p>"#)
+    );
+
+    Ok(())
+}
+
+#[test]
 fn add_attr_to_first_p() -> Result<(), StreamingEditorError> {
     let command = r#"EXTRACT-ELEMENT{#first-para} | SET-ATTR{data-test ↤ "some value"}"#;
 

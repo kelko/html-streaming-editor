@@ -1,12 +1,13 @@
+use crate::string_creating::command::ValueProcessingCommand;
 use crate::string_creating::{ElementSelectingCommand, ValueExtractingCommand};
 use crate::{CommandFailedSnafu, HtmlContent, PipelineError};
 use snafu::ResultExt;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct StringValueCreatingPipeline<'a> {
+pub(crate) struct StringValueCreatingPipeline<'a> {
     element_selector: ElementSelectingCommand<'a>,
     value_extractor: ValueExtractingCommand<'a>,
-    //todo: value_processing: Vec<ValueProcessingCommand<'a>>
+    value_processing: Vec<ValueProcessingCommand<'a>>,
 }
 
 /// The command pipeline: a list of individual commands
@@ -19,6 +20,19 @@ impl<'a> StringValueCreatingPipeline<'a> {
         StringValueCreatingPipeline {
             element_selector,
             value_extractor,
+            value_processing: vec![],
+        }
+    }
+
+    pub const fn with_value_processing(
+        element_selector: ElementSelectingCommand<'a>,
+        value_extractor: ValueExtractingCommand<'a>,
+        value_processing: Vec<ValueProcessingCommand<'a>>,
+    ) -> Self {
+        StringValueCreatingPipeline {
+            element_selector,
+            value_extractor,
+            value_processing,
         }
     }
 
@@ -34,16 +48,30 @@ impl<'a> StringValueCreatingPipeline<'a> {
             .element_selector
             .execute(node)
             .context(CommandFailedSnafu { index: 0_usize })?;
-        self.value_extractor
+
+        let mut intermediate = self
+            .value_extractor
             .execute(&element)
-            .context(CommandFailedSnafu { index: 1_usize })
+            .context(CommandFailedSnafu { index: 1_usize })?;
+
+        for (command_index, processing_command) in self.value_processing.iter().enumerate() {
+            intermediate =
+                processing_command
+                    .execute(&intermediate)
+                    .context(CommandFailedSnafu {
+                        index: command_index + 2,
+                    })?
+        }
+
+        Ok(intermediate)
     }
 }
 
 #[cfg(test)]
 mod test {
+    use crate::string_creating::command::ValueProcessingCommand;
     use crate::string_creating::{ElementSelectingCommand, ValueExtractingCommand};
-    use crate::{HtmlContent, StringValueCreatingPipeline};
+    use crate::{load_inline_html, StringValueCreatingPipeline};
 
     #[test]
     fn get_attr_from_element_returns_correct_value() {
@@ -52,14 +80,9 @@ mod test {
             ValueExtractingCommand::GetAttribute("data-test"),
         );
 
-        let dom = tl::parse(
-            r#"<div data-test="foo" class="bar"></div>"#,
-            tl::ParserOptions::default(),
-        )
-        .unwrap();
-        let starting_element = HtmlContent::import(dom).unwrap();
+        let root = load_inline_html(r#"<div data-test="foo" class="bar"></div>"#);
 
-        let mut result = pipeline.run_on(&starting_element).unwrap();
+        let mut result = pipeline.run_on(&root).unwrap();
 
         assert_eq!(result.len(), 1);
         let first_result = result.pop().unwrap();
@@ -73,15 +96,47 @@ mod test {
             ValueExtractingCommand::GetAttribute("data-other"),
         );
 
-        let dom = tl::parse(
-            r#"<div data-test="foo" class="bar"></div>"#,
-            tl::ParserOptions::default(),
-        )
-        .unwrap();
-        let starting_element = HtmlContent::import(dom).unwrap();
+        let root = load_inline_html(r#"<div data-test="foo" class="bar"></div>"#);
 
-        let result = pipeline.run_on(&starting_element).unwrap();
+        let result = pipeline.run_on(&root).unwrap();
 
         assert_eq!(result.len(), 0);
+    }
+
+    #[test]
+    fn get_attr_from_element_regex_replace_returns_correct_value() {
+        let pipeline = StringValueCreatingPipeline::with_value_processing(
+            ElementSelectingCommand::UseElement,
+            ValueExtractingCommand::GetAttribute("data-test"),
+            vec![ValueProcessingCommand::RegexReplace("f", "z")],
+        );
+
+        let root = load_inline_html(r#"<div data-test="foo" class="bar"></div>"#);
+
+        let mut result = pipeline.run_on(&root).unwrap();
+
+        assert_eq!(result.len(), 1);
+        let first_result = result.pop().unwrap();
+        assert_eq!(first_result, String::from("zoo"));
+    }
+
+    #[test]
+    fn get_attr_from_element_2_regex_replaces_returns_correct_value() {
+        let pipeline = StringValueCreatingPipeline::with_value_processing(
+            ElementSelectingCommand::UseElement,
+            ValueExtractingCommand::GetAttribute("data-test"),
+            vec![
+                ValueProcessingCommand::RegexReplace("f", "z"),
+                ValueProcessingCommand::RegexReplace("o", "a"),
+            ],
+        );
+
+        let root = load_inline_html(r#"<div data-test="foo" class="bar"></div>"#);
+
+        let mut result = pipeline.run_on(&root).unwrap();
+
+        assert_eq!(result.len(), 1);
+        let first_result = result.pop().unwrap();
+        assert_eq!(first_result, String::from("zaa"));
     }
 }

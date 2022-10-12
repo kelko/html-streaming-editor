@@ -68,12 +68,12 @@ Currently supported:
 - `QUERY-ROOT`: runs a query on the root of the currently selected element for a sub-pipeline, without detaching target element from HTML tree unlike `EXTRACT-ELEMENT`
 - `GET-ATTR`: returns the value of an attribute of the currently selected element for a string-value producing pipelines
 - `GET-TEXT-CONTENT`: returns the text content of the currently selected element for a string-value producing pipelines
+- `REGEX-REPLACE`: runs a RegEx-based value replacements on the current string value of the pipeline
 
 Not Yet implemented:
 
 - `TO-LOWER`: all-lower the current string value of the pipeline
 - `TO-UPPER`: all-caps the current string value of the pipeline
-- `REGEX-REPLACE`: runs a RegEx-based value replacements on the current string value of the pipeline
 
 
 Binary

@@ -2,6 +2,7 @@ use crate::element_creating::{ElementCreatingCommand, ElementCreatingPipeline};
 use crate::element_processing::{ElementProcessingCommand, ElementProcessingPipeline};
 use crate::string_creating::{
     ElementSelectingCommand, StringValueCreatingPipeline, ValueExtractingCommand,
+    ValueProcessingCommand,
 };
 use crate::{CssSelector, CssSelectorList, CssSelectorPath, ValueSource};
 
@@ -534,6 +535,39 @@ fn parse_string_creating_pipeline_use_element_get_attr() {
 }
 
 #[test]
+fn parse_string_creating_pipeline_use_element_get_attr_regex_replace() {
+    let parsed = super::grammar::string_creating_pipeline(
+        "USE-ELEMENT | GET-ATTR{data-test} | REGEX-REPLACE{'a' ↤ 'b'}",
+    );
+    assert_eq!(
+        parsed,
+        Ok(StringValueCreatingPipeline::with_value_processing(
+            ElementSelectingCommand::UseElement,
+            ValueExtractingCommand::GetAttribute("data-test"),
+            vec![ValueProcessingCommand::RegexReplace("a", "b")]
+        )),
+    );
+}
+
+#[test]
+fn parse_string_creating_pipeline_use_element_get_attr_2_regex_replaces() {
+    let parsed = super::grammar::string_creating_pipeline(
+        "USE-ELEMENT | GET-ATTR{data-test} | REGEX-REPLACE{'a' ↤ 'b'} | REGEX-REPLACE{'a' ↤ 'b'}",
+    );
+    assert_eq!(
+        parsed,
+        Ok(StringValueCreatingPipeline::with_value_processing(
+            ElementSelectingCommand::UseElement,
+            ValueExtractingCommand::GetAttribute("data-test"),
+            vec![
+                ValueProcessingCommand::RegexReplace("a", "b"),
+                ValueProcessingCommand::RegexReplace("a", "b")
+            ]
+        )),
+    );
+}
+
+#[test]
 fn parse_use_element() {
     let parsed = super::grammar::element_selecting_command("USE-ELEMENT");
     assert_eq!(parsed, Ok(ElementSelectingCommand::UseElement));
@@ -603,4 +637,30 @@ fn parse_get_attr() {
 fn parse_get_text_content() {
     let parsed = super::grammar::value_extracting_command("GET-TEXT-CONTENT");
     assert_eq!(parsed, Ok(ValueExtractingCommand::GetTextContent));
+}
+
+#[test]
+fn parse_regex_replace_simple() {
+    let parsed = super::grammar::value_processing_command("REGEX-REPLACE{'a' ↤ 'b'}");
+    assert_eq!(parsed, Ok(ValueProcessingCommand::RegexReplace("a", "b")));
+}
+
+#[test]
+fn parse_regex_replace_with_ascii_arrow() {
+    let parsed = super::grammar::value_processing_command("REGEX-REPLACE{'a' <= 'b'}");
+    assert_eq!(parsed, Ok(ValueProcessingCommand::RegexReplace("a", "b")));
+}
+
+#[test]
+fn parse_regex_replace_complex() {
+    let parsed = super::grammar::value_processing_command(
+        "REGEX-REPLACE{'^(\\w+)[a-zA-Z]{0,3}\\s$' ↤ 'Some $1 stuff'}",
+    );
+    assert_eq!(
+        parsed,
+        Ok(ValueProcessingCommand::RegexReplace(
+            "^(\\w+)[a-zA-Z]{0,3}\\s$",
+            "Some $1 stuff"
+        ))
+    );
 }

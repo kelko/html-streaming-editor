@@ -1,8 +1,10 @@
-use crate::{CommandError, CssSelectorList, HtmlContent, HtmlRenderable};
+use crate::{CommandError, CssSelectorList, HtmlContent, HtmlRenderable, ParsingRegexFailedSnafu};
 use rctree::Node;
+use regex::Regex;
+use snafu::ResultExt;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ElementSelectingCommand<'a> {
+pub(crate) enum ElementSelectingCommand<'a> {
     /// Returns the previously selected element
     UseElement,
     /// Returns the parent of the previously selected element (if exists)
@@ -79,17 +81,16 @@ impl<'a> ElementSelectingCommand<'a> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ValueExtractingCommand<'a> {
-    /// Returns the previously selected element
+pub(crate) enum ValueExtractingCommand<'a> {
+    /// returns the content of a named attribute
     GetAttribute(&'a str),
+    /// return the text content of that element
     GetTextContent,
 }
 
 impl<'a> ValueExtractingCommand<'a> {
     /// perform the action defined by the command on the set of nodes
     /// and return the calculated results.
-    /// For some command the output can be equal to the input,
-    /// others change the result-set
     pub(crate) fn execute(&self, input: &[Node<HtmlContent>]) -> Result<Vec<String>, CommandError> {
         match self {
             ValueExtractingCommand::GetAttribute(attr_name) => {
@@ -129,8 +130,40 @@ impl<'a> ValueExtractingCommand<'a> {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum ValueProcessingCommand<'a> {
+    RegexReplace(&'a str, &'a str),
+}
+
+impl<'a> ValueProcessingCommand<'a> {
+    /// perform the action defined by the command on the set of nodes
+    /// and return the calculated results.
+    pub(crate) fn execute(&self, input: &[String]) -> Result<Vec<String>, CommandError> {
+        match self {
+            ValueProcessingCommand::RegexReplace(regex, replace) => {
+                Self::regex_replace(input, regex, replace)
+            }
+        }
+    }
+
+    fn regex_replace(
+        input: &[String],
+        regex: &str,
+        replace: &str,
+    ) -> Result<Vec<String>, CommandError> {
+        let re = Regex::new(regex).context(ParsingRegexFailedSnafu)?;
+
+        Ok(input
+            .iter()
+            .map(|v| re.replace_all(v, replace))
+            .map(|v| String::from(v))
+            .collect::<Vec<_>>())
+    }
+}
+
 #[cfg(test)]
 mod test {
+    use crate::string_creating::command::ValueProcessingCommand;
     use crate::string_creating::{ElementSelectingCommand, ValueExtractingCommand};
     use crate::{load_inline_html, CssSelector, CssSelectorList, CssSelectorPath};
 
@@ -419,6 +452,7 @@ mod test {
         let mut result = command.execute(&vec![root]).unwrap();
 
         assert_eq!(result.len(), 1);
+
         let first_result = result.pop().unwrap();
         assert_eq!(first_result, String::from("The content"));
     }
@@ -436,6 +470,133 @@ mod test {
     #[test]
     fn get_text_content_returns_empty_string_on_empty_input() {
         let command = ValueExtractingCommand::GetTextContent;
+
+        let result = command.execute(&vec![]).unwrap();
+
+        assert_eq!(result.len(), 0);
+    }
+
+    #[test]
+    fn regex_replaces_uses_indexed_group_correctly() {
+        let command = ValueProcessingCommand::RegexReplace("(He)(l+)o", "-> $2 <-");
+
+        let mut result = command.execute(&[String::from("Hello")]).unwrap();
+
+        assert_eq!(result.len(), 1);
+
+        let first_result = result.pop().unwrap();
+        assert_eq!(first_result, String::from("-> ll <-"));
+    }
+
+    #[test]
+    fn regex_replaces_uses_named_groups_correctly() {
+        let command = ValueProcessingCommand::RegexReplace("(?P<s>He)(?P<m>l+)o", "-> $m <-");
+
+        let mut result = command.execute(&[String::from("Hello")]).unwrap();
+
+        assert_eq!(result.len(), 1);
+
+        let first_result = result.pop().unwrap();
+        assert_eq!(first_result, String::from("-> ll <-"));
+    }
+
+    #[test]
+    fn regex_replaces_uses_number_classes_correctly() {
+        let command = ValueProcessingCommand::RegexReplace("\\d", "##");
+
+        let mut result = command
+            .execute(&[String::from("And one, 2, three, 4")])
+            .unwrap();
+
+        assert_eq!(result.len(), 1);
+
+        let first_result = result.pop().unwrap();
+        assert_eq!(first_result, String::from("And one, ##, three, ##"));
+    }
+
+    #[test]
+    fn regex_replaces_uses_whitespace_classes_correctly() {
+        let command = ValueProcessingCommand::RegexReplace("\\s", "_");
+
+        let mut result = command
+            .execute(&[String::from("And one, 2, three, 4")])
+            .unwrap();
+
+        assert_eq!(result.len(), 1);
+
+        let first_result = result.pop().unwrap();
+        assert_eq!(first_result, String::from("And_one,_2,_three,_4"));
+    }
+
+    #[test]
+    fn regex_replaces_uses_nonword_classes_correctly() {
+        let command = ValueProcessingCommand::RegexReplace("\\W", "_");
+
+        let mut result = command
+            .execute(&[String::from("And one, 2, three, 4")])
+            .unwrap();
+
+        assert_eq!(result.len(), 1);
+
+        let first_result = result.pop().unwrap();
+        assert_eq!(first_result, String::from("And_one__2__three__4"));
+    }
+
+    #[test]
+    fn regex_replaces_changes_values_correctly() {
+        let command = ValueProcessingCommand::RegexReplace("a", "e");
+
+        let mut result = command.execute(&[String::from("Hallo")]).unwrap();
+
+        assert_eq!(result.len(), 1);
+
+        let first_result = result.pop().unwrap();
+        assert_eq!(first_result, String::from("Hello"));
+    }
+
+    #[test]
+    fn regex_replaces_changes_only_occurrences_correctly() {
+        let command = ValueProcessingCommand::RegexReplace("a", "e");
+
+        let mut result = command.execute(&[String::from("Apples are good")]).unwrap();
+
+        assert_eq!(result.len(), 1);
+
+        let first_result = result.pop().unwrap();
+        assert_eq!(first_result, String::from("Apples ere good"));
+    }
+
+    #[test]
+    fn regex_replaces_changes_all_occurrences_correctly() {
+        let command = ValueProcessingCommand::RegexReplace("A", "E");
+
+        let mut result = command.execute(&[String::from("Apples Are Good")]).unwrap();
+
+        assert_eq!(result.len(), 1);
+
+        let first_result = result.pop().unwrap();
+        assert_eq!(first_result, String::from("Epples Ere Good"));
+    }
+
+    #[test]
+    fn regex_replaces_changes_all_inputs_correctly() {
+        let command = ValueProcessingCommand::RegexReplace("a", "e");
+
+        let mut result = command
+            .execute(&[String::from("Hallo"), String::from("apples are good")])
+            .unwrap();
+
+        assert_eq!(result.len(), 2);
+
+        let second_result = result.pop().unwrap();
+        let first_result = result.pop().unwrap();
+        assert_eq!(second_result, String::from("epples ere good"));
+        assert_eq!(first_result, String::from("Hello"));
+    }
+
+    #[test]
+    fn regex_replaces_returns_empty_string_on_empty_input() {
+        let command = ValueProcessingCommand::RegexReplace("a", "e");
 
         let result = command.execute(&vec![]).unwrap();
 

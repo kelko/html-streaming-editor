@@ -5,6 +5,7 @@ use crate::{
     element_processing::{ElementProcessingCommand, ElementProcessingPipeline},
     string_creating::{
         ElementSelectingCommand, StringValueCreatingPipeline, ValueExtractingCommand,
+        ValueProcessingCommand,
     },
     CssAttributeComparison, CssAttributeSelector, CssPseudoClass, CssSelector, CssSelectorList,
     CssSelectorPath, CssSelectorStep, ValueSource,
@@ -165,6 +166,7 @@ parser! {
             / query_element_command()
             / query_parent_command()
             / query_root_command()
+
         rule get_attr_command() -> ValueExtractingCommand<'input>
             = "GET-ATTR{" whitespace()? a:identifier() whitespace()? "}" { ValueExtractingCommand::GetAttribute(a) }
         rule get_text_content_command() -> ValueExtractingCommand<'input>
@@ -172,8 +174,15 @@ parser! {
         pub(super) rule value_extracting_command() -> ValueExtractingCommand<'input>
             = get_attr_command()
             / get_text_content_command()
+
+        rule regex_replace_command() -> ValueProcessingCommand<'input>
+            = "REGEX-REPLACE{" whitespace()? m:string_value() whitespace()? assign_marker() whitespace()? r:string_value() whitespace()? "}" { ValueProcessingCommand::RegexReplace(m,r) }
+        pub(super) rule value_processing_command() -> ValueProcessingCommand<'input>
+            = regex_replace_command()
+
         pub(super) rule string_creating_pipeline() -> StringValueCreatingPipeline<'input>
-            = s:element_selecting_command() " | " e:value_extracting_command() { StringValueCreatingPipeline::new(s, e) }
+            = s:element_selecting_command() " | " e:value_extracting_command() " | " p:(value_processing_command() ** " | ") { StringValueCreatingPipeline::with_value_processing(s, e, p) }
+            / s:element_selecting_command() " | " e:value_extracting_command() { StringValueCreatingPipeline::new(s, e) }
 
         pub(crate) rule pipeline() -> ElementProcessingPipeline<'input>
             = p:(element_processing_command() ** " | ") { ElementProcessingPipeline::new(p) }

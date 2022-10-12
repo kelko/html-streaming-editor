@@ -97,6 +97,11 @@ pub enum CommandError {
         #[snafu(backtrace)]
         source: crate::html::StreamingEditorError,
     },
+    #[snafu(display("Failed to parse regular expression"))]
+    ParsingRegexFailed {
+        source: regex::Error,
+        backtrace: Backtrace,
+    },
 }
 
 pub struct HtmlStreamingEditor<'a> {
