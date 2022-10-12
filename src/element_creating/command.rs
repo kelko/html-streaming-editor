@@ -28,7 +28,7 @@ impl<'a> ElementCreatingCommand<'a> {
             ElementCreatingCommand::CreateElement(element_name) => {
                 Self::create_element(element_name)
             }
-            ElementCreatingCommand::FromFile(file_path) => Self::from_file(file_path),
+            ElementCreatingCommand::FromFile(file_path) => Self::load_file(file_path),
             ElementCreatingCommand::FromReplaced(selector) => Self::query_replaced(input, selector),
         }
     }
@@ -41,8 +41,8 @@ impl<'a> ElementCreatingCommand<'a> {
         )))])
     }
 
-    fn from_file(file_path: &str) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
-        trace!("Running FROM-FILE command using file: {:#?}", file_path);
+    fn load_file(file_path: &str) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
+        trace!("Running LOAD-FILE command using file: {:#?}", file_path);
 
         let root_element = load_html_file(file_path)?;
         Ok(vec![root_element.make_deep_copy()])
@@ -100,7 +100,7 @@ mod tests {
     }
 
     #[test]
-    fn from_file_read_file_content() {
+    fn load_file_read_file_content() {
         let command = ElementCreatingCommand::FromFile("tests/source.html");
         let mut result = command.execute(&vec![]).unwrap();
 
@@ -112,7 +112,7 @@ mod tests {
             r#"<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>FROM-FILE Source</title>
+    <title>LOAD-FILE Source</title>
 </head>
 <body>
     <div>Some other stuff</div>

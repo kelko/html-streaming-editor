@@ -397,9 +397,9 @@ fn parse_single_add_element_using_create() {
 }
 
 #[test]
-fn parse_single_add_element_using_from_file() {
+fn parse_single_add_element_using_load_file() {
     let parsed =
-        super::grammar::element_processing_command("ADD-ELEMENT{FROM-FILE{'tests/source.html'}}");
+        super::grammar::element_processing_command("ADD-ELEMENT{LOAD-FILE{'tests/source.html'}}");
     assert_eq!(
         parsed,
         Ok(ElementProcessingCommand::AddElement(

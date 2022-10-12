@@ -59,7 +59,7 @@ Currently supported:
 - `ADD-ELEMENT`: appends a new tag/element child
 - `REPLACE`: replace all elements matching a CSS selector with new elements (alias: `MAP`)
 - `CREATE-ELEMENT`: creates a new, empty element, mainly in combination with `ADD-ELEMENT` or `REPLACE` (alias: `NEW`)
-- `FROM-FILE`: reads a DOM from a different file, mainly in combination with `ADD-ELEMENT` or `REPLACE` (alias: `SOURCE`)
+- `LOAD-FILE`: reads a DOM from a different file, mainly in combination with `ADD-ELEMENT` or `REPLACE` (alias: `SOURCE`)
 - `QUERY-REPLACED`: returns children matching the CSS selector of those elements meant to be replaced, only combination with or `REPLACE` (alias: `KEEP`)
 - `USE-ELEMENT`: returns the currently selected element for a sub-pipeline, mainly in combination with "string value producing pipelines" (alias: `THIS`)
 - `USE-PARENT`: returns the parent of the currently selected element for a sub-pipeline, mainly in combination with "string value producing pipelines" (alias: `PARENT`)

@@ -131,11 +131,11 @@ parser! {
 
         rule create_element_command() -> ElementCreatingCommand<'input>
             = ("CREATE-ELEMENT"/"NEW") "{" whitespace()? n:identifier() whitespace()? "}" { ElementCreatingCommand::CreateElement(n)}
-        rule from_file_command() -> ElementCreatingCommand<'input>
-            = ("FROM-FILE"/"SOURCE") "{" whitespace()? f:string_value() whitespace()? "}" { ElementCreatingCommand::FromFile(f) }
+        rule load_file_command() -> ElementCreatingCommand<'input>
+            = ("LOAD-FILE"/"SOURCE") "{" whitespace()? f:string_value() whitespace()? "}" { ElementCreatingCommand::FromFile(f) }
         rule element_creating_command() -> ElementCreatingCommand<'input>
             = create_element_command()
-            / from_file_command()
+            / load_file_command()
         rule element_creating_pipeline() -> ElementCreatingPipeline<'input>
             = s:element_creating_command() p:element_manipulating_subpipeline()? { ElementCreatingPipeline::new(s, p) }
         rule element_manipulating_subpipeline() -> Vec<ElementProcessingCommand<'input>>

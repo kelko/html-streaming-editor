@@ -463,7 +463,7 @@ fn replace_from_create() {
 
 //noinspection DuplicatedCode
 #[test]
-fn replace_using_from_file() {
+fn replace_using_load_file() {
     let command = ElementProcessingCommand::Replace(
         CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_class(
             "replace-me",
