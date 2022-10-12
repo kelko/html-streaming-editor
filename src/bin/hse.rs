@@ -27,8 +27,8 @@ fn main() {
 
     let cli = Cli::parse();
 
-    let input_path = cli.input.unwrap_or(PathBuf::from("-"));
-    let output_path = cli.output.unwrap_or(PathBuf::from("-"));
+    let input_path = cli.input.unwrap_or_else(|| PathBuf::from("-"));
+    let output_path = cli.output.unwrap_or_else(|| PathBuf::from("-"));
     let pipeline_definition = cli.pipeline;
 
     let mut input_reader: Box<dyn BufRead> = if input_path.to_str() == Some("-") {

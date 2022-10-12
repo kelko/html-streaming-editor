@@ -8,7 +8,7 @@ use log::trace;
 mod tests;
 
 /// CSS [pseudo classes](https://developer.mozilla.org/en-US/docs/Web/CSS/Pseudo-classes) selector
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CssPseudoClass {
     /// CSS [:first-child](https://developer.mozilla.org/en-US/docs/Web/CSS/:first-child) selector
     FirstChild,
@@ -33,7 +33,7 @@ pub enum CssPseudoClass {
 }
 
 /// Operator for CSS [attribute](https://developer.mozilla.org/en-US/docs/Web/CSS/Attribute_selectors) selector
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CssAttributeComparison {
     /// CSS \[attr\] attribute selector
     Exist,
@@ -51,7 +51,7 @@ pub enum CssAttributeComparison {
     EqualsTillHyphen,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 /// CSS [attribute](https://developer.mozilla.org/en-US/docs/Web/CSS/Attribute_selectors) selector
 pub struct CssAttributeSelector<'a> {
     /// the attribute name to match against
@@ -101,7 +101,7 @@ impl<'a> CssAttributeSelector<'a> {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 /// model for [CSS selectors](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors)
 pub struct CssSelector<'a> {
     /// selector on element name
@@ -184,12 +184,12 @@ impl<'a> CssSelector<'a> {
             }
         }
 
-        return findings;
+        findings
     }
 }
 
 /// Combining different "steps" of the CSS selector path
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CssSelectorCombinator {
     /// used internally only, to indicate the beginning of the path
     Start,
@@ -210,7 +210,7 @@ pub enum CssSelectorCombinator {
 /// `a > b` would be two steps:
 /// - start of a
 /// - direct-child of b
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CssSelectorStep<'a> {
     pub selector: CssSelector<'a>,
     pub combinator: CssSelectorCombinator,
@@ -254,7 +254,7 @@ impl<'a> CssSelectorStep<'a> {
 }
 
 /// a whole "path" of CSS selectors
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CssSelectorPath<'a>(Vec<CssSelectorStep<'a>>);
 
 impl<'a> CssSelectorPath<'a> {
@@ -271,19 +271,16 @@ impl<'a> CssSelectorPath<'a> {
 
     pub(crate) fn query(
         &self,
-        start: &Vec<rctree::Node<HtmlContent>>,
+        start: &[rctree::Node<HtmlContent>],
     ) -> Vec<rctree::Node<HtmlContent>> {
-        let mut findings = start
-            .iter()
-            .map(|n| rctree::Node::clone(n))
-            .collect::<Vec<_>>();
+        let mut findings = start.iter().map(rctree::Node::clone).collect::<Vec<_>>();
 
         for step in &self.0 {
             let candidates = Self::resolve_combinator(&step.combinator, findings);
             findings = step.selector.query(&candidates);
         }
 
-        return findings;
+        findings
     }
 
     fn resolve_combinator(
@@ -308,22 +305,18 @@ impl<'a> CssSelectorPath<'a> {
                 .collect::<Vec<_>>(),
             CssSelectorCombinator::AdjacentSibling => source
                 .iter()
-                .flat_map(|s| Self::find_tag_sibling(s))
+                .flat_map(Self::find_tag_sibling)
                 .collect::<Vec<_>>(),
         }
     }
 
     fn find_tag_sibling(start: &rctree::Node<HtmlContent>) -> Option<rctree::Node<HtmlContent>> {
         let mut candidate = start.next_sibling();
-        loop {
-            if let Some(node) = candidate {
-                if node.borrow().is_tag() {
-                    return Some(node);
-                } else {
-                    candidate = node.next_sibling();
-                }
+        while let Some(node) = candidate {
+            if node.borrow().is_tag() {
+                return Some(node);
             } else {
-                break;
+                candidate = node.next_sibling();
             }
         }
 
@@ -340,7 +333,7 @@ impl<'a> Index<usize> for CssSelectorPath<'a> {
 }
 
 /// the list of all (comma-seperated) CSS paths
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Eq)]
 pub struct CssSelectorList<'a>(Vec<CssSelectorPath<'a>>);
 
 impl<'a> CssSelectorList<'a> {
@@ -350,7 +343,7 @@ impl<'a> CssSelectorList<'a> {
 
     pub(crate) fn query(
         &self,
-        start: &Vec<rctree::Node<HtmlContent>>,
+        start: &[rctree::Node<HtmlContent>],
     ) -> Vec<rctree::Node<HtmlContent>> {
         trace!("Querying using Selector {:#?}", &self.0);
 

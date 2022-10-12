@@ -4,7 +4,7 @@ use crate::{CommandFailedSnafu, HtmlContent, PipelineError};
 use log::{trace, warn};
 use snafu::ResultExt;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub(crate) struct ElementCreatingPipeline<'a>(
     ElementCreatingCommand<'a>,
     Vec<ElementProcessingCommand<'a>>,
@@ -17,7 +17,7 @@ impl<'a> ElementCreatingPipeline<'a> {
         creation: ElementCreatingCommand<'a>,
         processing: Option<Vec<ElementProcessingCommand<'a>>>,
     ) -> Self {
-        ElementCreatingPipeline(creation, processing.unwrap_or(vec![]))
+        ElementCreatingPipeline(creation, processing.unwrap_or_default())
     }
 
     /// execute the pipeline on the given nodes by
@@ -33,7 +33,7 @@ impl<'a> ElementCreatingPipeline<'a> {
             .execute(&nodes)
             .context(CommandFailedSnafu { index: 0_usize })?;
 
-        if intermediate.len() == 0 {
+        if intermediate.is_empty() {
             warn!("Command resulted in an empty result set");
         }
 
@@ -47,11 +47,11 @@ impl<'a> ElementCreatingPipeline<'a> {
             })?;
             command_index += 1;
 
-            if intermediate.len() == 0 {
+            if intermediate.is_empty() {
                 warn!("Command resulted in an empty result set");
             }
         }
 
-        return Ok(intermediate);
+        Ok(intermediate)
     }
 }

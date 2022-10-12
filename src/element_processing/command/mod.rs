@@ -93,18 +93,18 @@ impl<'a> ElementProcessingCommand<'a> {
     }
 
     fn for_each(
-        input: &Vec<rctree::Node<HtmlContent>>,
+        input: &[rctree::Node<HtmlContent>],
         selector: &CssSelectorList<'a>,
         pipeline: &ElementProcessingPipeline,
     ) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
         let queried_elements = selector.query(input);
         let _ = pipeline.run_on(queried_elements);
 
-        Ok(input.clone())
+        Ok(input.to_owned())
     }
 
     fn extract_element(
-        input: &Vec<rctree::Node<HtmlContent>>,
+        input: &[rctree::Node<HtmlContent>],
         selector: &CssSelectorList<'a>,
     ) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
         trace!(
@@ -120,7 +120,7 @@ impl<'a> ElementProcessingCommand<'a> {
     }
 
     fn remove_element(
-        input: &Vec<rctree::Node<HtmlContent>>,
+        input: &[rctree::Node<HtmlContent>],
         selector: &CssSelectorList<'a>,
     ) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
         trace!("Running WITHOUT command using selector: {:#?}", selector);
@@ -131,11 +131,11 @@ impl<'a> ElementProcessingCommand<'a> {
             node.detach();
         }
 
-        Ok(input.clone())
+        Ok(input.to_owned())
     }
 
     fn replace(
-        input: &Vec<rctree::Node<HtmlContent>>,
+        input: &[rctree::Node<HtmlContent>],
         selector: &CssSelectorList<'a>,
         pipeline: &ElementCreatingPipeline,
     ) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
@@ -154,7 +154,7 @@ impl<'a> ElementProcessingCommand<'a> {
             element_for_replacement.detach();
         }
 
-        Ok(input.clone())
+        Ok(input.to_owned())
     }
 
     fn clear_attr(
@@ -202,7 +202,7 @@ impl<'a> ElementProcessingCommand<'a> {
             let rendered_value = value_source.render(node).context(SubpipelineFailedSnafu)?;
             let rendered_value = rendered_value.join("");
             let rendered_value = String::from(encode_double_quoted_attribute(&rendered_value));
-            let rendered_value = rendered_value.replace("\n", "\\n");
+            let rendered_value = rendered_value.replace('\n', "\\n");
 
             let working_copy = rctree::Node::clone(node);
             let mut data = working_copy.borrow_mut();

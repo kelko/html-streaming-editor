@@ -1,7 +1,7 @@
 use crate::{CommandError, CssSelectorList, HtmlContent, HtmlRenderable};
 use rctree::Node;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ElementSelectingCommand<'a> {
     /// Returns the previously selected element
     UseElement,
@@ -50,7 +50,7 @@ impl<'a> ElementSelectingCommand<'a> {
         input: &Node<HtmlContent>,
         selector: &CssSelectorList<'a>,
     ) -> Result<Vec<Node<HtmlContent>>, CommandError> {
-        Ok(selector.query(&vec![rctree::Node::clone(input)]))
+        Ok(selector.query(&[rctree::Node::clone(input)]))
     }
 
     fn query_parent(
@@ -58,7 +58,7 @@ impl<'a> ElementSelectingCommand<'a> {
         selector: &CssSelectorList<'a>,
     ) -> Result<Vec<Node<HtmlContent>>, CommandError> {
         if let Some(parent) = input.parent() {
-            return Ok(selector.query(&vec![parent]));
+            return Ok(selector.query(&[parent]));
         }
 
         Ok(vec![])
@@ -70,19 +70,15 @@ impl<'a> ElementSelectingCommand<'a> {
     ) -> Result<Vec<Node<HtmlContent>>, CommandError> {
         let mut root = Node::clone(input);
 
-        loop {
-            if let Some(parent) = root.parent() {
-                root = parent;
-            } else {
-                break;
-            }
+        while let Some(parent) = root.parent() {
+            root = parent;
         }
 
-        Ok(selector.query(&vec![root]))
+        Ok(selector.query(&[root]))
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ValueExtractingCommand<'a> {
     /// Returns the previously selected element
     GetAttribute(&'a str),
@@ -94,10 +90,7 @@ impl<'a> ValueExtractingCommand<'a> {
     /// and return the calculated results.
     /// For some command the output can be equal to the input,
     /// others change the result-set
-    pub(crate) fn execute(
-        &self,
-        input: &Vec<rctree::Node<HtmlContent>>,
-    ) -> Result<Vec<String>, CommandError> {
+    pub(crate) fn execute(&self, input: &[Node<HtmlContent>]) -> Result<Vec<String>, CommandError> {
         match self {
             ValueExtractingCommand::GetAttribute(attr_name) => {
                 Self::get_attribute(input, attr_name)
@@ -107,7 +100,7 @@ impl<'a> ValueExtractingCommand<'a> {
     }
 
     fn get_attribute(
-        input: &Vec<Node<HtmlContent>>,
+        input: &[Node<HtmlContent>],
         attr_name: &str,
     ) -> Result<Vec<String>, CommandError> {
         let attribute = String::from(attr_name);
@@ -121,7 +114,7 @@ impl<'a> ValueExtractingCommand<'a> {
             .collect::<Vec<_>>())
     }
 
-    fn get_text_content(input: &Vec<Node<HtmlContent>>) -> Result<Vec<String>, CommandError> {
+    fn get_text_content(input: &[Node<HtmlContent>]) -> Result<Vec<String>, CommandError> {
         Ok(input
             .iter()
             .filter_map(|n| {

@@ -37,7 +37,7 @@ impl HtmlTag {
         }
     }
 
-    pub(crate) fn build_start_tag(&self, mut add_string: impl FnMut(String) -> ()) {
+    pub(crate) fn build_start_tag(&self, mut add_string: impl FnMut(String)) {
         add_string(format!("<{}", self.name));
         self.attributes
             .iter()
@@ -45,7 +45,7 @@ impl HtmlTag {
         add_string(String::from(">"));
     }
 
-    pub(crate) fn build_end_tag(&self, mut add_string: impl FnMut(String) -> ()) {
+    pub(crate) fn build_end_tag(&self, mut add_string: impl FnMut(String)) {
         if HTML_VOID_ELEMENTS.contains(&self.name.as_ref()) {
             return;
         }
@@ -93,14 +93,12 @@ impl HtmlTag {
         true
     }
 
-    fn is_class_member(&self, class: &&str) -> bool {
+    fn is_class_member(&self, class: &str) -> bool {
         if let Some(classes) = self.attributes.get(&String::from("class")) {
-            if let Some(_) = classes.split(" ").into_iter().find(|c| c == class) {
-                return true;
-            }
+            classes.split(' ').into_iter().any(|c| c == class)
+        } else {
+            false
         }
-
-        false
     }
 }
 
@@ -113,10 +111,7 @@ pub(crate) enum HtmlContent {
 
 impl HtmlContent {
     pub(crate) fn is_tag(&self) -> bool {
-        match self {
-            HtmlContent::Tag(_) => true,
-            _ => false,
-        }
+        matches!(self, HtmlContent::Tag(_))
     }
 
     pub(crate) fn import(dom: VDom) -> Result<Node<HtmlContent>, StreamingEditorError> {
@@ -279,13 +274,7 @@ impl HtmlContent {
     pub(crate) fn get_attribute(&self, attribute: &String) -> Option<String> {
         match self {
             HtmlContent::Comment(_) | HtmlContent::Text(_) => None,
-            HtmlContent::Tag(tag) => {
-                if let Some(value) = tag.attributes.get(attribute) {
-                    Some(value.clone())
-                } else {
-                    None
-                }
-            }
+            HtmlContent::Tag(tag) => tag.attributes.get(attribute).cloned(),
         }
     }
 }

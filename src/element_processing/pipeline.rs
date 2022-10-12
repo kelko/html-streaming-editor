@@ -25,22 +25,20 @@ impl<'a> ElementProcessingPipeline<'a> {
         nodes: Vec<rctree::Node<HtmlContent>>,
     ) -> Result<Vec<rctree::Node<HtmlContent>>, PipelineError> {
         let mut intermediate = nodes;
-        let mut command_index: usize = 0;
-        for command in self.0.iter() {
+        for (command_index, command) in self.0.iter().enumerate() {
             trace!("Running Next: {:#?}", &command);
             trace!("Current Element Set: {:#?}", &intermediate);
 
             intermediate = command.execute(&intermediate).context(CommandFailedSnafu {
                 index: command_index,
             })?;
-            command_index += 1;
 
-            if intermediate.len() == 0 {
+            if intermediate.is_empty() {
                 warn!("Command resulted in an empty result set");
             }
         }
 
-        return Ok(intermediate);
+        Ok(intermediate)
     }
 }
 

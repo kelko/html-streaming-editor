@@ -111,7 +111,7 @@ impl<'a> HtmlStreamingEditor<'a> {
 
     pub fn run(self, pipeline_definition: &str) -> Result<(), StreamingEditorError> {
         let pipeline =
-            parsing::grammar::pipeline(&pipeline_definition).context(ParsingPipelineFailedSnafu)?;
+            parsing::grammar::pipeline(pipeline_definition).context(ParsingPipelineFailedSnafu)?;
         debug!("Parsed Pipeline: {:#?}", &pipeline);
 
         let mut string_content = String::new();

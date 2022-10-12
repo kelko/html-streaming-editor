@@ -2,7 +2,7 @@ use crate::html::HtmlTag;
 use crate::{load_html_file, CommandError, CssSelectorList, HtmlContent};
 use log::trace;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ElementCreatingCommand<'a> {
     /// creates an HTML element of given type
     /// Returns the created element as result.
@@ -22,7 +22,7 @@ impl<'a> ElementCreatingCommand<'a> {
     /// others change the result-set
     pub(crate) fn execute(
         &self,
-        input: &Vec<rctree::Node<HtmlContent>>,
+        input: &[rctree::Node<HtmlContent>],
     ) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
         match self {
             ElementCreatingCommand::CreateElement(element_name) => {
@@ -37,7 +37,7 @@ impl<'a> ElementCreatingCommand<'a> {
         trace!("Running CREATE-ELEMENT command using name: {:#?}", name);
 
         Ok(vec![rctree::Node::new(HtmlContent::Tag(HtmlTag::of_name(
-            name.clone(),
+            <&str>::clone(&name),
         )))])
     }
 
@@ -49,7 +49,7 @@ impl<'a> ElementCreatingCommand<'a> {
     }
 
     fn query_replaced(
-        input: &Vec<rctree::Node<HtmlContent>>,
+        input: &[rctree::Node<HtmlContent>],
         selector: &CssSelectorList<'a>,
     ) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
         trace!("Running QUERY-REPLACED command");

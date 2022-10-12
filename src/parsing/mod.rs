@@ -25,7 +25,7 @@ fn build_css_path<'a>(
         result.append(&mut rest_content);
     }
 
-    return result;
+    result
 }
 
 parser! {
@@ -70,10 +70,10 @@ parser! {
         rule css_id() -> &'input str
             = "#" i:(identifier()) { i }
         pub(crate) rule css_selector() -> CssSelector<'input>
-            = e:(identifier())i:(css_id())?c:(css_classes()?)p:(css_pseudo_classes())?a:(css_attributes()?) { CssSelector{element:Some(e), id: i, classes: c.unwrap_or(vec![]), pseudo_classes: p.unwrap_or(vec![]), attributes: a.unwrap_or(vec![])} }
-            / i:(css_id())c:(css_classes())?p:(css_pseudo_classes())?a:(css_attributes()?) { CssSelector{element:None, id: Some(i), classes: c.unwrap_or(vec![]), pseudo_classes: p.unwrap_or(vec![]), attributes: a.unwrap_or(vec![])} }
-            / c:(css_classes())p:(css_pseudo_classes())?a:(css_attributes()?) { CssSelector{element:None, id: None, classes: c, pseudo_classes: p.unwrap_or(vec![]), attributes: a.unwrap_or(vec![])} }
-            / p:(css_pseudo_classes())a:(css_attributes())? { CssSelector{element:None, id: None, classes: vec![], pseudo_classes: p, attributes: a.unwrap_or(vec![])} }
+            = e:(identifier())i:(css_id())?c:(css_classes()?)p:(css_pseudo_classes())?a:(css_attributes()?) { CssSelector{element:Some(e), id: i, classes: c.unwrap_or_default(), pseudo_classes: p.unwrap_or_default(), attributes: a.unwrap_or_default()} }
+            / i:(css_id())c:(css_classes())?p:(css_pseudo_classes())?a:(css_attributes()?) { CssSelector{element:None, id: Some(i), classes: c.unwrap_or_default(), pseudo_classes: p.unwrap_or_default(), attributes: a.unwrap_or_default()} }
+            / c:(css_classes())p:(css_pseudo_classes())?a:(css_attributes()?) { CssSelector{element:None, id: None, classes: c, pseudo_classes: p.unwrap_or_default(), attributes: a.unwrap_or_default()} }
+            / p:(css_pseudo_classes())a:(css_attributes())? { CssSelector{element:None, id: None, classes: vec![], pseudo_classes: p, attributes: a.unwrap_or_default()} }
             / a:(css_attributes()) { CssSelector{element:None, id: None, classes: vec![], pseudo_classes: vec![], attributes: a} }
         rule css_selector_step() -> Vec<CssSelectorStep<'input>>
             = " "? ">" " "? s:(css_selector()) l:(css_selector_step())? { build_css_path(CssSelectorStep::direct_child(s), l) }
@@ -81,7 +81,7 @@ parser! {
             / " "? "+" " "? s:(css_selector()) l:(css_selector_step())? { build_css_path(CssSelectorStep::adjacent_sibling(s), l) }
             / " " s:(css_selector()) l:(css_selector_step())? { build_css_path(CssSelectorStep::descendent(s), l) }
         pub(crate) rule css_selector_path() -> CssSelectorPath<'input>
-            = whitespace()? f:(css_selector()) l:(css_selector_step())? whitespace()?{ CssSelectorPath::new(f, l.unwrap_or(vec![]))  }
+            = whitespace()? f:(css_selector()) l:(css_selector_step())? whitespace()?{ CssSelectorPath::new(f, l.unwrap_or_default())  }
         pub(crate) rule css_selector_list() -> CssSelectorList<'input>
             = v:(css_selector_path() ++ ",") { CssSelectorList::new(v) }
 

@@ -2,7 +2,7 @@ use crate::string_creating::{ElementSelectingCommand, ValueExtractingCommand};
 use crate::{CommandFailedSnafu, HtmlContent, PipelineError};
 use snafu::ResultExt;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StringValueCreatingPipeline<'a> {
     element_selector: ElementSelectingCommand<'a>,
     value_extractor: ValueExtractingCommand<'a>,
