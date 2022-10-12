@@ -1,8 +1,8 @@
 HTML Streaming Editor
 =======================
 
-![GitHub](https://img.shields.io/github/license/kelko/html-streaming-editor)
-![GitHub Workflow Status](https://img.shields.io/github/workflow/status/kelko/html-streaming-editor/Rust)
+[![License: MIT](https://img.shields.io/github/license/kelko/html-streaming-editor)](https://github.com/kelko/html-streaming-editor/blob/main/LICENSE)
+[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/kelko/html-streaming-editor/Rust)](https://github.com/kelko/html-streaming-editor/actions/workflows/main.yml)
 [![docs.rs](https://img.shields.io/docsrs/html-streaming-editor?style=flat-square])](https://docs.rs/html-streaming-editor/)
 [![Crates.io](https://img.shields.io/crates/v/html-streaming-editor)](https://crates.io/crates/html-streaming-editor)
 
