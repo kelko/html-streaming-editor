@@ -32,14 +32,24 @@ Some `COMMAND` use sub-pipelines. There are two kind of `COMMANDS` with this:
  
 The `SELECTOR` is a [CSS selector](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors).
 
+Pipeline Types
+-----------------
+
+There are three types of pipelines:
+
+- element processing pipeline: The default. You have some input HTML which you run through the pipeline
+- element creating sub-pipeline: special sub-pipeline wherever a commands adds one or more elements into the HTML tree (or into a different place of said tree)
+- string value creating sub-pipeline: special sub-pipeline wherever a commands set a string value (text content, comment, attribute value)
+
+
 Commands
 -------------
 
 Currently supported:
 
-- `ONLY`: remove everything not matching the CSS selector (alias: `SELECT`)
-- `WITHOUT`: remove everything matching the CSS selector (alias: `FILTER`)
-- `FOR-EACH`: run a sub-pipeline on all sub-elements matching a CSS selector but return the previously selected elements (alias: `FOR`)
+- `EXTRACT-ELEMENT`: remove everything not matching the CSS selector (alias: `ONLY`)
+- `REMOVE-ELEMENT`: remove everything matching the CSS selector (alias: `WITHOUT`)
+- `FOR-EACH`: run a sub-pipeline on all sub-elements matching a CSS selector but return the previously selected elements (alias: `WITH`)
 - `CLEAR-ATTR`: removes a given attribute from the previously selected elements  
 - `CLEAR-CONTENT`: clears all children from the previously selected elements
 - `SET-ATTR`: Sets a given attribute to a specified value
@@ -49,7 +59,22 @@ Currently supported:
 - `ADD-ELEMENT`: appends a new tag/element child
 - `REPLACE`: replace all elements matching a CSS selector with new elements (alias: `MAP`)
 - `CREATE-ELEMENT`: creates a new, empty element, mainly in combination with `ADD-ELEMENT` or `REPLACE` (alias: `NEW`)
-- `READ-FROM`: reads a DOM from a different file, mainly in combination with `ADD-ELEMENT` or `REPLACE` (alias: `SOURCE`) 
+- `LOAD-FILE`: reads a DOM from a different file, mainly in combination with `ADD-ELEMENT` or `REPLACE` (alias: `SOURCE`)
+- `QUERY-REPLACED`: returns children matching the CSS selector of those elements meant to be replaced, only combination with or `REPLACE` (alias: `KEEP`)
+- `USE-ELEMENT`: returns the currently selected element for a sub-pipeline, mainly in combination with "string value producing pipelines" (alias: `THIS`)
+- `USE-PARENT`: returns the parent of the currently selected element for a sub-pipeline, mainly in combination with "string value producing pipelines" (alias: `PARENT`)
+- `QUERY-ELEMENT`: runs a query on the currently selected element for a sub-pipeline, without detaching target element from HTML tree unlike `EXTRACT-ELEMENT`
+- `QUERY-PARENT`: runs a query on the parent of the currently selected element for a sub-pipeline, without detaching target element from HTML tree unlike `EXTRACT-ELEMENT`
+- `QUERY-ROOT`: runs a query on the root of the currently selected element for a sub-pipeline, without detaching target element from HTML tree unlike `EXTRACT-ELEMENT`
+- `GET-ATTR`: returns the value of an attribute of the currently selected element for a string-value producing pipelines
+- `GET-TEXT-CONTENT`: returns the text content of the currently selected element for a string-value producing pipelines
+
+Not Yet implemented:
+
+- `TO-LOWER`: all-lower the current string value of the pipeline
+- `TO-UPPER`: all-caps the current string value of the pipeline
+- `REGEX-REPLACE`: runs a RegEx-based value replacements on the current string value of the pipeline
+
 
 Binary
 -------
@@ -81,11 +106,11 @@ hse -i index.html 'ONLY{main .content}'
 hse -i index.html 'ONLY{main, .main} | WITHOUT{script}'
 
 # replaces all elements with `placeholder` class with the <div class="content"> from a second HTML file 
-hse -i index.html 'REPLACE{.placeholder ↤ READ-FROM{"other.html"} | ONLY{div.content} }'
+hse -i index.html 'REPLACE{.placeholder ↤ SOURCE{"other.html"} | ONLY{div.content} }'
 
 # add a new <meta name="version" value=""> element to <head> with git version info 
-hse -i index.html "FOR{head ↦ ADD-ELEMENT{ CREATE-ELEMENT{meta} | SET-ATTR{name ↤ 'version'} | SET-ATTR{content ↤ '`git describe --tags`'}  } }"
+hse -i index.html "WITH{head ↦ ADD-ELEMENT{ NEW{meta} | SET-ATTR{name ↤ 'version'} | SET-ATTR{content ↤ '`git describe --tags`'}  } }"
 
 # add a new comment to <body> with git version info
-hse -i index.html "FOR{body ↦ ADD-COMMENT{'`git describe --tags`'}}"
+hse -i index.html "WITH{body ↦ ADD-COMMENT{'`git describe --tags`'}}"
 ```

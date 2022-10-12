@@ -258,6 +258,7 @@ impl<'a> CssSelectorStep<'a> {
 pub struct CssSelectorPath<'a>(Vec<CssSelectorStep<'a>>);
 
 impl<'a> CssSelectorPath<'a> {
+    #[cfg(test)]
     pub fn single(step: CssSelector<'a>) -> Self {
         CssSelectorPath(vec![CssSelectorStep::start(step)])
     }
@@ -266,10 +267,6 @@ impl<'a> CssSelectorPath<'a> {
         let mut list = vec![CssSelectorStep::start(start)];
         list.extend_from_slice(&rest);
         CssSelectorPath(list)
-    }
-
-    pub fn as_vec(&self) -> Vec<CssSelectorStep<'a>> {
-        return self.0.clone();
     }
 
     pub(crate) fn query(
@@ -349,10 +346,6 @@ pub struct CssSelectorList<'a>(Vec<CssSelectorPath<'a>>);
 impl<'a> CssSelectorList<'a> {
     pub fn new(content: Vec<CssSelectorPath<'a>>) -> Self {
         CssSelectorList(content)
-    }
-
-    pub fn as_vec(&self) -> Vec<CssSelectorPath<'a>> {
-        return self.0.clone();
     }
 
     pub(crate) fn query(

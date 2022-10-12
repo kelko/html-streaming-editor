@@ -17,7 +17,7 @@ const HTML_INPUT: &str = r#"<html>
 
 #[test]
 fn add_simple_div_to_first_p_content() -> Result<(), StreamingEditorError> {
-    let command = "ONLY{#first-para} | ADD-ELEMENT{ CREATE-ELEMENT{div} }";
+    let command = "EXTRACT-ELEMENT{#first-para} | ADD-ELEMENT{ CREATE-ELEMENT{div} }";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
     let mut output = Vec::new();
@@ -36,7 +36,7 @@ fn add_simple_div_to_first_p_content() -> Result<(), StreamingEditorError> {
 
 #[test]
 fn add_two_divs_to_first_p_content() -> Result<(), StreamingEditorError> {
-    let command = "ONLY{#first-para} | ADD-ELEMENT{ CREATE-ELEMENT{div} } | ADD-ELEMENT{ CREATE-ELEMENT{div} }";
+    let command = "EXTRACT-ELEMENT{#first-para} | ADD-ELEMENT{ CREATE-ELEMENT{div} } | ADD-ELEMENT{ CREATE-ELEMENT{div} }";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
     let mut output = Vec::new();
@@ -55,7 +55,8 @@ fn add_two_divs_to_first_p_content() -> Result<(), StreamingEditorError> {
 
 #[test]
 fn add_div_with_attr_to_first_p_content() -> Result<(), StreamingEditorError> {
-    let command = "ONLY{#first-para} | ADD-ELEMENT{ CREATE-ELEMENT{div} | SET-ATTR{id ↤ 'new'} }";
+    let command =
+        "EXTRACT-ELEMENT{#first-para} | ADD-ELEMENT{ CREATE-ELEMENT{div} | SET-ATTR{id ↤ 'new'} }";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
     let mut output = Vec::new();
@@ -67,6 +68,44 @@ fn add_div_with_attr_to_first_p_content() -> Result<(), StreamingEditorError> {
     assert_eq!(
         result_string,
         String::from(r#"<p id="first-para">Some first text<div id="new"></div></p>"#)
+    );
+
+    Ok(())
+}
+
+#[test]
+fn copy_title_to_meta_tag() -> Result<(), StreamingEditorError> {
+    let command = "FOR-EACH{head ↦ ADD-ELEMENT{ ↤ CREATE-ELEMENT{meta} | SET-ATTR{name ↤ 'title' } } | FOR-EACH{meta[name='title'] ↦ SET-ATTR{content ↤ QUERY-PARENT{title} | GET-TEXT-CONTENT } } }";
+
+    let mut input = Box::new(
+        r#"<html>
+    <head>
+        <title>This is the title</title>
+    </head>
+    <body>
+        <h1>Title</h1>
+    </body>
+</html>"#
+            .as_bytes(),
+    );
+    let mut output = Vec::new();
+    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+
+    let _ = hse.run(command)?;
+    let result_string = String::from_utf8(output).unwrap();
+
+    assert_eq!(
+        result_string,
+        String::from(
+            r#"<html>
+    <head>
+        <title>This is the title</title>
+    <meta content="This is the title" name="title"></head>
+    <body>
+        <h1>Title</h1>
+    </body>
+</html>"#
+        )
     );
 
     Ok(())

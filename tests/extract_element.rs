@@ -16,8 +16,8 @@ const HTML_INPUT: &str = r#"<html>
 </html>"#;
 
 #[test]
-fn add_attr_to_li() -> Result<(), StreamingEditorError> {
-    let command = r#"ONLY{ul} | FOR-EACH{li ↦ SET-ATTR{data-test ↤ "x"}}"#;
+fn only_first_para() -> Result<(), StreamingEditorError> {
+    let command = "EXTRACT-ELEMENT{#first-para}";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
     let mut output = Vec::new();
@@ -28,14 +28,26 @@ fn add_attr_to_li() -> Result<(), StreamingEditorError> {
 
     assert_eq!(
         result_string,
-        String::from(
-            r#"<ul id="list">
-            <li data-test="x" id="item-1">1</li>
-            <li data-test="x" id="item-2">2</li>
-            <li data-test="x" id="item-3">3</li>
-        </ul>"#
-        )
+        String::from(r#"<p id="first-para">Some first text</p>"#)
     );
+
+    Ok(())
+}
+
+#[test]
+fn only_list_items() -> Result<(), StreamingEditorError> {
+    let command = "EXTRACT-ELEMENT{li}";
+
+    let mut input = Box::new(HTML_INPUT.as_bytes());
+    let mut output = Vec::new();
+    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+
+    let _ = hse.run(command)?;
+    let result_string = String::from_utf8(output).unwrap();
+
+    assert!(result_string.contains(r#"<li id="item-1">1</li>"#));
+    assert!(result_string.contains(r#"<li id="item-2">2</li>"#));
+    assert!(result_string.contains(r#"<li id="item-3">3</li>"#));
 
     Ok(())
 }

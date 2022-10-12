@@ -1,8 +1,13 @@
 use peg::parser;
 
 use crate::{
-    Command, CssAttributeComparison, CssAttributeSelector, CssPseudoClass, CssSelector,
-    CssSelectorList, CssSelectorPath, CssSelectorStep, Pipeline, ValueSource,
+    element_creating::{ElementCreatingCommand, ElementCreatingPipeline},
+    element_processing::{ElementProcessingCommand, ElementProcessingPipeline},
+    string_creating::{
+        ElementSelectingCommand, StringValueCreatingPipeline, ValueExtractingCommand,
+    },
+    CssAttributeComparison, CssAttributeSelector, CssPseudoClass, CssSelector, CssSelectorList,
+    CssSelectorPath, CssSelectorStep, ValueSource,
 };
 
 #[cfg(test)]
@@ -35,7 +40,7 @@ parser! {
             / "=>"
         rule number() -> usize
             = n:$(['0'..='9']+) { n.parse().unwrap() }
-        pub(crate) rule identifier() -> &'input str
+        pub(super) rule identifier() -> &'input str
             = i:$(['a'..='z' | 'A'..='Z' | '0'..='9' | '-' | '_' ]+) { i }
         rule css_attribute() -> CssAttributeSelector<'input>
             = "[" a:(identifier()) "]" { CssAttributeSelector::<'input> { attribute: a, operator: CssAttributeComparison::Exist, value: None } }
@@ -80,39 +85,40 @@ parser! {
         pub(crate) rule css_selector_list() -> CssSelectorList<'input>
             = v:(css_selector_path() ++ ",") { CssSelectorList::new(v) }
 
-        pub(crate) rule string_value() -> &'input str
+        pub(super) rule string_value() -> &'input str
             = "\"" s:$([^'"']+) "\"" { s }
             / "'" s:$([^'\'']+) "'" { s }
             / "?" s:$([^'?']+) "?" { s }
-        rule only_command() -> Command<'input>
-            = ("ONLY" / "SELECT") "{" whitespace()?  oc:css_selector_list() whitespace()? "}" { Command::Only(oc) }
-        rule without_command() -> Command<'input>
-            = ("WITHOUT" / "FILTER") "{" whitespace()? oc:css_selector_list() whitespace()? "}" { Command::Without(oc) }
-        rule for_each_command() -> Command<'input>
-            = "FOR" "-EACH"? "{" whitespace()? oc:css_selector_list() whitespace()? iterate_marker() whitespace()? sp:pipeline() whitespace()?  "}" { Command::ForEach(oc, sp) }
-        rule replace_command() -> Command<'input>
-            = ("REPLACE"/"MAP") "{" whitespace()? oc:css_selector_list() whitespace()? assign_marker() whitespace()? sp:element_creating_pipeline() whitespace()? "}" { Command::Replace(oc, sp)}
-        rule clear_attr_command() -> Command<'input>
-            = "CLEAR-ATTR{" whitespace()? a:identifier() whitespace()? "}" { Command::ClearAttribute(String::from(a)) }
-        rule clear_content_command() -> Command<'input>
-            = "CLEAR-CONTENT" { Command::ClearContent }
-        rule set_attr_command() -> Command<'input>
-            = "SET-ATTR{" whitespace()? a:identifier() whitespace()? assign_marker() whitespace()? v:string_value() "}" { Command::SetAttribute(String::from(a), ValueSource::StringValue(String::from(v))) }
-        rule set_text_content_command() -> Command<'input>
-            = "SET-TEXT-CONTENT{" whitespace()? (assign_marker() whitespace()?)? v:string_value() "}" { Command::SetTextContent(ValueSource::StringValue(String::from(v))) }
-        rule add_text_content_command() -> Command<'input>
-            = "ADD-TEXT-CONTENT{" whitespace()? (assign_marker() whitespace()?)? v:string_value() "}" { Command::AddTextContent(ValueSource::StringValue(String::from(v))) }
-        rule add_comment_command() -> Command<'input>
-            = "ADD-COMMENT{" whitespace()? (assign_marker() whitespace()?)? v:string_value() "}" { Command::AddComment(ValueSource::StringValue(String::from(v))) }
-        rule add_element_command() -> Command<'input>
-            = "ADD-ELEMENT{" whitespace()? (assign_marker() whitespace()?)? sp:element_creating_pipeline() whitespace()?  "}" { Command::AddElement(sp) }
-        rule create_element_command() -> Command<'input>
-            = ("CREATE-ELEMENT"/"NEW") "{" whitespace()? n:identifier() whitespace()? "}" { Command::CreateElement(String::from(n))}
-        rule read_from_command() -> Command<'input>
-            = ("READ-FROM"/"SOURCE") "{" whitespace()? f:string_value() whitespace()? "}" { Command::ReadFrom(String::from(f)) }
-        pub(super) rule command() -> Command<'input>
-            = only_command()
-            / without_command()
+
+        rule value_source() -> ValueSource<'input>
+            = v:string_value() { ValueSource::StringValue(v) }
+            / p:string_creating_pipeline() { ValueSource::SubPipeline(p) }
+
+        rule extract_element_command() -> ElementProcessingCommand<'input>
+            = ("EXTRACT-ELEMENT" / "ONLY") "{" whitespace()?  oc:css_selector_list() whitespace()? "}" { ElementProcessingCommand::ExtractElement(oc) }
+        rule remove_element_command() -> ElementProcessingCommand<'input>
+            = ("REMOVE-ELEMENT" / "WITHOUT") "{" whitespace()? oc:css_selector_list() whitespace()? "}" { ElementProcessingCommand::RemoveElement(oc) }
+        rule for_each_command() -> ElementProcessingCommand<'input>
+            = ("FOR-EACH"/"WITH") "{" whitespace()? oc:css_selector_list() whitespace()? iterate_marker() whitespace()? sp:pipeline() whitespace()?  "}" { ElementProcessingCommand::ForEach(oc, sp) }
+        rule replace_command() -> ElementProcessingCommand<'input>
+            = ("REPLACE"/"MAP") "{" whitespace()? oc:css_selector_list() whitespace()? assign_marker() whitespace()? sp:element_subselect_or_creating_pipeline() whitespace()? "}" { ElementProcessingCommand::Replace(oc, sp)}
+        rule clear_attr_command() -> ElementProcessingCommand<'input>
+            = "CLEAR-ATTR{" whitespace()? a:identifier() whitespace()? "}" { ElementProcessingCommand::ClearAttribute(a) }
+        rule clear_content_command() -> ElementProcessingCommand<'input>
+            = "CLEAR-CONTENT" { ElementProcessingCommand::ClearContent }
+        rule set_attr_command() -> ElementProcessingCommand<'input>
+            = "SET-ATTR{" whitespace()? a:identifier() whitespace()? assign_marker() whitespace()? v:value_source() whitespace()? "}" { ElementProcessingCommand::SetAttribute(a, v) }
+        rule set_text_content_command() -> ElementProcessingCommand<'input>
+            = "SET-TEXT-CONTENT{" whitespace()? (assign_marker() whitespace()?)? v:value_source() whitespace()? "}" { ElementProcessingCommand::SetTextContent(v) }
+        rule add_text_content_command() -> ElementProcessingCommand<'input>
+            = "ADD-TEXT-CONTENT{" whitespace()? (assign_marker() whitespace()?)? v:value_source() whitespace()? "}" { ElementProcessingCommand::AddTextContent(v) }
+        rule add_comment_command() -> ElementProcessingCommand<'input>
+            = "ADD-COMMENT{" whitespace()? (assign_marker() whitespace()?)? v:value_source() whitespace()? "}" { ElementProcessingCommand::AddComment(v) }
+        rule add_element_command() -> ElementProcessingCommand<'input>
+            = "ADD-ELEMENT{" whitespace()? (assign_marker() whitespace()?)? sp:element_creating_pipeline() whitespace()?  "}" { ElementProcessingCommand::AddElement(sp) }
+        pub(super) rule element_processing_command() -> ElementProcessingCommand<'input>
+            = extract_element_command()
+            / remove_element_command()
             / for_each_command()
             / clear_attr_command()
             / clear_content_command()
@@ -122,14 +128,54 @@ parser! {
             / add_comment_command()
             / add_element_command()
             / replace_command()
-        rule element_source_command() -> Command<'input>
+
+        rule create_element_command() -> ElementCreatingCommand<'input>
+            = ("CREATE-ELEMENT"/"NEW") "{" whitespace()? n:identifier() whitespace()? "}" { ElementCreatingCommand::CreateElement(n)}
+        rule load_file_command() -> ElementCreatingCommand<'input>
+            = ("LOAD-FILE"/"SOURCE") "{" whitespace()? f:string_value() whitespace()? "}" { ElementCreatingCommand::FromFile(f) }
+        rule element_creating_command() -> ElementCreatingCommand<'input>
             = create_element_command()
-            / read_from_command()
-        rule element_manipulating_pipeline() -> Vec<Command<'input>>
-            = " | " p:(command() ** " | ") { p }
-        rule element_creating_pipeline() -> Pipeline<'input>
-            = s:element_source_command() p:element_manipulating_pipeline()? { Pipeline::new(s + p) }
-        pub rule pipeline() -> Pipeline<'input>
-            = p:(command() ** " | ") { Pipeline::new(p) }
+            / load_file_command()
+        rule element_creating_pipeline() -> ElementCreatingPipeline<'input>
+            = s:element_creating_command() p:element_manipulating_subpipeline()? { ElementCreatingPipeline::new(s, p) }
+        rule element_manipulating_subpipeline() -> Vec<ElementProcessingCommand<'input>>
+            = " | " p:(element_processing_command() ** " | ") { p }
+
+        rule query_replaced_command() -> ElementCreatingCommand<'input>
+            = ("QUERY-REPLACED"/"KEEP") "{" whitespace()? oc:css_selector_list() whitespace()? "}" { ElementCreatingCommand::FromReplaced(oc) }
+        rule element_subselect_or_creating_category() -> ElementCreatingCommand<'input>
+            = query_replaced_command()
+            / element_creating_command()
+        rule element_subselect_or_creating_pipeline() -> ElementCreatingPipeline<'input>
+            = s:element_subselect_or_creating_category() p:element_manipulating_subpipeline()? { ElementCreatingPipeline::new(s, p) }
+
+        rule use_element_command() -> ElementSelectingCommand<'input>
+            = ("USE-ELEMENT"/"THIS") { ElementSelectingCommand::UseElement }
+        rule use_parent_command() -> ElementSelectingCommand<'input>
+            = ("USE-PARENT"/"PARENT") { ElementSelectingCommand::UseParent }
+        rule query_element_command() -> ElementSelectingCommand<'input>
+            = "QUERY-ELEMENT{" whitespace()? oc:css_selector_list() whitespace()? "}" { ElementSelectingCommand::QueryElement(oc) }
+        rule query_parent_command() -> ElementSelectingCommand<'input>
+            = "QUERY-PARENT{" whitespace()? oc:css_selector_list() whitespace()? "}" { ElementSelectingCommand::QueryParent(oc) }
+        rule query_root_command() -> ElementSelectingCommand<'input>
+            = "QUERY-ROOT{" whitespace()? oc:css_selector_list() whitespace()? "}" { ElementSelectingCommand::QueryRoot(oc) }
+        pub(super) rule element_selecting_command() -> ElementSelectingCommand<'input>
+            = use_element_command()
+            / use_parent_command()
+            / query_element_command()
+            / query_parent_command()
+            / query_root_command()
+        rule get_attr_command() -> ValueExtractingCommand<'input>
+            = "GET-ATTR{" whitespace()? a:identifier() whitespace()? "}" { ValueExtractingCommand::GetAttribute(a) }
+        rule get_text_content_command() -> ValueExtractingCommand<'input>
+            = "GET-TEXT-CONTENT" { ValueExtractingCommand::GetTextContent }
+        pub(super) rule value_extracting_command() -> ValueExtractingCommand<'input>
+            = get_attr_command()
+            / get_text_content_command()
+        pub(super) rule string_creating_pipeline() -> StringValueCreatingPipeline<'input>
+            = s:element_selecting_command() " | " e:value_extracting_command() { StringValueCreatingPipeline::new(s, e) }
+
+        pub(crate) rule pipeline() -> ElementProcessingPipeline<'input>
+            = p:(element_processing_command() ** " | ") { ElementProcessingPipeline::new(p) }
   }
 }
