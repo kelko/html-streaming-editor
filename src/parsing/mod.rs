@@ -101,8 +101,8 @@ parser! {
             = ("REMOVE-ELEMENT" / "WITHOUT") "{" whitespace()? oc:css_selector_list() whitespace()? "}" { ElementProcessingCommand::RemoveElement(oc) }
         rule for_each_command() -> ElementProcessingCommand<'input>
             = ("FOR-EACH"/"WITH") "{" whitespace()? oc:css_selector_list() whitespace()? iterate_marker() whitespace()? sp:pipeline() whitespace()?  "}" { ElementProcessingCommand::ForEach(oc, sp) }
-        rule replace_command() -> ElementProcessingCommand<'input>
-            = ("REPLACE"/"MAP") "{" whitespace()? oc:css_selector_list() whitespace()? assign_marker() whitespace()? sp:element_subselect_or_creating_pipeline() whitespace()? "}" { ElementProcessingCommand::Replace(oc, sp)}
+        rule replace_element_command() -> ElementProcessingCommand<'input>
+            = ("REPLACE-ELEMENT"/"MAP") "{" whitespace()? oc:css_selector_list() whitespace()? assign_marker() whitespace()? sp:element_subselect_or_creating_pipeline() whitespace()? "}" { ElementProcessingCommand::ReplaceElement(oc, sp)}
         rule clear_attr_command() -> ElementProcessingCommand<'input>
             = "CLEAR-ATTR{" whitespace()? a:identifier() whitespace()? "}" { ElementProcessingCommand::ClearAttribute(a) }
         rule clear_content_command() -> ElementProcessingCommand<'input>
@@ -128,7 +128,7 @@ parser! {
             / add_text_content_command()
             / add_comment_command()
             / add_element_command()
-            / replace_command()
+            / replace_element_command()
 
         rule create_element_command() -> ElementCreatingCommand<'input>
             = ("CREATE-ELEMENT"/"NEW") "{" whitespace()? n:identifier() whitespace()? "}" { ElementCreatingCommand::CreateElement(n)}

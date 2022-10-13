@@ -439,8 +439,8 @@ fn add_element_from_create_for_tag() {
 
 //noinspection DuplicatedCode
 #[test]
-fn replace_from_create() {
-    let command = ElementProcessingCommand::Replace(
+fn replace_element_from_create() {
+    let command = ElementProcessingCommand::ReplaceElement(
         CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_class(
             "replace-me",
         ))]),
@@ -463,8 +463,8 @@ fn replace_from_create() {
 
 //noinspection DuplicatedCode
 #[test]
-fn replace_using_load_file() {
-    let command = ElementProcessingCommand::Replace(
+fn replace_element_using_load_file() {
+    let command = ElementProcessingCommand::ReplaceElement(
         CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_class(
             "replace-me",
         ))]),
@@ -492,8 +492,8 @@ fn replace_using_load_file() {
 
 //noinspection DuplicatedCode
 #[test]
-fn replace_using_query_replaced() {
-    let command = ElementProcessingCommand::Replace(
+fn replace_element_using_query_replaced() {
+    let command = ElementProcessingCommand::ReplaceElement(
         CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_class(
             "replace-me",
         ))]),

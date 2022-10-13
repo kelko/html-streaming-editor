@@ -111,7 +111,7 @@ hse -i index.html 'ONLY{main .content}'
 hse -i index.html 'ONLY{main, .main} | WITHOUT{script}'
 
 # replaces all elements with `placeholder` class with the <div class="content"> from a second HTML file 
-hse -i index.html 'REPLACE{.placeholder ↤ SOURCE{"other.html"} | ONLY{div.content} }'
+hse -i index.html 'MAP{.placeholder ↤ SOURCE{"other.html"} | ONLY{div.content} }'
 
 # add a new <meta name="version" value=""> element to <head> with git version info 
 hse -i index.html "WITH{head ↦ ADD-ELEMENT{ NEW{meta} | SET-ATTR{name ↤ 'version'} | SET-ATTR{content ↤ '`git describe --tags`'}  } }"

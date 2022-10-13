@@ -26,7 +26,7 @@ pub(crate) enum ElementProcessingCommand<'a> {
     ForEach(CssSelectorList<'a>, ElementProcessingPipeline<'a>),
     /// runs a sub-pipeline and replaces each element matching the given CSS selector with the result of the pipeline
     /// Returns the input as result.
-    Replace(CssSelectorList<'a>, ElementCreatingPipeline<'a>),
+    ReplaceElement(CssSelectorList<'a>, ElementCreatingPipeline<'a>),
     /// Remove the given attribute from all currently selected nodes
     /// Returns the input as result.
     ClearAttribute(&'a str),
@@ -86,8 +86,8 @@ impl<'a> ElementProcessingCommand<'a> {
                 Self::for_each(input, selector, pipeline)
             }
             ElementProcessingCommand::AddElement(pipeline) => Self::add_element(input, pipeline),
-            ElementProcessingCommand::Replace(selector, pipeline) => {
-                Self::replace(input, selector, pipeline)
+            ElementProcessingCommand::ReplaceElement(selector, pipeline) => {
+                Self::replace_element(input, selector, pipeline)
             }
         }
     }
@@ -134,7 +134,7 @@ impl<'a> ElementProcessingCommand<'a> {
         Ok(input.to_owned())
     }
 
-    fn replace(
+    fn replace_element(
         input: &[rctree::Node<HtmlContent>],
         selector: &CssSelectorList<'a>,
         pipeline: &ElementCreatingPipeline,

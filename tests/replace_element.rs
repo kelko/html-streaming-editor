@@ -17,7 +17,7 @@ const HTML_INPUT: &str = r#"<html>
 
 #[test]
 fn replace_ul_with_created_div() -> Result<(), StreamingEditorError> {
-    let command = "REPLACE{ul ↤ CREATE-ELEMENT{div} | SET-TEXT-CONTENT{'this was an UL'} | SET-ATTR{id ↤ 'new'}}";
+    let command = "REPLACE-ELEMENT{ul ↤ CREATE-ELEMENT{div} | SET-TEXT-CONTENT{'this was an UL'} | SET-ATTR{id ↤ 'new'}}";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
     let mut output = Vec::new();
@@ -47,7 +47,7 @@ fn replace_ul_with_created_div() -> Result<(), StreamingEditorError> {
 
 #[test]
 fn replace_ul_with_sourced_html() -> Result<(), StreamingEditorError> {
-    let command = "REPLACE{ul ↤ LOAD-FILE{'tests/source.html'} | EXTRACT-ELEMENT{ul}}";
+    let command = "REPLACE-ELEMENT{ul ↤ LOAD-FILE{'tests/source.html'} | EXTRACT-ELEMENT{ul}}";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
     let mut output = Vec::new();
@@ -85,7 +85,7 @@ fn replace_ul_with_sourced_html() -> Result<(), StreamingEditorError> {
 
 #[test]
 fn replace_third_para_with_child_abbr() -> Result<(), StreamingEditorError> {
-    let command = "REPLACE{#third-para ↤ QUERY-REPLACED{abbr}}";
+    let command = "REPLACE-ELEMENT{#third-para ↤ QUERY-REPLACED{abbr}}";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
     let mut output = Vec::new();
