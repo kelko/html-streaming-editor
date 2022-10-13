@@ -5,6 +5,7 @@ use crate::{
     element_processing::{ElementProcessingCommand, ElementProcessingPipeline},
     string_creating::{
         ElementSelectingCommand, StringValueCreatingPipeline, ValueExtractingCommand,
+        ValueProcessingCommand,
     },
     CssAttributeComparison, CssAttributeSelector, CssPseudoClass, CssSelector, CssSelectorList,
     CssSelectorPath, CssSelectorStep, ValueSource,
@@ -100,8 +101,8 @@ parser! {
             = ("REMOVE-ELEMENT" / "WITHOUT") "{" whitespace()? oc:css_selector_list() whitespace()? "}" { ElementProcessingCommand::RemoveElement(oc) }
         rule for_each_command() -> ElementProcessingCommand<'input>
             = ("FOR-EACH"/"WITH") "{" whitespace()? oc:css_selector_list() whitespace()? iterate_marker() whitespace()? sp:pipeline() whitespace()?  "}" { ElementProcessingCommand::ForEach(oc, sp) }
-        rule replace_command() -> ElementProcessingCommand<'input>
-            = ("REPLACE"/"MAP") "{" whitespace()? oc:css_selector_list() whitespace()? assign_marker() whitespace()? sp:element_subselect_or_creating_pipeline() whitespace()? "}" { ElementProcessingCommand::Replace(oc, sp)}
+        rule replace_element_command() -> ElementProcessingCommand<'input>
+            = ("REPLACE-ELEMENT"/"MAP") "{" whitespace()? oc:css_selector_list() whitespace()? assign_marker() whitespace()? sp:element_subselect_or_creating_pipeline() whitespace()? "}" { ElementProcessingCommand::ReplaceElement(oc, sp)}
         rule clear_attr_command() -> ElementProcessingCommand<'input>
             = "CLEAR-ATTR{" whitespace()? a:identifier() whitespace()? "}" { ElementProcessingCommand::ClearAttribute(a) }
         rule clear_content_command() -> ElementProcessingCommand<'input>
@@ -127,7 +128,7 @@ parser! {
             / add_text_content_command()
             / add_comment_command()
             / add_element_command()
-            / replace_command()
+            / replace_element_command()
 
         rule create_element_command() -> ElementCreatingCommand<'input>
             = ("CREATE-ELEMENT"/"NEW") "{" whitespace()? n:identifier() whitespace()? "}" { ElementCreatingCommand::CreateElement(n)}
@@ -165,6 +166,7 @@ parser! {
             / query_element_command()
             / query_parent_command()
             / query_root_command()
+
         rule get_attr_command() -> ValueExtractingCommand<'input>
             = "GET-ATTR{" whitespace()? a:identifier() whitespace()? "}" { ValueExtractingCommand::GetAttribute(a) }
         rule get_text_content_command() -> ValueExtractingCommand<'input>
@@ -172,8 +174,27 @@ parser! {
         pub(super) rule value_extracting_command() -> ValueExtractingCommand<'input>
             = get_attr_command()
             / get_text_content_command()
+
+        rule regex_replace_command() -> ValueProcessingCommand<'input>
+            = "REGEX-REPLACE{" whitespace()? m:string_value() whitespace()? assign_marker() whitespace()? r:string_value() whitespace()? "}" { ValueProcessingCommand::RegexReplace(m,r) }
+        rule to_lower_command() -> ValueProcessingCommand<'input>
+            = "TO-LOWER" { ValueProcessingCommand::ToLower }
+        rule to_upper_command() -> ValueProcessingCommand<'input>
+            = "TO-UPPER" { ValueProcessingCommand::ToUpper }
+        rule add_prefix_command() -> ValueProcessingCommand<'input>
+            = "ADD-PREFIX{" whitespace()? v:string_value() whitespace()? "}" { ValueProcessingCommand::AddPrefix(v) }
+        rule add_suffix_command() -> ValueProcessingCommand<'input>
+            = "ADD-SUFFIX{" whitespace()? v:string_value() whitespace()? "}" { ValueProcessingCommand::AddSuffix(v) }
+        pub(super) rule value_processing_command() -> ValueProcessingCommand<'input>
+            = regex_replace_command()
+            / to_lower_command()
+            / to_upper_command()
+            / add_prefix_command()
+            / add_suffix_command()
+
         pub(super) rule string_creating_pipeline() -> StringValueCreatingPipeline<'input>
-            = s:element_selecting_command() " | " e:value_extracting_command() { StringValueCreatingPipeline::new(s, e) }
+            = s:element_selecting_command() " | " e:value_extracting_command() " | " p:(value_processing_command() ** " | ") { StringValueCreatingPipeline::with_value_processing(s, e, p) }
+            / s:element_selecting_command() " | " e:value_extracting_command() { StringValueCreatingPipeline::new(s, e) }
 
         pub(crate) rule pipeline() -> ElementProcessingPipeline<'input>
             = p:(element_processing_command() ** " | ") { ElementProcessingPipeline::new(p) }
