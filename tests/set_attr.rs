@@ -37,7 +37,7 @@ fn overwrite_first_p_id() -> Result<(), StreamingEditorError> {
 }
 
 #[test]
-fn replace_characters_in_first_id() -> Result<(), StreamingEditorError> {
+fn replace_and_characters_in_first_id() -> Result<(), StreamingEditorError> {
     let command = "EXTRACT-ELEMENT{#first-para} | SET-ATTR{id ↤ USE-ELEMENT | GET-ATTR{id} | REGEX-REPLACE{'\\W' ↤ '_'} }";
     let mut input = Box::new(HTML_INPUT.as_bytes());
     let mut output = Vec::new();
@@ -49,6 +49,25 @@ fn replace_characters_in_first_id() -> Result<(), StreamingEditorError> {
     assert_eq!(
         result_string,
         String::from(r#"<p id="first_para">Some first text</p>"#)
+    );
+
+    Ok(())
+}
+
+#[test]
+fn uppercase_first_id() -> Result<(), StreamingEditorError> {
+    let command =
+        "EXTRACT-ELEMENT{#first-para} | SET-ATTR{id ↤ USE-ELEMENT | GET-ATTR{id} | TO-UPPER }";
+    let mut input = Box::new(HTML_INPUT.as_bytes());
+    let mut output = Vec::new();
+    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+
+    let _ = hse.run(command)?;
+    let result_string = String::from_utf8(output).unwrap();
+
+    assert_eq!(
+        result_string,
+        String::from(r#"<p id="FIRST-PARA">Some first text</p>"#)
     );
 
     Ok(())
@@ -133,6 +152,25 @@ fn set_attr_from_other_attr() -> Result<(), StreamingEditorError> {
 }
 
 #[test]
+fn set_attr_from_other_attr_but_uppercase() -> Result<(), StreamingEditorError> {
+    let command = "EXTRACT-ELEMENT{#first-para} | SET-ATTR{data-test ↤ USE-ELEMENT | GET-ATTR{id} | TO-UPPER}";
+
+    let mut input = Box::new(HTML_INPUT.as_bytes());
+    let mut output = Vec::new();
+    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+
+    let _ = hse.run(command)?;
+    let result_string = String::from_utf8(output).unwrap();
+
+    assert_eq!(
+        result_string,
+        String::from(r#"<p data-test="FIRST-PARA" id="first-para">Some first text</p>"#)
+    );
+
+    Ok(())
+}
+
+#[test]
 fn set_attr_from_attr_of_sibling() -> Result<(), StreamingEditorError> {
     let command =
         "FOR-EACH{#first-para ↦ SET-ATTR{data-test ↤ QUERY-PARENT{#second-para} | GET-ATTR{id}}} | EXTRACT-ELEMENT{#first-para}";
@@ -183,6 +221,25 @@ fn set_attr_from_attr_of_head_meta() -> Result<(), StreamingEditorError> {
     </body>
 </html>"#
         )
+    );
+
+    Ok(())
+}
+
+#[test]
+fn set_first_word_lowercased_as_id() -> Result<(), StreamingEditorError> {
+    let command = r#"EXTRACT-ELEMENT{#first-para} | SET-ATTR{id ↤ USE-ELEMENT | GET-TEXT-CONTENT | REGEX-REPLACE{"^(\w+).*" ↤ "$1"} | TO-LOWER }"#;
+
+    let mut input = Box::new(HTML_INPUT.as_bytes());
+    let mut output = Vec::new();
+    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+
+    let _ = hse.run(command)?;
+    let result_string = String::from_utf8(output).unwrap();
+
+    assert_eq!(
+        result_string,
+        String::from(r#"<p id="some">Some first text</p>"#)
     );
 
     Ok(())

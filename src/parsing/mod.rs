@@ -177,8 +177,14 @@ parser! {
 
         rule regex_replace_command() -> ValueProcessingCommand<'input>
             = "REGEX-REPLACE{" whitespace()? m:string_value() whitespace()? assign_marker() whitespace()? r:string_value() whitespace()? "}" { ValueProcessingCommand::RegexReplace(m,r) }
+        rule to_lower_command() -> ValueProcessingCommand<'input>
+            = "TO-LOWER" { ValueProcessingCommand::ToLower }
+        rule to_upper_command() -> ValueProcessingCommand<'input>
+            = "TO-UPPER" { ValueProcessingCommand::ToUpper }
         pub(super) rule value_processing_command() -> ValueProcessingCommand<'input>
             = regex_replace_command()
+            / to_lower_command()
+            / to_upper_command()
 
         pub(super) rule string_creating_pipeline() -> StringValueCreatingPipeline<'input>
             = s:element_selecting_command() " | " e:value_extracting_command() " | " p:(value_processing_command() ** " | ") { StringValueCreatingPipeline::with_value_processing(s, e, p) }

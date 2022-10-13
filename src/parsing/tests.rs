@@ -664,3 +664,15 @@ fn parse_regex_replace_complex() {
         ))
     );
 }
+
+#[test]
+fn parse_to_lower() {
+    let parsed = super::grammar::value_processing_command("TO-LOWER");
+    assert_eq!(parsed, Ok(ValueProcessingCommand::ToLower));
+}
+
+#[test]
+fn parse_to_upper() {
+    let parsed = super::grammar::value_processing_command("TO-UPPER");
+    assert_eq!(parsed, Ok(ValueProcessingCommand::ToUpper));
+}

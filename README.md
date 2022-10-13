@@ -45,7 +45,7 @@ There are three types of pipelines:
 Commands
 -------------
 
-Currently supported:
+Currently supported element processing commands:
 
 - `EXTRACT-ELEMENT`: remove everything not matching the CSS selector (alias: `ONLY`)
 - `REMOVE-ELEMENT`: remove everything matching the CSS selector (alias: `WITHOUT`)
@@ -58,9 +58,15 @@ Currently supported:
 - `ADD-COMMENT`: appends a new comment child
 - `ADD-ELEMENT`: appends a new tag/element child
 - `REPLACE`: replace all elements matching a CSS selector with new elements (alias: `MAP`)
+
+Currently supported element creating commands:
+
 - `CREATE-ELEMENT`: creates a new, empty element, mainly in combination with `ADD-ELEMENT` or `REPLACE` (alias: `NEW`)
 - `LOAD-FILE`: reads a DOM from a different file, mainly in combination with `ADD-ELEMENT` or `REPLACE` (alias: `SOURCE`)
 - `QUERY-REPLACED`: returns children matching the CSS selector of those elements meant to be replaced, only combination with or `REPLACE` (alias: `KEEP`)
+
+Currently supported string-value creating commands:
+
 - `USE-ELEMENT`: returns the currently selected element for a sub-pipeline, mainly in combination with "string value producing pipelines" (alias: `THIS`)
 - `USE-PARENT`: returns the parent of the currently selected element for a sub-pipeline, mainly in combination with "string value producing pipelines" (alias: `PARENT`)
 - `QUERY-ELEMENT`: runs a query on the currently selected element for a sub-pipeline, without detaching target element from HTML tree unlike `EXTRACT-ELEMENT`
@@ -69,9 +75,6 @@ Currently supported:
 - `GET-ATTR`: returns the value of an attribute of the currently selected element for a string-value producing pipelines
 - `GET-TEXT-CONTENT`: returns the text content of the currently selected element for a string-value producing pipelines
 - `REGEX-REPLACE`: runs a RegEx-based value replacements on the current string value of the pipeline
-
-Not Yet implemented:
-
 - `TO-LOWER`: all-lower the current string value of the pipeline
 - `TO-UPPER`: all-caps the current string value of the pipeline
 
@@ -113,4 +116,10 @@ hse -i index.html "WITH{head ↦ ADD-ELEMENT{ NEW{meta} | SET-ATTR{name ↤ 'ver
 
 # add a new comment to <body> with git version info
 hse -i index.html "WITH{body ↦ ADD-COMMENT{'`git describe --tags`'}}"
+
+# add an RDF <meta name="dc:title"> with same content as <title>
+hse -i input.html "WITH{head ↦ ADD-ELEMENT{ NEW{meta} | SET-ATTR{name ↤ 'dc:title' } } | WITH{meta[name='dc:title'] ↦ SET-ATTR{content ↤ QUERY-PARENT{title} | GET-TEXT-CONTENT } } }"
+
+# replace non-word characters with an underscore in an attribute
+hse -i index.html "EXTRACT-ELEMENT{#target} | SET-ATTR{data-test ↤ USE-ELEMENT | GET-ATTR{data-test} | REGEX-REPLACE{'\\W' ↤ '_'} }";"
 ```

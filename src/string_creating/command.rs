@@ -133,6 +133,10 @@ impl<'a> ValueExtractingCommand<'a> {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum ValueProcessingCommand<'a> {
     RegexReplace(&'a str, &'a str),
+    /// returns an all-lower-case version of the input
+    ToLower,
+    /// returns an all-upper-case version of the input
+    ToUpper,
 }
 
 impl<'a> ValueProcessingCommand<'a> {
@@ -143,6 +147,8 @@ impl<'a> ValueProcessingCommand<'a> {
             ValueProcessingCommand::RegexReplace(regex, replace) => {
                 Self::regex_replace(input, regex, replace)
             }
+            ValueProcessingCommand::ToLower => Self::to_lower(input),
+            ValueProcessingCommand::ToUpper => Self::to_upper(input),
         }
     }
 
@@ -158,6 +164,14 @@ impl<'a> ValueProcessingCommand<'a> {
             .map(|v| re.replace_all(v, replace))
             .map(|v| String::from(v))
             .collect::<Vec<_>>())
+    }
+
+    fn to_lower(input: &[String]) -> Result<Vec<String>, CommandError> {
+        Ok(input.iter().map(|v| v.to_lowercase()).collect::<Vec<_>>())
+    }
+
+    fn to_upper(input: &[String]) -> Result<Vec<String>, CommandError> {
+        Ok(input.iter().map(|v| v.to_uppercase()).collect::<Vec<_>>())
     }
 }
 
@@ -597,6 +611,76 @@ mod test {
     #[test]
     fn regex_replaces_returns_empty_string_on_empty_input() {
         let command = ValueProcessingCommand::RegexReplace("a", "e");
+
+        let result = command.execute(&vec![]).unwrap();
+
+        assert_eq!(result.len(), 0);
+    }
+
+    #[test]
+    fn to_lower_lowercases_ascii_characters_correctly() {
+        let command = ValueProcessingCommand::ToLower;
+
+        let mut result = command
+            .execute(&[String::from("ABCDEFGHIJKLMNOPQRSTUVWXYZ")])
+            .unwrap();
+
+        assert_eq!(result.len(), 1);
+
+        let first_result = result.pop().unwrap();
+        assert_eq!(first_result, String::from("abcdefghijklmnopqrstuvwxyz"));
+    }
+
+    #[test]
+    fn to_lower_lowercases_german_umlauts_correctly() {
+        let command = ValueProcessingCommand::ToLower;
+
+        let mut result = command.execute(&[String::from("ÄÖÜ")]).unwrap();
+
+        assert_eq!(result.len(), 1);
+
+        let first_result = result.pop().unwrap();
+        assert_eq!(first_result, String::from("äöü"));
+    }
+
+    #[test]
+    fn to_lower_returns_empty_on_empty_input() {
+        let command = ValueProcessingCommand::ToLower;
+
+        let result = command.execute(&vec![]).unwrap();
+
+        assert_eq!(result.len(), 0);
+    }
+
+    #[test]
+    fn to_upper_uppercases_ascii_characters_correctly() {
+        let command = ValueProcessingCommand::ToUpper;
+
+        let mut result = command
+            .execute(&[String::from("abcdefghijklmnopqrstuvwxyz")])
+            .unwrap();
+
+        assert_eq!(result.len(), 1);
+
+        let first_result = result.pop().unwrap();
+        assert_eq!(first_result, String::from("ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
+    }
+
+    #[test]
+    fn to_upper_uppercases_german_umlauts_correctly() {
+        let command = ValueProcessingCommand::ToUpper;
+
+        let mut result = command.execute(&[String::from("äöü")]).unwrap();
+
+        assert_eq!(result.len(), 1);
+
+        let first_result = result.pop().unwrap();
+        assert_eq!(first_result, String::from("ÄÖÜ"));
+    }
+
+    #[test]
+    fn to_upper_returns_empty_on_empty_input() {
+        let command = ValueProcessingCommand::ToUpper;
 
         let result = command.execute(&vec![]).unwrap();
 
