@@ -168,7 +168,7 @@ impl<'a> ValueProcessingCommand<'a> {
         Ok(input
             .iter()
             .map(|v| re.replace_all(v, replace))
-            .map(|v| String::from(v))
+            .map(String::from)
             .collect::<Vec<_>>())
     }
 
