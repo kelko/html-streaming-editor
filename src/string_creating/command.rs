@@ -137,6 +137,10 @@ pub(crate) enum ValueProcessingCommand<'a> {
     ToLower,
     /// returns an all-upper-case version of the input
     ToUpper,
+    /// returns the input prefixed with given string
+    AddPrefix(&'a str),
+    /// returns the input suffixed with given string
+    AddSuffix(&'a str),
 }
 
 impl<'a> ValueProcessingCommand<'a> {
@@ -149,6 +153,8 @@ impl<'a> ValueProcessingCommand<'a> {
             }
             ValueProcessingCommand::ToLower => Self::to_lower(input),
             ValueProcessingCommand::ToUpper => Self::to_upper(input),
+            ValueProcessingCommand::AddPrefix(prefix) => Self::add_prefix(input, prefix),
+            ValueProcessingCommand::AddSuffix(suffix) => Self::add_suffix(input, suffix),
         }
     }
 
@@ -172,6 +178,20 @@ impl<'a> ValueProcessingCommand<'a> {
 
     fn to_upper(input: &[String]) -> Result<Vec<String>, CommandError> {
         Ok(input.iter().map(|v| v.to_uppercase()).collect::<Vec<_>>())
+    }
+
+    fn add_prefix(input: &[String], prefix: &'a str) -> Result<Vec<String>, CommandError> {
+        Ok(input
+            .iter()
+            .map(|v| format!("{}{}", prefix, v))
+            .collect::<Vec<_>>())
+    }
+
+    fn add_suffix(input: &[String], suffix: &'a str) -> Result<Vec<String>, CommandError> {
+        Ok(input
+            .iter()
+            .map(|v| format!("{}{}", v, suffix))
+            .collect::<Vec<_>>())
     }
 }
 
@@ -681,6 +701,48 @@ mod test {
     #[test]
     fn to_upper_returns_empty_on_empty_input() {
         let command = ValueProcessingCommand::ToUpper;
+
+        let result = command.execute(&vec![]).unwrap();
+
+        assert_eq!(result.len(), 0);
+    }
+
+    #[test]
+    fn add_prefix_returns_prefixed_version_correctly() {
+        let command = ValueProcessingCommand::AddPrefix("a");
+
+        let mut result = command.execute(&[String::from("b")]).unwrap();
+
+        assert_eq!(result.len(), 1);
+
+        let first_result = result.pop().unwrap();
+        assert_eq!(first_result, String::from("ab"));
+    }
+
+    #[test]
+    fn add_prefix_returns_empty_on_empty_input() {
+        let command = ValueProcessingCommand::AddPrefix("a");
+
+        let result = command.execute(&vec![]).unwrap();
+
+        assert_eq!(result.len(), 0);
+    }
+
+    #[test]
+    fn add_suffix_returns_suffixed_version_correctly() {
+        let command = ValueProcessingCommand::AddSuffix("z");
+
+        let mut result = command.execute(&[String::from("b")]).unwrap();
+
+        assert_eq!(result.len(), 1);
+
+        let first_result = result.pop().unwrap();
+        assert_eq!(first_result, String::from("bz"));
+    }
+
+    #[test]
+    fn add_suffix_returns_empty_on_empty_input() {
+        let command = ValueProcessingCommand::AddSuffix("z");
 
         let result = command.execute(&vec![]).unwrap();
 

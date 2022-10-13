@@ -244,3 +244,22 @@ fn set_first_word_lowercased_as_id() -> Result<(), StreamingEditorError> {
 
     Ok(())
 }
+
+#[test]
+fn set_first_word_prefixed_as_id() -> Result<(), StreamingEditorError> {
+    let command = r#"EXTRACT-ELEMENT{#first-para} | SET-ATTR{id ↤ USE-ELEMENT | GET-TEXT-CONTENT | REGEX-REPLACE{"^(\w+).*" ↤ "$1"} | ADD-PREFIX{"id-"} }"#;
+
+    let mut input = Box::new(HTML_INPUT.as_bytes());
+    let mut output = Vec::new();
+    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+
+    let _ = hse.run(command)?;
+    let result_string = String::from_utf8(output).unwrap();
+
+    assert_eq!(
+        result_string,
+        String::from(r#"<p id="id-Some">Some first text</p>"#)
+    );
+
+    Ok(())
+}

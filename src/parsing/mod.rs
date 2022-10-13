@@ -181,10 +181,16 @@ parser! {
             = "TO-LOWER" { ValueProcessingCommand::ToLower }
         rule to_upper_command() -> ValueProcessingCommand<'input>
             = "TO-UPPER" { ValueProcessingCommand::ToUpper }
+        rule add_prefix_command() -> ValueProcessingCommand<'input>
+            = "ADD-PREFIX{" whitespace()? v:string_value() whitespace()? "}" { ValueProcessingCommand::AddPrefix(v) }
+        rule add_suffix_command() -> ValueProcessingCommand<'input>
+            = "ADD-SUFFIX{" whitespace()? v:string_value() whitespace()? "}" { ValueProcessingCommand::AddSuffix(v) }
         pub(super) rule value_processing_command() -> ValueProcessingCommand<'input>
             = regex_replace_command()
             / to_lower_command()
             / to_upper_command()
+            / add_prefix_command()
+            / add_suffix_command()
 
         pub(super) rule string_creating_pipeline() -> StringValueCreatingPipeline<'input>
             = s:element_selecting_command() " | " e:value_extracting_command() " | " p:(value_processing_command() ** " | ") { StringValueCreatingPipeline::with_value_processing(s, e, p) }

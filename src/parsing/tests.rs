@@ -676,3 +676,15 @@ fn parse_to_upper() {
     let parsed = super::grammar::value_processing_command("TO-UPPER");
     assert_eq!(parsed, Ok(ValueProcessingCommand::ToUpper));
 }
+
+#[test]
+fn parse_add_prefix() {
+    let parsed = super::grammar::value_processing_command("ADD-PREFIX{'a'}");
+    assert_eq!(parsed, Ok(ValueProcessingCommand::AddPrefix("a")));
+}
+
+#[test]
+fn parse_add_suffix() {
+    let parsed = super::grammar::value_processing_command("ADD-SUFFIX{'a'}");
+    assert_eq!(parsed, Ok(ValueProcessingCommand::AddSuffix("a")));
+}

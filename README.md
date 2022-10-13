@@ -77,6 +77,8 @@ Currently supported string-value creating commands:
 - `REGEX-REPLACE`: runs a RegEx-based value replacements on the current string value of the pipeline
 - `TO-LOWER`: all-lower the current string value of the pipeline
 - `TO-UPPER`: all-caps the current string value of the pipeline
+- `ADD-PREFIX`: add a given string to the beginning of the string value of the pipeline
+- `ADD-SUFFIX`: add a given string to the end of the string value of the pipeline
 
 
 Binary
