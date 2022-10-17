@@ -1,5 +1,6 @@
-use crate::html::{HtmlContent, HtmlRenderable, HtmlTag};
+use crate::html::{HtmlContent, HtmlDocument, HtmlRenderable, HtmlTag};
 use std::collections::BTreeMap;
+use tl::HTMLVersion;
 
 fn build_comment() -> rctree::Node<HtmlContent> {
     rctree::Node::<HtmlContent>::new(HtmlContent::Comment(String::from("Some Comment")))
@@ -53,6 +54,25 @@ fn build_tag_with_complex_content() -> rctree::Node<HtmlContent> {
     unit_of_test.append(build_text_with_content("Third Text"));
 
     unit_of_test
+}
+
+fn build_document() -> rctree::Node<HtmlContent> {
+    let unit_of_tests = rctree::Node::<HtmlContent>::new(HtmlContent::Document(HtmlDocument {
+        doctype: Some(HTMLVersion::HTML5),
+    }));
+
+    let html = rctree::Node::<HtmlContent>::new(HtmlContent::Tag(HtmlTag::of_name("html")));
+    html.append(rctree::Node::<HtmlContent>::new(HtmlContent::Tag(
+        HtmlTag::of_name("head"),
+    )));
+
+    let body = rctree::Node::<HtmlContent>::new(HtmlContent::Tag(HtmlTag::of_name("body")));
+    body.append(build_text());
+
+    html.append(body);
+    unit_of_tests.append(html);
+
+    unit_of_tests
 }
 
 #[test]
@@ -123,6 +143,17 @@ fn outer_html_of_complex_node_has_all() {
 }
 
 #[test]
+fn outer_html_of_document_has_all() {
+    let unit_of_test = build_document();
+    let rendered = unit_of_test.outer_html();
+
+    assert_eq!(
+        rendered,
+        "<!DOCTYPE html>\n<html><head></head><body>Some Text</body></html>"
+    )
+}
+
+#[test]
 fn inner_html_of_comment_is_empty() {
     let unit_of_test = build_comment();
     let rendered_inner_html = unit_of_test.inner_html();
@@ -181,6 +212,17 @@ fn inner_html_of_complex_node_has_all() {
             r#"Some Text<!-- Some Comment --><div class="foo" data-bar="value">Other Text</div>Third Text"#
         )
     );
+}
+
+#[test]
+fn inner_html_of_document_has_all() {
+    let unit_of_test = build_document();
+    let rendered = unit_of_test.inner_html();
+
+    assert_eq!(
+        rendered,
+        "<!DOCTYPE html>\n<html><head></head><body>Some Text</body></html>"
+    )
 }
 
 #[test]
@@ -243,6 +285,14 @@ fn text_content_of_complex_node_is_set() {
 }
 
 #[test]
+fn text_content_of_document_has_all() {
+    let unit_of_test = build_document();
+    let rendered = unit_of_test.text_content();
+
+    assert_eq!(rendered, "Some Text");
+}
+
+#[test]
 fn convert_single_vdom_works() {
     let dom = tl::parse(
         "<html><head></head><!-- nothing here --><body class=\"simple\" data-test=\"Ala ma kota\">Hello World</body></html>",
@@ -296,4 +346,63 @@ fn convert_empty_comments_works() {
     )));
 
     assert_eq!(converted.outer_html(), body.outer_html());
+}
+
+#[test]
+fn convert_vdom_keeps_doctype5_if_present() {
+    let dom = tl::parse(
+        "<!DOCTYPE html>\n<html>Hello World</html>",
+        tl::ParserOptions::default(),
+    )
+    .unwrap();
+
+    let converted = HtmlContent::import(dom).unwrap();
+    assert_eq!(
+        converted.outer_html(),
+        "<!DOCTYPE html>\n<html>Hello World</html>"
+    );
+}
+
+#[test]
+fn convert_vdom_keeps_doctype4_if_present() {
+    let dom = tl::parse(
+        r#"<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>Hello World</html>"#,
+        tl::ParserOptions::default(),
+    )
+    .unwrap();
+
+    let converted = HtmlContent::import(dom).unwrap();
+    assert_eq!(
+        converted.outer_html(),
+        r#"<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>Hello World</html>"#
+    );
+}
+
+#[test]
+fn convert_vdom_no_doctype_if_none_present() {
+    let dom = tl::parse("<html>Hello World</html>", tl::ParserOptions::default()).unwrap();
+
+    let converted = HtmlContent::import(dom).unwrap();
+    assert_eq!(converted.outer_html(), "<html>Hello World</html>");
+}
+
+#[test]
+fn convert_vdom_html_tag_builds_document() {
+    let dom = tl::parse("<html>Hello World</html>", tl::ParserOptions::default()).unwrap();
+
+    let converted = HtmlContent::import(dom).unwrap();
+
+    let content = converted.borrow();
+    assert!(matches!(*content, HtmlContent::Document(_)));
+}
+
+#[test]
+fn convert_vdom_other_tag_builds_tag() {
+    let dom = tl::parse("<body>Hello World</body>", tl::ParserOptions::default()).unwrap();
+
+    let converted = HtmlContent::import(dom).unwrap();
+    let content = converted.borrow();
+    assert!(matches!(*content, HtmlContent::Tag(_)));
 }
