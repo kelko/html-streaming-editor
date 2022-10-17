@@ -244,9 +244,9 @@ fn set_text_content_from_string_for_tag_with_multiple_children() {
 }
 
 #[test]
-fn add_text_content_from_string_for_tag() {
+fn append_text_content_from_string_for_tag() {
     let command =
-        ElementProcessingCommand::AddTextContent(ValueSource::StringValue("Other Content"));
+        ElementProcessingCommand::AppendTextContent(ValueSource::StringValue("Other Content"));
 
     let root = load_inline_html(r#"<div data-test="foo" class="bar">Some Content</div>"#);
 
@@ -261,8 +261,8 @@ fn add_text_content_from_string_for_tag() {
 }
 
 #[test]
-fn add_text_content_from_string_for_empty_tag() {
-    let command = ElementProcessingCommand::AddTextContent(ValueSource::SubPipeline(
+fn append_text_content_from_string_for_empty_tag() {
+    let command = ElementProcessingCommand::AppendTextContent(ValueSource::SubPipeline(
         StringValueCreatingPipeline::new(
             ElementSelectingCommand::UseElement,
             ValueExtractingCommand::GetAttribute("data-test"),
@@ -282,9 +282,9 @@ fn add_text_content_from_string_for_empty_tag() {
 }
 
 #[test]
-fn add_text_content_from_attr_for_empty_tag() {
+fn append_text_content_from_attr_for_empty_tag() {
     let command =
-        ElementProcessingCommand::AddTextContent(ValueSource::StringValue("Other Content"));
+        ElementProcessingCommand::AppendTextContent(ValueSource::StringValue("Other Content"));
 
     let root = load_inline_html(r#"<div data-test="foo" class="bar"></div>"#);
 
@@ -299,9 +299,9 @@ fn add_text_content_from_attr_for_empty_tag() {
 }
 
 #[test]
-fn add_text_content_from_string_for_tag_with_multiple_children() {
+fn append_text_content_from_string_for_tag_with_multiple_children() {
     let command =
-        ElementProcessingCommand::AddTextContent(ValueSource::StringValue("Other Content"));
+        ElementProcessingCommand::AppendTextContent(ValueSource::StringValue("Other Content"));
 
     let root = load_inline_html(
         r#"<div data-test="foo" class="bar">Some <em>special</em> Content. <!-- rightly so --></div>"#,
@@ -320,8 +320,9 @@ fn add_text_content_from_string_for_tag_with_multiple_children() {
 }
 
 #[test]
-fn add_comment_from_string_for_tag() {
-    let command = ElementProcessingCommand::AddComment(ValueSource::StringValue("Other Content"));
+fn append_comment_from_string_for_tag() {
+    let command =
+        ElementProcessingCommand::AppendComment(ValueSource::StringValue("Other Content"));
 
     let root = load_inline_html(r#"<div data-test="foo" class="bar">Some Content</div>"#);
 
@@ -338,8 +339,9 @@ fn add_comment_from_string_for_tag() {
 }
 
 #[test]
-fn add_comment_from_string_for_empty_tag() {
-    let command = ElementProcessingCommand::AddComment(ValueSource::StringValue("Other Content"));
+fn append_comment_from_string_for_empty_tag() {
+    let command =
+        ElementProcessingCommand::AppendComment(ValueSource::StringValue("Other Content"));
 
     let root = load_inline_html(r#"<div data-test="foo" class="bar"></div>"#);
 
@@ -354,8 +356,8 @@ fn add_comment_from_string_for_empty_tag() {
 }
 
 #[test]
-fn add_comment_from_attr_for_empty_tag() {
-    let command = ElementProcessingCommand::AddComment(ValueSource::SubPipeline(
+fn append_comment_from_attr_for_empty_tag() {
+    let command = ElementProcessingCommand::AppendComment(ValueSource::SubPipeline(
         StringValueCreatingPipeline::new(
             ElementSelectingCommand::UseElement,
             ValueExtractingCommand::GetAttribute("data-test"),
@@ -375,8 +377,9 @@ fn add_comment_from_attr_for_empty_tag() {
 }
 
 #[test]
-fn add_comment_from_string_for_tag_with_multiple_children() {
-    let command = ElementProcessingCommand::AddComment(ValueSource::StringValue("Other Content"));
+fn append_comment_from_string_for_tag_with_multiple_children() {
+    let command =
+        ElementProcessingCommand::AppendComment(ValueSource::StringValue("Other Content"));
 
     let root = load_inline_html(
         r#"<div data-test="foo" class="bar"><!-- rightly so -->Some <em>special</em> Content.</div>"#,
@@ -391,6 +394,25 @@ fn add_comment_from_string_for_tag_with_multiple_children() {
         String::from(
             r#"<div class="bar" data-test="foo"><!-- rightly so -->Some <em>special</em> Content.<!-- Other Content --></div>"#
         )
+    );
+}
+
+#[test]
+fn append_element_from_create_for_tag() {
+    let command = ElementProcessingCommand::AppendElement(ElementCreatingPipeline::new(
+        ElementCreatingCommand::CreateElement("div"),
+        None,
+    ));
+
+    let root = load_inline_html(r#"<div data-test="foo" class="bar">Some Content</div>"#);
+
+    let mut result = command.execute(&vec![rctree::Node::clone(&root)]).unwrap();
+
+    assert_eq!(result.len(), 1);
+    let first_result = result.pop().unwrap();
+    assert_eq!(
+        first_result.outer_html(),
+        String::from(r#"<div class="bar" data-test="foo">Some Content<div></div></div>"#)
     );
 }
 
@@ -415,25 +437,6 @@ fn for_each_on_ul() {
     assert_eq!(
         first_result.outer_html(),
         String::from(r#"<ul><li data-test="x">1</li><li data-test="x">2</li></ul>"#)
-    );
-}
-
-#[test]
-fn add_element_from_create_for_tag() {
-    let command = ElementProcessingCommand::AddElement(ElementCreatingPipeline::new(
-        ElementCreatingCommand::CreateElement("div"),
-        None,
-    ));
-
-    let root = load_inline_html(r#"<div data-test="foo" class="bar">Some Content</div>"#);
-
-    let mut result = command.execute(&vec![rctree::Node::clone(&root)]).unwrap();
-
-    assert_eq!(result.len(), 1);
-    let first_result = result.pop().unwrap();
-    assert_eq!(
-        first_result.outer_html(),
-        String::from(r#"<div class="bar" data-test="foo">Some Content<div></div></div>"#)
     );
 }
 
@@ -518,5 +521,178 @@ fn replace_element_using_query_replaced() {
         String::from(
             r#"<body><p>Content</p><p>levels</p><div class="stay">This will be kept</div></body>"#
         )
+    );
+}
+
+#[test]
+fn prepend_text_content_from_string_for_tag() {
+    let command =
+        ElementProcessingCommand::PrependTextContent(ValueSource::StringValue("Other Content"));
+
+    let root = load_inline_html(r#"<div data-test="foo" class="bar">Some Content</div>"#);
+
+    let mut result = command.execute(&vec![rctree::Node::clone(&root)]).unwrap();
+
+    assert_eq!(result.len(), 1);
+    let first_result = result.pop().unwrap();
+    assert_eq!(
+        first_result.outer_html(),
+        String::from(r#"<div class="bar" data-test="foo">Other ContentSome Content</div>"#)
+    );
+}
+
+#[test]
+fn prepend_text_content_from_string_for_empty_tag() {
+    let command = ElementProcessingCommand::PrependTextContent(ValueSource::SubPipeline(
+        StringValueCreatingPipeline::new(
+            ElementSelectingCommand::UseElement,
+            ValueExtractingCommand::GetAttribute("data-test"),
+        ),
+    ));
+
+    let root = load_inline_html(r#"<div data-test="foo" class="bar"></div>"#);
+
+    let mut result = command.execute(&vec![rctree::Node::clone(&root)]).unwrap();
+
+    assert_eq!(result.len(), 1);
+    let first_result = result.pop().unwrap();
+    assert_eq!(
+        first_result.outer_html(),
+        String::from(r#"<div class="bar" data-test="foo">foo</div>"#)
+    );
+}
+
+#[test]
+fn prepend_text_content_from_attr_for_empty_tag() {
+    let command =
+        ElementProcessingCommand::PrependTextContent(ValueSource::StringValue("Other Content"));
+
+    let root = load_inline_html(r#"<div data-test="foo" class="bar"></div>"#);
+
+    let mut result = command.execute(&vec![rctree::Node::clone(&root)]).unwrap();
+
+    assert_eq!(result.len(), 1);
+    let first_result = result.pop().unwrap();
+    assert_eq!(
+        first_result.outer_html(),
+        String::from(r#"<div class="bar" data-test="foo">Other Content</div>"#)
+    );
+}
+
+#[test]
+fn prepend_text_content_from_string_for_tag_with_multiple_children() {
+    let command =
+        ElementProcessingCommand::PrependTextContent(ValueSource::StringValue("Other Content"));
+
+    let root = load_inline_html(
+        r#"<div data-test="foo" class="bar">Some <em>special</em> Content. <!-- rightly so --></div>"#,
+    );
+
+    let mut result = command.execute(&vec![rctree::Node::clone(&root)]).unwrap();
+
+    assert_eq!(result.len(), 1);
+    let first_result = result.pop().unwrap();
+    assert_eq!(
+        first_result.outer_html(),
+        String::from(
+            r#"<div class="bar" data-test="foo">Other ContentSome <em>special</em> Content. <!-- rightly so --></div>"#
+        )
+    );
+}
+
+#[test]
+fn prepend_comment_from_string_for_tag() {
+    let command =
+        ElementProcessingCommand::PrependComment(ValueSource::StringValue("Other Content"));
+
+    let root = load_inline_html(r#"<div data-test="foo" class="bar">Some Content</div>"#);
+
+    let mut result = command.execute(&vec![rctree::Node::clone(&root)]).unwrap();
+
+    assert_eq!(result.len(), 1);
+    let first_result = result.pop().unwrap();
+    assert_eq!(
+        first_result.outer_html(),
+        String::from(
+            r#"<div class="bar" data-test="foo"><!-- Other Content -->Some Content</div>"#
+        )
+    );
+}
+
+#[test]
+fn prepend_comment_from_string_for_empty_tag() {
+    let command =
+        ElementProcessingCommand::PrependComment(ValueSource::StringValue("Other Content"));
+
+    let root = load_inline_html(r#"<div data-test="foo" class="bar"></div>"#);
+
+    let mut result = command.execute(&vec![rctree::Node::clone(&root)]).unwrap();
+
+    assert_eq!(result.len(), 1);
+    let first_result = result.pop().unwrap();
+    assert_eq!(
+        first_result.outer_html(),
+        String::from(r#"<div class="bar" data-test="foo"><!-- Other Content --></div>"#)
+    );
+}
+
+#[test]
+fn prepend_comment_from_attr_for_empty_tag() {
+    let command = ElementProcessingCommand::PrependComment(ValueSource::SubPipeline(
+        StringValueCreatingPipeline::new(
+            ElementSelectingCommand::UseElement,
+            ValueExtractingCommand::GetAttribute("data-test"),
+        ),
+    ));
+
+    let root = load_inline_html(r#"<div data-test="foo" class="bar"></div>"#);
+
+    let mut result = command.execute(&vec![rctree::Node::clone(&root)]).unwrap();
+
+    assert_eq!(result.len(), 1);
+    let first_result = result.pop().unwrap();
+    assert_eq!(
+        first_result.outer_html(),
+        String::from(r#"<div class="bar" data-test="foo"><!-- foo --></div>"#)
+    );
+}
+
+#[test]
+fn prepend_comment_from_string_for_tag_with_multiple_children() {
+    let command =
+        ElementProcessingCommand::PrependComment(ValueSource::StringValue("Other Content"));
+
+    let root = load_inline_html(
+        r#"<div data-test="foo" class="bar"><!-- rightly so -->Some <em>special</em> Content.</div>"#,
+    );
+
+    let mut result = command.execute(&vec![rctree::Node::clone(&root)]).unwrap();
+
+    assert_eq!(result.len(), 1);
+    let first_result = result.pop().unwrap();
+    assert_eq!(
+        first_result.outer_html(),
+        String::from(
+            r#"<div class="bar" data-test="foo"><!-- Other Content --><!-- rightly so -->Some <em>special</em> Content.</div>"#
+        )
+    );
+}
+
+#[test]
+fn prepend_element_from_create_for_tag() {
+    let command = ElementProcessingCommand::PrependElement(ElementCreatingPipeline::new(
+        ElementCreatingCommand::CreateElement("div"),
+        None,
+    ));
+
+    let root = load_inline_html(r#"<div data-test="foo" class="bar">Some Content</div>"#);
+
+    let mut result = command.execute(&vec![rctree::Node::clone(&root)]).unwrap();
+
+    assert_eq!(result.len(), 1);
+    let first_result = result.pop().unwrap();
+    assert_eq!(
+        first_result.outer_html(),
+        String::from(r#"<div class="bar" data-test="foo"><div></div>Some Content</div>"#)
     );
 }
