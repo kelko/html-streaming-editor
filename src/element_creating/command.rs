@@ -109,7 +109,8 @@ mod tests {
         let first_result = result.pop().unwrap();
         assert_eq!(
             first_result.outer_html(),
-            r#"<html lang="en">
+            r#"<!DOCTYPE html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>LOAD-FILE Source</title>
