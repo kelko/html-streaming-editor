@@ -256,82 +256,82 @@ fn parse_set_text_content_by_string_with_ascii_arrow() {
 }
 
 #[test]
-fn parse_add_text_content_by_string() {
-    let parsed = super::grammar::element_processing_command("ADD-TEXT-CONTENT{'some text'}");
+fn parse_append_text_content_by_string() {
+    let parsed = super::grammar::element_processing_command("APPEND-TEXT-CONTENT{'some text'}");
     assert_eq!(
         parsed,
-        Ok(ElementProcessingCommand::AddTextContent(
+        Ok(ElementProcessingCommand::AppendTextContent(
             ValueSource::StringValue("some text")
         ))
     );
 }
 
 #[test]
-fn parse_add_text_content_by_string_with_arrow() {
-    let parsed = super::grammar::element_processing_command("ADD-TEXT-CONTENT{ ↤ 'some text'}");
+fn parse_append_text_content_by_string_with_arrow() {
+    let parsed = super::grammar::element_processing_command("APPEND-TEXT-CONTENT{ ↤ 'some text'}");
     assert_eq!(
         parsed,
-        Ok(ElementProcessingCommand::AddTextContent(
+        Ok(ElementProcessingCommand::AppendTextContent(
             ValueSource::StringValue("some text")
         ))
     );
 }
 
 #[test]
-fn parse_add_text_content_by_sub_pipeline() {
+fn parse_append_text_content_by_sub_pipeline() {
     let constructed_pipeline = format!(
-        "ADD-TEXT-CONTENT{{ {} }}",
+        "APPEND-TEXT-CONTENT{{ {} }}",
         EXEMPLARY_SUB_PIPELINE_DEFINITION
     );
     let parsed = super::grammar::element_processing_command(&constructed_pipeline);
 
     assert_eq!(
         parsed,
-        Ok(ElementProcessingCommand::AddTextContent(
+        Ok(ElementProcessingCommand::AppendTextContent(
             ValueSource::SubPipeline(EXEMPLARY_SUB_PIPELINE_MODEL.clone())
         ))
     );
 }
 
 #[test]
-fn parse_add_text_content_by_string_with_ascii_arrow() {
-    let parsed = super::grammar::element_processing_command("ADD-TEXT-CONTENT{ <= 'some text'}");
+fn parse_append_text_content_by_string_with_ascii_arrow() {
+    let parsed = super::grammar::element_processing_command("APPEND-TEXT-CONTENT{ <= 'some text'}");
     assert_eq!(
         parsed,
-        Ok(ElementProcessingCommand::AddTextContent(
+        Ok(ElementProcessingCommand::AppendTextContent(
             ValueSource::StringValue("some text")
         ))
     );
 }
 
 #[test]
-fn parse_add_comment_by_string() {
-    let parsed = super::grammar::element_processing_command("ADD-COMMENT{'some text'}");
+fn parse_append_comment_by_string() {
+    let parsed = super::grammar::element_processing_command("APPEND-COMMENT{'some text'}");
     assert_eq!(
         parsed,
-        Ok(ElementProcessingCommand::AddComment(
+        Ok(ElementProcessingCommand::AppendComment(
             ValueSource::StringValue("some text")
         ))
     );
 }
 
 #[test]
-fn parse_add_comment_by_string_with_arrow() {
-    let parsed = super::grammar::element_processing_command("ADD-COMMENT{ ↤ 'some text'}");
+fn parse_append_comment_by_string_with_arrow() {
+    let parsed = super::grammar::element_processing_command("APPEND-COMMENT{ ↤ 'some text'}");
     assert_eq!(
         parsed,
-        Ok(ElementProcessingCommand::AddComment(
+        Ok(ElementProcessingCommand::AppendComment(
             ValueSource::StringValue("some text")
         ))
     );
 }
 
 #[test]
-fn parse_add_comment_by_string_with_ascii_arrow() {
-    let parsed = super::grammar::element_processing_command("ADD-COMMENT{ <= 'some text'}");
+fn parse_append_comment_by_string_with_ascii_arrow() {
+    let parsed = super::grammar::element_processing_command("APPEND-COMMENT{ <= 'some text'}");
     assert_eq!(
         parsed,
-        Ok(ElementProcessingCommand::AddComment(
+        Ok(ElementProcessingCommand::AppendComment(
             ValueSource::StringValue("some text")
         ))
     );
@@ -397,34 +397,35 @@ fn parse_for_each_with_ascii_arrow_using_set_attr() {
 }
 
 #[test]
-fn parse_add_element_using_new_alias() {
-    let parsed = super::grammar::element_processing_command("ADD-ELEMENT{NEW{div}}");
+fn parse_append_element_using_new_alias() {
+    let parsed = super::grammar::element_processing_command("APPEND-ELEMENT{NEW{div}}");
     assert_eq!(
         parsed,
-        Ok(ElementProcessingCommand::AddElement(
+        Ok(ElementProcessingCommand::AppendElement(
             ElementCreatingPipeline::new(ElementCreatingCommand::CreateElement("div"), None)
         ))
     );
 }
 
 #[test]
-fn parse_add_element_using_create() {
-    let parsed = super::grammar::element_processing_command("ADD-ELEMENT{CREATE-ELEMENT{div}}");
+fn parse_append_element_using_create() {
+    let parsed = super::grammar::element_processing_command("APPEND-ELEMENT{CREATE-ELEMENT{div}}");
     assert_eq!(
         parsed,
-        Ok(ElementProcessingCommand::AddElement(
+        Ok(ElementProcessingCommand::AppendElement(
             ElementCreatingPipeline::new(ElementCreatingCommand::CreateElement("div"), None)
         ))
     );
 }
 
 #[test]
-fn parse_add_element_using_load_file() {
-    let parsed =
-        super::grammar::element_processing_command("ADD-ELEMENT{LOAD-FILE{'tests/source.html'}}");
+fn parse_append_element_using_load_file() {
+    let parsed = super::grammar::element_processing_command(
+        "APPEND-ELEMENT{LOAD-FILE{'tests/source.html'}}",
+    );
     assert_eq!(
         parsed,
-        Ok(ElementProcessingCommand::AddElement(
+        Ok(ElementProcessingCommand::AppendElement(
             ElementCreatingPipeline::new(
                 ElementCreatingCommand::FromFile("tests/source.html"),
                 None
@@ -434,12 +435,12 @@ fn parse_add_element_using_load_file() {
 }
 
 #[test]
-fn parse_add_element_using_source() {
+fn parse_append_element_using_source() {
     let parsed =
-        super::grammar::element_processing_command("ADD-ELEMENT{SOURCE{'tests/source.html'}}");
+        super::grammar::element_processing_command("APPEND-ELEMENT{SOURCE{'tests/source.html'}}");
     assert_eq!(
         parsed,
-        Ok(ElementProcessingCommand::AddElement(
+        Ok(ElementProcessingCommand::AppendElement(
             ElementCreatingPipeline::new(
                 ElementCreatingCommand::FromFile("tests/source.html"),
                 None
@@ -449,22 +450,24 @@ fn parse_add_element_using_source() {
 }
 
 #[test]
-fn parse_add_element_with_arrow_using_create() {
-    let parsed = super::grammar::element_processing_command("ADD-ELEMENT{ ↤ CREATE-ELEMENT{div}}");
+fn parse_append_element_with_arrow_using_create() {
+    let parsed =
+        super::grammar::element_processing_command("APPEND-ELEMENT{ ↤ CREATE-ELEMENT{div}}");
     assert_eq!(
         parsed,
-        Ok(ElementProcessingCommand::AddElement(
+        Ok(ElementProcessingCommand::AppendElement(
             ElementCreatingPipeline::new(ElementCreatingCommand::CreateElement("div"), None)
         ))
     );
 }
 
 #[test]
-fn parse_add_element_with_ascii_arrow_using_create() {
-    let parsed = super::grammar::element_processing_command("ADD-ELEMENT{ <= CREATE-ELEMENT{div}}");
+fn parse_append_element_with_ascii_arrow_using_create() {
+    let parsed =
+        super::grammar::element_processing_command("APPEND-ELEMENT{ <= CREATE-ELEMENT{div}}");
     assert_eq!(
         parsed,
-        Ok(ElementProcessingCommand::AddElement(
+        Ok(ElementProcessingCommand::AppendElement(
             ElementCreatingPipeline::new(ElementCreatingCommand::CreateElement("div"), None)
         ))
     );
@@ -544,6 +547,166 @@ fn parse_replace_element_using_query_replaced_alias_keep() {
                 None
             )
         )),
+    );
+}
+
+#[test]
+fn parse_prepend_text_content_by_string() {
+    let parsed = super::grammar::element_processing_command("PREPEND-TEXT-CONTENT{'some text'}");
+    assert_eq!(
+        parsed,
+        Ok(ElementProcessingCommand::PrependTextContent(
+            ValueSource::StringValue("some text")
+        ))
+    );
+}
+
+#[test]
+fn parse_prepend_text_content_by_string_with_arrow() {
+    let parsed = super::grammar::element_processing_command("PREPEND-TEXT-CONTENT{ ↤ 'some text'}");
+    assert_eq!(
+        parsed,
+        Ok(ElementProcessingCommand::PrependTextContent(
+            ValueSource::StringValue("some text")
+        ))
+    );
+}
+
+#[test]
+fn parse_prepend_text_content_by_sub_pipeline() {
+    let constructed_pipeline = format!(
+        "PREPEND-TEXT-CONTENT{{ {} }}",
+        EXEMPLARY_SUB_PIPELINE_DEFINITION
+    );
+    let parsed = super::grammar::element_processing_command(&constructed_pipeline);
+
+    assert_eq!(
+        parsed,
+        Ok(ElementProcessingCommand::PrependTextContent(
+            ValueSource::SubPipeline(EXEMPLARY_SUB_PIPELINE_MODEL.clone())
+        ))
+    );
+}
+
+#[test]
+fn parse_prepend_text_content_by_string_with_ascii_arrow() {
+    let parsed =
+        super::grammar::element_processing_command("PREPEND-TEXT-CONTENT{ <= 'some text'}");
+    assert_eq!(
+        parsed,
+        Ok(ElementProcessingCommand::PrependTextContent(
+            ValueSource::StringValue("some text")
+        ))
+    );
+}
+
+#[test]
+fn parse_prepend_comment_by_string() {
+    let parsed = super::grammar::element_processing_command("PREPEND-COMMENT{'some text'}");
+    assert_eq!(
+        parsed,
+        Ok(ElementProcessingCommand::PrependComment(
+            ValueSource::StringValue("some text")
+        ))
+    );
+}
+
+#[test]
+fn parse_prepend_comment_by_string_with_arrow() {
+    let parsed = super::grammar::element_processing_command("PREPEND-COMMENT{ ↤ 'some text'}");
+    assert_eq!(
+        parsed,
+        Ok(ElementProcessingCommand::PrependComment(
+            ValueSource::StringValue("some text")
+        ))
+    );
+}
+
+#[test]
+fn parse_prepend_comment_by_string_with_ascii_arrow() {
+    let parsed = super::grammar::element_processing_command("PREPEND-COMMENT{ <= 'some text'}");
+    assert_eq!(
+        parsed,
+        Ok(ElementProcessingCommand::PrependComment(
+            ValueSource::StringValue("some text")
+        ))
+    );
+}
+
+#[test]
+fn parse_prepend_element_using_new_alias() {
+    let parsed = super::grammar::element_processing_command("PREPEND-ELEMENT{NEW{div}}");
+    assert_eq!(
+        parsed,
+        Ok(ElementProcessingCommand::PrependElement(
+            ElementCreatingPipeline::new(ElementCreatingCommand::CreateElement("div"), None)
+        ))
+    );
+}
+
+#[test]
+fn parse_prepend_element_using_create() {
+    let parsed = super::grammar::element_processing_command("PREPEND-ELEMENT{CREATE-ELEMENT{div}}");
+    assert_eq!(
+        parsed,
+        Ok(ElementProcessingCommand::PrependElement(
+            ElementCreatingPipeline::new(ElementCreatingCommand::CreateElement("div"), None)
+        ))
+    );
+}
+
+#[test]
+fn parse_prepend_element_using_load_file() {
+    let parsed = super::grammar::element_processing_command(
+        "PREPEND-ELEMENT{LOAD-FILE{'tests/source.html'}}",
+    );
+    assert_eq!(
+        parsed,
+        Ok(ElementProcessingCommand::PrependElement(
+            ElementCreatingPipeline::new(
+                ElementCreatingCommand::FromFile("tests/source.html"),
+                None
+            )
+        ))
+    );
+}
+
+#[test]
+fn parse_prepend_element_using_source() {
+    let parsed =
+        super::grammar::element_processing_command("PREPEND-ELEMENT{SOURCE{'tests/source.html'}}");
+    assert_eq!(
+        parsed,
+        Ok(ElementProcessingCommand::PrependElement(
+            ElementCreatingPipeline::new(
+                ElementCreatingCommand::FromFile("tests/source.html"),
+                None
+            )
+        ))
+    );
+}
+
+#[test]
+fn parse_prepend_element_with_arrow_using_create() {
+    let parsed =
+        super::grammar::element_processing_command("PREPEND-ELEMENT{ ↤ CREATE-ELEMENT{div}}");
+    assert_eq!(
+        parsed,
+        Ok(ElementProcessingCommand::PrependElement(
+            ElementCreatingPipeline::new(ElementCreatingCommand::CreateElement("div"), None)
+        ))
+    );
+}
+
+#[test]
+fn parse_prepend_element_with_ascii_arrow_using_create() {
+    let parsed =
+        super::grammar::element_processing_command("PREPEND-ELEMENT{ <= CREATE-ELEMENT{div}}");
+    assert_eq!(
+        parsed,
+        Ok(ElementProcessingCommand::PrependElement(
+            ElementCreatingPipeline::new(ElementCreatingCommand::CreateElement("div"), None)
+        ))
     );
 }
 

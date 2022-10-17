@@ -1,1 +1,1 @@
-WITH{head ↦ ADD-ELEMENT{ CREATE-ELEMENT{meta} | SET-ATTR{name ↤ 'foo'} | SET-ATTR{value ↤ 'added by pipeline from file'}  } }
+WITH{head ↦ APPEND-ELEMENT{ CREATE-ELEMENT{meta} | SET-ATTR{name ↤ 'foo'} | SET-ATTR{value ↤ 'added by pipeline from file'}  } }

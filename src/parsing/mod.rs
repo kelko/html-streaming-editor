@@ -113,24 +113,33 @@ parser! {
             = "SET-ATTR{" whitespace()? a:identifier() whitespace()? assign_marker() whitespace()? v:value_source() whitespace()? "}" { ElementProcessingCommand::SetAttribute(a, v) }
         rule set_text_content_command() -> ElementProcessingCommand<'input>
             = "SET-TEXT-CONTENT{" whitespace()? (assign_marker() whitespace()?)? v:value_source() whitespace()? "}" { ElementProcessingCommand::SetTextContent(v) }
-        rule add_text_content_command() -> ElementProcessingCommand<'input>
-            = "ADD-TEXT-CONTENT{" whitespace()? (assign_marker() whitespace()?)? v:value_source() whitespace()? "}" { ElementProcessingCommand::AddTextContent(v) }
-        rule add_comment_command() -> ElementProcessingCommand<'input>
-            = "ADD-COMMENT{" whitespace()? (assign_marker() whitespace()?)? v:value_source() whitespace()? "}" { ElementProcessingCommand::AddComment(v) }
-        rule add_element_command() -> ElementProcessingCommand<'input>
-            = "ADD-ELEMENT{" whitespace()? (assign_marker() whitespace()?)? sp:element_creating_pipeline() whitespace()?  "}" { ElementProcessingCommand::AddElement(sp) }
+        rule append_text_content_command() -> ElementProcessingCommand<'input>
+            = "APPEND-TEXT-CONTENT{" whitespace()? (assign_marker() whitespace()?)? v:value_source() whitespace()? "}" { ElementProcessingCommand::AppendTextContent(v) }
+        rule append_comment_command() -> ElementProcessingCommand<'input>
+            = "APPEND-COMMENT{" whitespace()? (assign_marker() whitespace()?)? v:value_source() whitespace()? "}" { ElementProcessingCommand::AppendComment(v) }
+        rule append_element_command() -> ElementProcessingCommand<'input>
+            = "APPEND-ELEMENT{" whitespace()? (assign_marker() whitespace()?)? sp:element_creating_pipeline() whitespace()?  "}" { ElementProcessingCommand::AppendElement(sp) }
+        rule prepend_text_content_command() -> ElementProcessingCommand<'input>
+            = "PREPEND-TEXT-CONTENT{" whitespace()? (assign_marker() whitespace()?)? v:value_source() whitespace()? "}" { ElementProcessingCommand::PrependTextContent(v) }
+        rule prepend_comment_command() -> ElementProcessingCommand<'input>
+            = "PREPEND-COMMENT{" whitespace()? (assign_marker() whitespace()?)? v:value_source() whitespace()? "}" { ElementProcessingCommand::PrependComment(v) }
+        rule prepend_element_command() -> ElementProcessingCommand<'input>
+            = "PREPEND-ELEMENT{" whitespace()? (assign_marker() whitespace()?)? sp:element_creating_pipeline() whitespace()?  "}" { ElementProcessingCommand::PrependElement(sp) }
         pub(super) rule element_processing_command() -> ElementProcessingCommand<'input>
-            = extract_element_command()
-            / remove_element_command()
-            / for_each_command()
-            / clear_attr_command()
-            / clear_content_command()
-            / set_attr_command()
-            / set_text_content_command()
-            / add_text_content_command()
-            / add_comment_command()
-            / add_element_command()
+            = for_each_command()
             / replace_element_command()
+            / extract_element_command()
+            / remove_element_command()
+            / clear_attr_command()
+            / set_attr_command()
+            / clear_content_command()
+            / set_text_content_command()
+            / append_text_content_command()
+            / append_comment_command()
+            / append_element_command()
+            / prepend_text_content_command()
+            / prepend_comment_command()
+            / prepend_element_command()
 
         rule create_element_command() -> ElementCreatingCommand<'input>
             = ("CREATE-ELEMENT"/"NEW") "{" whitespace()? n:identifier() whitespace()? "}" { ElementCreatingCommand::CreateElement(n)}

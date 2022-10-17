@@ -39,15 +39,24 @@ pub(crate) enum ElementProcessingCommand<'a> {
     /// Remove all children of the currently selected nodes and add a new text as child instead
     /// Returns the input as result.
     SetTextContent(ValueSource<'a>),
-    /// adds a new text as child
+    /// adds a new text as last child
     /// Returns the input as result.
-    AddTextContent(ValueSource<'a>),
-    /// adds a new comment as child
+    AppendTextContent(ValueSource<'a>),
+    /// adds a new comment as last child
     /// Returns the input as result.
-    AddComment(ValueSource<'a>),
-    /// runs a sub-pipeline and adds the result as child
+    AppendComment(ValueSource<'a>),
+    /// runs a sub-pipeline and adds the result as last child
     /// Returns the input as result.
-    AddElement(ElementCreatingPipeline<'a>),
+    AppendElement(ElementCreatingPipeline<'a>),
+    /// adds a new text as first child
+    /// Returns the input as result.
+    PrependTextContent(ValueSource<'a>),
+    /// adds a new comment as first child
+    /// Returns the input as result.
+    PrependComment(ValueSource<'a>),
+    /// runs a sub-pipeline and adds the result as first child
+    /// Returns the input as result.
+    PrependElement(ElementCreatingPipeline<'a>),
 }
 
 impl<'a> ElementProcessingCommand<'a> {
@@ -60,6 +69,12 @@ impl<'a> ElementProcessingCommand<'a> {
         input: &Vec<rctree::Node<HtmlContent>>,
     ) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
         match self {
+            ElementProcessingCommand::ForEach(selector, pipeline) => {
+                Self::for_each(input, selector, pipeline)
+            }
+            ElementProcessingCommand::ReplaceElement(selector, pipeline) => {
+                Self::replace_element(input, selector, pipeline)
+            }
             ElementProcessingCommand::ExtractElement(selector) => {
                 Self::extract_element(input, selector)
             }
@@ -69,25 +84,30 @@ impl<'a> ElementProcessingCommand<'a> {
             ElementProcessingCommand::ClearAttribute(attribute) => {
                 Self::clear_attr(input, attribute)
             }
-            ElementProcessingCommand::ClearContent => Self::clear_content(input),
             ElementProcessingCommand::SetAttribute(attribute, value_source) => {
                 Self::set_attr(input, attribute, value_source)
             }
+            ElementProcessingCommand::ClearContent => Self::clear_content(input),
             ElementProcessingCommand::SetTextContent(value_source) => {
                 Self::set_text_content(input, value_source)
             }
-            ElementProcessingCommand::AddTextContent(value_source) => {
-                Self::add_text_content(input, value_source)
+            ElementProcessingCommand::AppendTextContent(value_source) => {
+                Self::append_text_content(input, value_source)
             }
-            ElementProcessingCommand::AddComment(value_source) => {
-                Self::add_comment(input, value_source)
+            ElementProcessingCommand::AppendComment(value_source) => {
+                Self::append_comment(input, value_source)
             }
-            ElementProcessingCommand::ForEach(selector, pipeline) => {
-                Self::for_each(input, selector, pipeline)
+            ElementProcessingCommand::AppendElement(pipeline) => {
+                Self::append_element(input, pipeline)
             }
-            ElementProcessingCommand::AddElement(pipeline) => Self::add_element(input, pipeline),
-            ElementProcessingCommand::ReplaceElement(selector, pipeline) => {
-                Self::replace_element(input, selector, pipeline)
+            ElementProcessingCommand::PrependTextContent(value_source) => {
+                Self::prepend_text_content(input, value_source)
+            }
+            ElementProcessingCommand::PrependComment(value_source) => {
+                Self::prepend_comment(input, value_source)
+            }
+            ElementProcessingCommand::PrependElement(pipeline) => {
+                Self::prepend_element(input, pipeline)
             }
         }
     }
@@ -238,12 +258,12 @@ impl<'a> ElementProcessingCommand<'a> {
         Ok(input.clone())
     }
 
-    fn add_text_content(
+    fn append_text_content(
         input: &Vec<rctree::Node<HtmlContent>>,
         value_source: &ValueSource,
     ) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
         trace!(
-            "Running ADD-TEXT-CONTENT command with value: {:#?}",
+            "Running APPEND-TEXT-CONTENT command with value: {:#?}",
             value_source
         );
 
@@ -259,12 +279,12 @@ impl<'a> ElementProcessingCommand<'a> {
         Ok(input.clone())
     }
 
-    fn add_comment(
+    fn append_comment(
         input: &Vec<rctree::Node<HtmlContent>>,
         value_source: &ValueSource,
     ) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
         trace!(
-            "Running ADD-COMMENT command with value: {:#?}",
+            "Running APPEND-COMMENT command with value: {:#?}",
             value_source
         );
 
@@ -280,11 +300,11 @@ impl<'a> ElementProcessingCommand<'a> {
         Ok(input.clone())
     }
 
-    fn add_element(
+    fn append_element(
         input: &Vec<rctree::Node<HtmlContent>>,
         pipeline: &ElementCreatingPipeline,
     ) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
-        trace!("Running ADD-ELEMENT command");
+        trace!("Running APPEND-ELEMENT command");
 
         for node in input {
             if let Some(new_element) = pipeline
@@ -294,6 +314,68 @@ impl<'a> ElementProcessingCommand<'a> {
             {
                 let working_copy = rctree::Node::clone(node);
                 working_copy.append(new_element);
+            }
+        }
+
+        Ok(input.clone())
+    }
+
+    fn prepend_text_content(
+        input: &Vec<rctree::Node<HtmlContent>>,
+        value_source: &ValueSource,
+    ) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
+        trace!(
+            "Running APPEND-TEXT-CONTENT command with value: {:#?}",
+            value_source
+        );
+
+        for node in input {
+            let rendered_value = value_source.render(node).context(SubpipelineFailedSnafu)?;
+            let rendered_value = rendered_value.join("");
+            let rendered_value = String::from(encode_text(&rendered_value));
+
+            let working_copy = rctree::Node::clone(node);
+            working_copy.prepend(rctree::Node::new(HtmlContent::Text(rendered_value)));
+        }
+
+        Ok(input.clone())
+    }
+
+    fn prepend_comment(
+        input: &Vec<rctree::Node<HtmlContent>>,
+        value_source: &ValueSource,
+    ) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
+        trace!(
+            "Running APPEND-COMMENT command with value: {:#?}",
+            value_source
+        );
+
+        for node in input {
+            let rendered_value = value_source.render(node).context(SubpipelineFailedSnafu)?;
+            let rendered_value = rendered_value.join("");
+            let rendered_value = rendered_value.replace("--", "\\x2D\\x2D");
+
+            let working_copy = rctree::Node::clone(node);
+            working_copy.prepend(rctree::Node::new(HtmlContent::Comment(rendered_value)));
+        }
+
+        Ok(input.clone())
+    }
+
+    fn prepend_element(
+        input: &Vec<rctree::Node<HtmlContent>>,
+        pipeline: &ElementCreatingPipeline,
+    ) -> Result<Vec<rctree::Node<HtmlContent>>, CommandError> {
+        trace!("Running APPEND-ELEMENT command");
+
+        for node in input {
+            if let Some(new_element) = pipeline
+                .run_on(vec![])
+                .context(SubpipelineFailedSnafu)?
+                .pop()
+            {
+                let working_copy = rctree::Node::clone(node);
+                working_copy.prepend(new_element);
             }
         }
 
