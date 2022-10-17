@@ -2,7 +2,7 @@ extern crate clap;
 
 use clap::Parser;
 use std::fs::File;
-use std::io::{BufRead, BufReader, BufWriter, Write};
+use std::io::{BufRead, BufReader, BufWriter, Read, Write};
 use std::path::PathBuf;
 
 use html_streaming_editor::{report, HtmlStreamingEditor};
@@ -18,7 +18,9 @@ struct Cli {
     #[arg(short, long, value_name = "OUTPUT")]
     output: Option<PathBuf>,
 
-    /// Single string with the command pipeline to perform
+    /// Single string with the command pipeline to perform.
+    /// If it starts with an @ the rest is treated as file name
+    /// to read the pipeline definition from
     pipeline: String,
 }
 
@@ -29,7 +31,21 @@ fn main() {
 
     let input_path = cli.input.unwrap_or_else(|| PathBuf::from("-"));
     let output_path = cli.output.unwrap_or_else(|| PathBuf::from("-"));
-    let pipeline_definition = cli.pipeline;
+    let mut pipeline_definition = cli.pipeline;
+
+    if pipeline_definition.starts_with('@') {
+        let filename = pipeline_definition.get(1..).unwrap().to_owned();
+        pipeline_definition = String::new();
+        if let Ok(mut file) = File::open(filename) {
+            if let Err(e) = file.read_to_string(&mut pipeline_definition) {
+                eprintln!("[ERROR] Could not read pipeline definition: {}", e);
+                std::process::exit(exitcode::NOINPUT);
+            }
+        } else {
+            eprintln!("[ERROR] Could not open pipeline definition");
+            std::process::exit(exitcode::NOINPUT);
+        };
+    }
 
     let mut input_reader: Box<dyn BufRead> = if input_path.to_str() == Some("-") {
         Box::new(std::io::stdin().lock())
