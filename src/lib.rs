@@ -38,17 +38,12 @@ pub enum StreamingEditorError {
     #[snafu(display("Failed to convert parsed HTML into memory model"))]
     LoadingParsedHtmlFailed {
         #[snafu(backtrace)]
-        source: crate::html::StreamingEditorError,
+        source: html::HtmlDomError,
     },
     #[snafu(display("Failed to parse pipeline"))]
     ParsingPipelineFailed {
         source: peg::error::ParseError<LineCol>,
         backtrace: Backtrace,
-    },
-    #[snafu(display("Failed to render output"))]
-    RenderingOutputFailed {
-        #[snafu(backtrace)]
-        source: crate::html::IndexError,
     },
     #[snafu(display("Failed to run pipeline"))]
     RunningPipelineFailed {
@@ -71,11 +66,6 @@ pub enum PipelineError {
 #[derive(Debug, Snafu)]
 #[snafu(visibility(pub(crate)))]
 pub enum CommandError {
-    #[snafu(display("Failed to remove HTML node"))]
-    RemovingNodeFailed {
-        #[snafu(backtrace)]
-        source: crate::html::IndexError,
-    },
     #[snafu(display("Sub-Pipeline failed"))]
     SubpipelineFailed {
         #[snafu(backtrace)]
@@ -95,7 +85,7 @@ pub enum CommandError {
     #[snafu(display("Failed to convert parsed HTML into memory model"))]
     LoadingParsedCommandHtmlFailed {
         #[snafu(backtrace)]
-        source: crate::html::StreamingEditorError,
+        source: crate::html::HtmlDomError,
     },
     #[snafu(display("Failed to parse regular expression"))]
     ParsingRegexFailed {

@@ -1,27 +1,36 @@
-use log::warn;
 use rctree::{Children, Node};
 use snafu::{Backtrace, Snafu};
 use std::collections::BTreeMap;
 
 use crate::CssSelector;
-use tl::{HTMLTag, NodeHandle, Parser, VDom};
+use tl::{HTMLTag, HTMLVersion, NodeHandle, Parser, VDom};
 
 #[cfg(test)]
 mod tests;
 
 #[derive(Debug, Snafu)]
 #[snafu(visibility(pub(crate)))]
-pub enum StreamingEditorError {
+pub enum HtmlDomError {
     #[snafu(display("Nothing Imported from tl"))]
     NothingImported { backtrace: Backtrace },
     #[snafu(display("Node not resolved by Parser"))]
     InvalidParserState { backtrace: Backtrace },
+    #[snafu(display("HTML Document has invalid structure: {}", message))]
+    InvalidHtmlDocument {
+        message: &'static str,
+        backtrace: Backtrace,
+    },
 }
 
 const HTML_VOID_ELEMENTS: [&str; 16] = [
     "area", "base", "br", "col", "command", "embed", "hr", "img", "input", "keygen", "link",
     "meta", "param", "source", "track", "wbr",
 ];
+
+#[derive(Debug, PartialEq, Clone)]
+pub(crate) struct HtmlDocument {
+    pub doctype: Option<HTMLVersion>,
+}
 
 #[derive(Debug, PartialEq, Clone)]
 pub(crate) struct HtmlTag {
@@ -104,6 +113,7 @@ impl HtmlTag {
 
 #[derive(Debug, PartialEq, Clone)]
 pub(crate) enum HtmlContent {
+    Document(HtmlDocument),
     Tag(HtmlTag),
     Text(String),
     Comment(String),
@@ -114,37 +124,38 @@ impl HtmlContent {
         matches!(self, HtmlContent::Tag(_))
     }
 
-    pub(crate) fn import(dom: VDom) -> Result<Node<HtmlContent>, StreamingEditorError> {
-        let parser = dom.parser();
-        let mut converted = dom
-            .children()
-            .iter()
-            .filter_map(|node_handle| {
-                if let Some(node) = node_handle.get(parser) {
-                    if let Some(tag) = node.as_tag() {
-                        return Some(Self::convert_tag(tag, parser));
-                    }
-                }
+    pub(crate) fn import(dom: VDom) -> Result<Node<HtmlContent>, HtmlDomError> {
+        let (root_tag, root_tag_name) = Self::find_root_tag(&dom)?;
 
-                None
-            })
-            .collect::<Vec<_>>();
+        if root_tag_name == *"html" {
+            let document = Node::new(HtmlContent::Document(HtmlDocument {
+                doctype: dom.version(),
+            }));
+            document.append(root_tag);
 
-        if converted.len() > 1 {
-            warn!("VDom seemed to have more then one root tag")
-        }
-
-        if let Some(root_result) = converted.pop() {
-            root_result
+            Ok(document)
         } else {
-            NothingImportedSnafu {}.fail()
+            Ok(root_tag)
         }
     }
 
-    fn convert_tag(
-        tag: &HTMLTag,
-        parser: &Parser,
-    ) -> Result<Node<HtmlContent>, StreamingEditorError> {
+    fn find_root_tag(dom: &VDom) -> Result<(Node<HtmlContent>, String), HtmlDomError> {
+        let parser = dom.parser();
+
+        for child in dom.children() {
+            if let Some(node) = child.get(parser) {
+                if let Some(tag) = node.as_tag() {
+                    let name = String::from(tag.name().as_utf8_str());
+                    let converted = Self::convert_tag(tag, parser)?;
+                    return Ok((converted, name));
+                }
+            }
+        }
+
+        NothingImportedSnafu {}.fail()
+    }
+
+    fn convert_tag(tag: &HTMLTag, parser: &Parser) -> Result<Node<HtmlContent>, HtmlDomError> {
         let name = String::from(tag.name().as_utf8_str());
         let mut attributes = BTreeMap::new();
 
@@ -170,7 +181,7 @@ impl HtmlContent {
     fn convert_node(
         node_handle: &NodeHandle,
         parser: &Parser,
-    ) -> Result<Node<HtmlContent>, StreamingEditorError> {
+    ) -> Result<Node<HtmlContent>, HtmlDomError> {
         if let Some(node) = node_handle.get(parser) {
             return match node {
                 tl::Node::Tag(tag) => Self::convert_tag(tag, parser),
@@ -182,13 +193,11 @@ impl HtmlContent {
         InvalidParserStateSnafu {}.fail()
     }
 
-    fn convert_text(text: impl Into<String>) -> Result<Node<HtmlContent>, StreamingEditorError> {
+    fn convert_text(text: impl Into<String>) -> Result<Node<HtmlContent>, HtmlDomError> {
         Ok(Node::new(HtmlContent::Text(text.into())))
     }
 
-    fn convert_comment(
-        comment: impl Into<String>,
-    ) -> Result<Node<HtmlContent>, StreamingEditorError> {
+    fn convert_comment(comment: impl Into<String>) -> Result<Node<HtmlContent>, HtmlDomError> {
         let comment = comment.into();
         let comment = comment.trim_start_matches("<!--");
         let comment = comment.trim_end_matches("-->");
@@ -200,6 +209,18 @@ impl HtmlContent {
         match self {
             HtmlContent::Comment(_) => String::new(),
             HtmlContent::Text(s) => s.clone(),
+            HtmlContent::Document(d) => {
+                let mut inner_content = children
+                    .into_iter()
+                    .map(|c| c.outer_html())
+                    .collect::<Vec<_>>();
+                if let Some(doctype) = &d.doctype {
+                    inner_content.insert(0, doctype.outer_html());
+                    inner_content.insert(1, String::from('\n'));
+                }
+
+                inner_content.join("")
+            }
             HtmlContent::Tag(_t) => children
                 .into_iter()
                 .map(|c| c.outer_html())
@@ -212,6 +233,7 @@ impl HtmlContent {
         match self {
             HtmlContent::Comment(s) => format!("<!-- {} -->", s),
             HtmlContent::Text(s) => s.clone(),
+            HtmlContent::Document(_) => self.inner_html(children),
             HtmlContent::Tag(t) => {
                 let mut parts = Vec::<String>::new();
                 t.build_start_tag(|content| parts.push(content));
@@ -230,7 +252,7 @@ impl HtmlContent {
         match self {
             HtmlContent::Comment(_) => String::new(),
             HtmlContent::Text(s) => s.clone(),
-            HtmlContent::Tag(_t) => children
+            HtmlContent::Tag(_) | HtmlContent::Document(_) => children
                 .into_iter()
                 .filter_map(|c| {
                     let child_render = c.text_content();
@@ -248,14 +270,14 @@ impl HtmlContent {
 
     fn matches_selector(&self, selector: &CssSelector) -> bool {
         match self {
-            HtmlContent::Comment(_) | HtmlContent::Text(_) => false,
+            HtmlContent::Comment(_) | HtmlContent::Text(_) | HtmlContent::Document(_) => false,
             HtmlContent::Tag(t) => t.matches_selector(selector),
         }
     }
 
     pub(crate) fn clear_attribute(&mut self, attribute: &String) {
         match self {
-            HtmlContent::Comment(_) | HtmlContent::Text(_) => (),
+            HtmlContent::Comment(_) | HtmlContent::Text(_) | HtmlContent::Document(_) => (),
             HtmlContent::Tag(tag) => {
                 tag.attributes.remove(attribute);
             }
@@ -264,7 +286,7 @@ impl HtmlContent {
 
     pub(crate) fn set_attribute(&mut self, attribute: impl Into<String>, value: impl Into<String>) {
         match self {
-            HtmlContent::Comment(_) | HtmlContent::Text(_) => (),
+            HtmlContent::Comment(_) | HtmlContent::Text(_) | HtmlContent::Document(_) => (),
             HtmlContent::Tag(tag) => {
                 tag.attributes.insert(attribute.into(), value.into());
             }
@@ -273,7 +295,7 @@ impl HtmlContent {
 
     pub(crate) fn get_attribute(&self, attribute: &String) -> Option<String> {
         match self {
-            HtmlContent::Comment(_) | HtmlContent::Text(_) => None,
+            HtmlContent::Comment(_) | HtmlContent::Text(_) | HtmlContent::Document(_) => None,
             HtmlContent::Tag(tag) => tag.attributes.get(attribute).cloned(),
         }
     }
@@ -328,16 +350,29 @@ impl HtmlRenderable for Node<HtmlContent> {
     }
 }
 
-#[derive(Debug, Snafu)]
-#[snafu(visibility(pub(crate)))]
-pub enum IndexError {
-    #[snafu(display("Index seems out of date. NodeHandle couldn't be found in Parser"))]
-    OutdatedIndex { backtrace: Backtrace },
-    #[snafu(display("HTML seems broken: {operation} failed"))]
-    InvalidHtml {
-        operation: String,
-        backtrace: Backtrace,
-    },
+impl HtmlRenderable for HTMLVersion {
+    fn inner_html(&self) -> String {
+        String::new()
+    }
+
+    fn outer_html(&self) -> String {
+        match self {
+            HTMLVersion::HTML5 => String::from("<!DOCTYPE html>"),
+            HTMLVersion::StrictHTML401 => String::from(
+                r#"<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">"#,
+            ),
+            HTMLVersion::TransitionalHTML401 => String::from(
+                r#"<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/1999/REC-html401-19991224/loose.dtd">"#,
+            ),
+            HTMLVersion::FramesetHTML401 => String::from(
+                r#"<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN" "http://www.w3.org/TR/1999/REC-html401-19991224/frameset.dtd">"#,
+            ),
+        }
+    }
+
+    fn text_content(&self) -> String {
+        String::new()
+    }
 }
 
 pub(crate) trait HtmlQueryable {
