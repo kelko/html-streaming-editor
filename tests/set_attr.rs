@@ -246,8 +246,8 @@ fn set_first_word_lowercased_as_id() -> Result<(), StreamingEditorError> {
 }
 
 #[test]
-fn set_first_word_prefixed_as_id() -> Result<(), StreamingEditorError> {
-    let command = r#"EXTRACT-ELEMENT{#first-para} | SET-ATTR{id ↤ USE-ELEMENT | GET-TEXT-CONTENT | REGEX-REPLACE{"^(\w+).*" ↤ "$1"} | ADD-PREFIX{"id-"} }"#;
+fn set_attr_to_value_of_attr() -> Result<(), StreamingEditorError> {
+    let command = r#"EXTRACT-ELEMENT{#first-para} | SET-ATTR{id ↤ USE-ELEMENT | GET-ATTR{id}}"#;
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
     let mut output = Vec::new();
@@ -258,7 +258,26 @@ fn set_first_word_prefixed_as_id() -> Result<(), StreamingEditorError> {
 
     assert_eq!(
         result_string,
-        String::from(r#"<p id="id-Some">Some first text</p>"#)
+        String::from(r#"<p id="first-para">Some first text</p>"#)
+    );
+
+    Ok(())
+}
+
+#[test]
+fn set_attr_to_adjusted_value_of_attr() -> Result<(), StreamingEditorError> {
+    let command = r#"EXTRACT-ELEMENT{#first-para} | SET-ATTR{id ↤ USE-ELEMENT | GET-ATTR{id} | REGEX-REPLACE{ '-' ↤ '_'}}"#;
+
+    let mut input = Box::new(HTML_INPUT.as_bytes());
+    let mut output = Vec::new();
+    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+
+    let _ = hse.run(command)?;
+    let result_string = String::from_utf8(output).unwrap();
+
+    assert_eq!(
+        result_string,
+        String::from(r#"<p id="first_para">Some first text</p>"#)
     );
 
     Ok(())

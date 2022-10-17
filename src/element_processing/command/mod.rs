@@ -222,16 +222,16 @@ impl<'a> ElementProcessingCommand<'a> {
         );
 
         for node in input {
-            // first clear everything that was there before
-            for child in node.children() {
-                child.detach()
-            }
-
             let rendered_value = value_source.render(node).context(SubpipelineFailedSnafu)?;
             let rendered_value = rendered_value.join("");
             let rendered_value = String::from(encode_text(&rendered_value));
 
             let working_copy = rctree::Node::clone(node);
+            // first clear everything that was there before
+            for child in node.children() {
+                child.detach()
+            }
+
             working_copy.append(rctree::Node::new(HtmlContent::Text(rendered_value)));
         }
 

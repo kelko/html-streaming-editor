@@ -142,3 +142,42 @@ fn set_second_para_content_as_text_to_first_para() -> Result<(), StreamingEditor
 
     Ok(())
 }
+
+#[test]
+fn set_text_content_to_value_of_text_content() -> Result<(), StreamingEditorError> {
+    let command =
+        r#"EXTRACT-ELEMENT{#first-para} | SET-TEXT-CONTENT{ USE-ELEMENT | GET-TEXT-CONTENT }"#;
+
+    let mut input = Box::new(HTML_INPUT.as_bytes());
+    let mut output = Vec::new();
+    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+
+    let _ = hse.run(command)?;
+    let result_string = String::from_utf8(output).unwrap();
+
+    assert_eq!(
+        result_string,
+        String::from(r#"<p id="first-para">Some first text</p>"#)
+    );
+
+    Ok(())
+}
+
+#[test]
+fn set_text_content_to_adjusted_value_of_text_content() -> Result<(), StreamingEditorError> {
+    let command = r#"EXTRACT-ELEMENT{#first-para} | SET-TEXT-CONTENT{USE-ELEMENT | GET-TEXT-CONTENT | REGEX-REPLACE{ '\s' ↤ '_'}}"#;
+
+    let mut input = Box::new(HTML_INPUT.as_bytes());
+    let mut output = Vec::new();
+    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+
+    let _ = hse.run(command)?;
+    let result_string = String::from_utf8(output).unwrap();
+
+    assert_eq!(
+        result_string,
+        String::from(r#"<p id="first-para">Some_first_text</p>"#)
+    );
+
+    Ok(())
+}
