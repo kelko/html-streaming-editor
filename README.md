@@ -50,23 +50,23 @@ Currently supported element processing commands:
 - `EXTRACT-ELEMENT`: remove everything not matching the CSS selector (alias: `ONLY`)
 - `REMOVE-ELEMENT`: remove everything matching the CSS selector (alias: `WITHOUT`)
 - `FOR-EACH`: run a sub-pipeline on all sub-elements matching a CSS selector but return the previously selected elements (alias: `WITH`)
+- `REPLACE-ELEMENT`: replace all elements matching a CSS selector with new elements (alias: `MAP`)
 - `CLEAR-ATTR`: removes a given attribute from the previously selected elements  
-- `CLEAR-CONTENT`: clears all children from the previously selected elements
 - `SET-ATTR`: Sets a given attribute to a specified value
+- `CLEAR-CONTENT`: clears all children from the previously selected elements
 - `SET-TEXT-CONTENT`: removes previous children and replaces it with exactly one given text child
 - `APPEND-TEXT-CONTENT`: appends a new text child
-- `APPEND-COMMENT`: appends a new comment child
-- `APPEND-ELEMENT`: appends a new tag/element child
 - `PREPEND-TEXT-CONTENT`: prepends a new text child
+- `APPEND-COMMENT`: appends a new comment child
 - `PREPEND-COMMENT`: prepends a new comment child
+- `APPEND-ELEMENT`: appends a new tag/element child
 - `PREPEND-ELEMENT`: prepends a new tag/element child
-- `REPLACE`: replace all elements matching a CSS selector with new elements (alias: `MAP`)
 
 Currently supported element creating commands:
 
-- `CREATE-ELEMENT`: creates a new, empty element, mainly in combination with `APPEND-ELEMENT`, `PREPEND-ELEMENT` or `REPLACE` (alias: `NEW`)
-- `LOAD-FILE`: reads a DOM from a different file, mainly in combination with `APPEND-ELEMENT`,  `PREPEND-ELEMENT` or `REPLACE` (alias: `SOURCE`)
-- `QUERY-REPLACED`: returns children matching the CSS selector of those elements meant to be replaced, only combination with or `REPLACE` (alias: `KEEP`)
+- `CREATE-ELEMENT`: creates a new, empty element, mainly in combination with `APPEND-ELEMENT`, `PREPEND-ELEMENT` or `REPLACE-ELEMENT` (alias: `NEW`)
+- `LOAD-FILE`: reads a DOM from a different file, mainly in combination with `APPEND-ELEMENT`,  `PREPEND-ELEMENT` or `REPLACE-ELEMENT` (alias: `SOURCE`)
+- `QUERY-REPLACED`: returns children matching the CSS selector of those elements meant to be replaced, only combination with or `REPLACE-ELEMENT` (alias: `KEEP`)
 
 Currently supported string-value creating commands:
 
@@ -91,10 +91,10 @@ The binary is called `hse` and supports following options:
 
 ```
 USAGE:
-    hse [OPTIONS] <COMMANDS>
+    hse [OPTIONS] <PIPELINE>
 
 ARGS:
-    <COMMANDS>    Single string with the command pipeline to perform
+    <PIPELINE>  Single string with the command pipeline to perform. If it starts with an @ the rest is treated as file name to read the pipeline definition from
 
 OPTIONS:
     -h, --help               Print help information
@@ -126,5 +126,8 @@ hse -i index.html "WITH{body ↦ APPEND-COMMENT{'`git describe --tags`'}}"
 hse -i input.html "WITH{head ↦ APPEND-ELEMENT{ NEW{meta} | SET-ATTR{name ↤ 'dc:title' } } | WITH{meta[name='dc:title'] ↦ SET-ATTR{content ↤ QUERY-PARENT{title} | GET-TEXT-CONTENT } } }"
 
 # replace non-word characters with an underscore in an attribute
-hse -i index.html "EXTRACT-ELEMENT{#target} | SET-ATTR{data-test ↤ USE-ELEMENT | GET-ATTR{data-test} | REGEX-REPLACE{'\\W' ↤ '_'} }";"
+hse -i index.html "EXTRACT-ELEMENT{#target} | SET-ATTR{data-test ↤ USE-ELEMENT | GET-ATTR{data-test} | REGEX-REPLACE{'\\W' ↤ '_'} }"
+
+# run the pipeline defined in file `file.hsp` on content of `index.html`
+hse -i index.html @file.hsp
 ```
