@@ -127,7 +127,7 @@ impl HtmlContent {
     pub(crate) fn import(dom: VDom) -> Result<Node<HtmlContent>, HtmlDomError> {
         let (root_tag, root_tag_name) = Self::find_root_tag(&dom)?;
 
-        if root_tag_name == String::from("html") {
+        if root_tag_name == *"html" {
             let document = Node::new(HtmlContent::Document(HtmlDocument {
                 doctype: dom.version(),
             }));
