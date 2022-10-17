@@ -73,6 +73,43 @@ fn parse_value_questionmarked_cant_have_questionmarks() {
 }
 
 #[test]
+fn parse_two_commands_pipeline() {
+    let parsed = super::grammar::pipeline("EXTRACT-ELEMENT{a} | REMOVE-ELEMENT{b}");
+    assert_eq!(
+        parsed,
+        Ok(ElementProcessingPipeline::new(vec![
+            ElementProcessingCommand::ExtractElement(CssSelectorList::new(vec![
+                CssSelectorPath::single(CssSelector::for_element("a"))
+            ])),
+            ElementProcessingCommand::RemoveElement(CssSelectorList::new(vec![
+                CssSelectorPath::single(CssSelector::for_element("b"))
+            ])),
+        ]))
+    );
+}
+
+#[test]
+fn parse_pipeline_with_newlines_and_whitespaces() {
+    let parsed = super::grammar::pipeline(
+        "EXTRACT-ELEMENT{a}\n\t| REMOVE-ELEMENT{b}\n\t|\tREMOVE-ELEMENT{c}",
+    );
+    assert_eq!(
+        parsed,
+        Ok(ElementProcessingPipeline::new(vec![
+            ElementProcessingCommand::ExtractElement(CssSelectorList::new(vec![
+                CssSelectorPath::single(CssSelector::for_element("a"))
+            ])),
+            ElementProcessingCommand::RemoveElement(CssSelectorList::new(vec![
+                CssSelectorPath::single(CssSelector::for_element("b"))
+            ])),
+            ElementProcessingCommand::RemoveElement(CssSelectorList::new(vec![
+                CssSelectorPath::single(CssSelector::for_element("c"))
+            ])),
+        ]))
+    );
+}
+
+#[test]
 fn parse_extract_element() {
     let parsed = super::grammar::element_processing_command("EXTRACT-ELEMENT{a}");
     assert_eq!(
@@ -113,22 +150,6 @@ fn parse_remove_element_alias_without() {
         Ok(ElementProcessingCommand::RemoveElement(
             CssSelectorList::new(vec![CssSelectorPath::single(CssSelector::for_element("a"))])
         ))
-    );
-}
-
-#[test]
-fn parse_two_grammar() {
-    let parsed = super::grammar::pipeline("EXTRACT-ELEMENT{a} | REMOVE-ELEMENT{b}");
-    assert_eq!(
-        parsed,
-        Ok(ElementProcessingPipeline::new(vec![
-            ElementProcessingCommand::ExtractElement(CssSelectorList::new(vec![
-                CssSelectorPath::single(CssSelector::for_element("a"))
-            ])),
-            ElementProcessingCommand::RemoveElement(CssSelectorList::new(vec![
-                CssSelectorPath::single(CssSelector::for_element("b"))
-            ])),
-        ]))
     );
 }
 

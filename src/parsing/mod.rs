@@ -33,6 +33,8 @@ parser! {
   pub grammar grammar() for str {
         rule whitespace()
             = quiet!{[' ' | '\n' | '\t']+}
+        rule pipeline_marker()
+            = whitespace()? "|" whitespace()?
         rule assign_marker()
             = "↤"
             / "<="
@@ -140,7 +142,7 @@ parser! {
         rule element_creating_pipeline() -> ElementCreatingPipeline<'input>
             = s:element_creating_command() p:element_manipulating_subpipeline()? { ElementCreatingPipeline::new(s, p) }
         rule element_manipulating_subpipeline() -> Vec<ElementProcessingCommand<'input>>
-            = " | " p:(element_processing_command() ** " | ") { p }
+            = pipeline_marker() p:(element_processing_command() ** pipeline_marker()) { p }
 
         rule query_replaced_command() -> ElementCreatingCommand<'input>
             = ("QUERY-REPLACED"/"KEEP") "{" whitespace()? oc:css_selector_list() whitespace()? "}" { ElementCreatingCommand::FromReplaced(oc) }
@@ -193,10 +195,10 @@ parser! {
             / add_suffix_command()
 
         pub(super) rule string_creating_pipeline() -> StringValueCreatingPipeline<'input>
-            = s:element_selecting_command() " | " e:value_extracting_command() " | " p:(value_processing_command() ** " | ") { StringValueCreatingPipeline::with_value_processing(s, e, p) }
-            / s:element_selecting_command() " | " e:value_extracting_command() { StringValueCreatingPipeline::new(s, e) }
+            = s:element_selecting_command() pipeline_marker() e:value_extracting_command() pipeline_marker() p:(value_processing_command() ** pipeline_marker()) { StringValueCreatingPipeline::with_value_processing(s, e, p) }
+            / s:element_selecting_command() pipeline_marker() e:value_extracting_command() { StringValueCreatingPipeline::new(s, e) }
 
         pub(crate) rule pipeline() -> ElementProcessingPipeline<'input>
-            = p:(element_processing_command() ** " | ") { ElementProcessingPipeline::new(p) }
+            = p:(element_processing_command() ** pipeline_marker()) { ElementProcessingPipeline::new(p) }
   }
 }
