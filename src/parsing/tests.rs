@@ -110,6 +110,22 @@ fn parse_pipeline_with_newlines_and_whitespaces() {
 }
 
 #[test]
+fn parse_pipeline_with_crlf_newlines() {
+    let parsed = super::grammar::pipeline("EXTRACT-ELEMENT{a}\r\n| REMOVE-ELEMENT{b}");
+    assert_eq!(
+        parsed,
+        Ok(ElementProcessingPipeline::new(vec![
+            ElementProcessingCommand::ExtractElement(CssSelectorList::new(vec![
+                CssSelectorPath::single(CssSelector::for_element("a"))
+            ])),
+            ElementProcessingCommand::RemoveElement(CssSelectorList::new(vec![
+                CssSelectorPath::single(CssSelector::for_element("b"))
+            ])),
+        ]))
+    );
+}
+
+#[test]
 fn parse_extract_element() {
     let parsed = super::grammar::element_processing_command("EXTRACT-ELEMENT{a}");
     assert_eq!(

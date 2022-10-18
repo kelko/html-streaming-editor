@@ -32,7 +32,7 @@ fn build_css_path<'a>(
 parser! {
   pub grammar grammar() for str {
         rule whitespace()
-            = quiet!{[' ' | '\n' | '\t']+}
+            = quiet!{([' ' | '\n' | '\t'] / "\r\n")+}
         rule pipeline_marker()
             = whitespace()? "|" whitespace()?
         rule assign_marker()
