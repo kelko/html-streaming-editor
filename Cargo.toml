@@ -14,13 +14,13 @@ keywords = ["html"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-peg = "0.8.0"
+peg = "0.8.1"
 tl = "0.7.7"
 snafu = { version = "0.7", features = ["backtraces"] }
-clap = { version = "4.0.9", features = ["derive"] }
+clap = { version = "4.2.1", features = ["derive"] }
 exitcode = "1.1.2"
 log = "0.4"
 pretty_env_logger = "0.4.0"
 rctree = "0.5.0"
-html-escape = "0.2.11"
-regex = "1.6.0"
+html-escape = "0.2.13"
+regex = "1.7.3"

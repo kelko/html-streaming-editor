@@ -104,7 +104,7 @@ impl HtmlTag {
 
     fn is_class_member(&self, class: &str) -> bool {
         if let Some(classes) = self.attributes.get(&String::from("class")) {
-            classes.split(' ').into_iter().any(|c| c == class)
+            classes.split(' ').any(|c| c == class)
         } else {
             false
         }
