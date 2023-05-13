@@ -22,11 +22,14 @@ fn overwrite_first_p_id() -> Result<(), StreamingEditorError> {
     let command = "EXTRACT-ELEMENT{#first-para} | SET-ATTR{id ↤ 'new-id'}";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
-    let mut output = Vec::new();
-    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+    let hse = HtmlStreamingEditor::new(&mut input);
 
-    let _ = hse.run(command)?;
-    let result_string = String::from_utf8(output).unwrap();
+    let result = hse.run(command)?;
+    let result_string = result
+        .iter()
+        .map(|n| n.outer_html())
+        .collect::<Vec<_>>()
+        .join("");
 
     assert_eq!(
         result_string,
@@ -40,11 +43,14 @@ fn overwrite_first_p_id() -> Result<(), StreamingEditorError> {
 fn replace_and_characters_in_first_id() -> Result<(), StreamingEditorError> {
     let command = "EXTRACT-ELEMENT{#first-para} | SET-ATTR{id ↤ USE-ELEMENT | GET-ATTR{id} | REGEX-REPLACE{'\\W' ↤ '_'} }";
     let mut input = Box::new(HTML_INPUT.as_bytes());
-    let mut output = Vec::new();
-    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+    let hse = HtmlStreamingEditor::new(&mut input);
 
-    let _ = hse.run(command)?;
-    let result_string = String::from_utf8(output).unwrap();
+    let result = hse.run(command)?;
+    let result_string = result
+        .iter()
+        .map(|n| n.outer_html())
+        .collect::<Vec<_>>()
+        .join("");
 
     assert_eq!(
         result_string,
@@ -59,11 +65,14 @@ fn uppercase_first_id() -> Result<(), StreamingEditorError> {
     let command =
         "EXTRACT-ELEMENT{#first-para} | SET-ATTR{id ↤ USE-ELEMENT | GET-ATTR{id} | TO-UPPER }";
     let mut input = Box::new(HTML_INPUT.as_bytes());
-    let mut output = Vec::new();
-    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+    let hse = HtmlStreamingEditor::new(&mut input);
 
-    let _ = hse.run(command)?;
-    let result_string = String::from_utf8(output).unwrap();
+    let result = hse.run(command)?;
+    let result_string = result
+        .iter()
+        .map(|n| n.outer_html())
+        .collect::<Vec<_>>()
+        .join("");
 
     assert_eq!(
         result_string,
@@ -78,11 +87,14 @@ fn add_attr_to_first_p() -> Result<(), StreamingEditorError> {
     let command = r#"EXTRACT-ELEMENT{#first-para} | SET-ATTR{data-test ↤ "some value"}"#;
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
-    let mut output = Vec::new();
-    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+    let hse = HtmlStreamingEditor::new(&mut input);
 
-    let _ = hse.run(command)?;
-    let result_string = String::from_utf8(output).unwrap();
+    let result = hse.run(command)?;
+    let result_string = result
+        .iter()
+        .map(|n| n.outer_html())
+        .collect::<Vec<_>>()
+        .join("");
 
     assert_eq!(
         result_string,
@@ -97,11 +109,14 @@ fn set_attr_with_double_quotes() -> Result<(), StreamingEditorError> {
     let command = r#"EXTRACT-ELEMENT{#first-para} | SET-ATTR{data-test ↤ 'some "value"'}"#;
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
-    let mut output = Vec::new();
-    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+    let hse = HtmlStreamingEditor::new(&mut input);
 
-    let _ = hse.run(command)?;
-    let result_string = String::from_utf8(output).unwrap();
+    let result = hse.run(command)?;
+    let result_string = result
+        .iter()
+        .map(|n| n.outer_html())
+        .collect::<Vec<_>>()
+        .join("");
 
     assert_eq!(
         result_string,
@@ -118,11 +133,14 @@ fn set_attr_with_line_break() -> Result<(), StreamingEditorError> {
     let command = "EXTRACT-ELEMENT{#first-para} | SET-ATTR{data-test ↤ 'some \nvalue'}";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
-    let mut output = Vec::new();
-    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+    let hse = HtmlStreamingEditor::new(&mut input);
 
-    let _ = hse.run(command)?;
-    let result_string = String::from_utf8(output).unwrap();
+    let result = hse.run(command)?;
+    let result_string = result
+        .iter()
+        .map(|n| n.outer_html())
+        .collect::<Vec<_>>()
+        .join("");
 
     assert_eq!(
         result_string,
@@ -137,11 +155,14 @@ fn set_attr_from_other_attr() -> Result<(), StreamingEditorError> {
     let command = "EXTRACT-ELEMENT{#first-para} | SET-ATTR{data-test ↤ USE-ELEMENT | GET-ATTR{id}}";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
-    let mut output = Vec::new();
-    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+    let hse = HtmlStreamingEditor::new(&mut input);
 
-    let _ = hse.run(command)?;
-    let result_string = String::from_utf8(output).unwrap();
+    let result = hse.run(command)?;
+    let result_string = result
+        .iter()
+        .map(|n| n.outer_html())
+        .collect::<Vec<_>>()
+        .join("");
 
     assert_eq!(
         result_string,
@@ -156,11 +177,14 @@ fn set_attr_from_other_attr_but_uppercase() -> Result<(), StreamingEditorError> 
     let command = "EXTRACT-ELEMENT{#first-para} | SET-ATTR{data-test ↤ USE-ELEMENT | GET-ATTR{id} | TO-UPPER}";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
-    let mut output = Vec::new();
-    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+    let hse = HtmlStreamingEditor::new(&mut input);
 
-    let _ = hse.run(command)?;
-    let result_string = String::from_utf8(output).unwrap();
+    let result = hse.run(command)?;
+    let result_string = result
+        .iter()
+        .map(|n| n.outer_html())
+        .collect::<Vec<_>>()
+        .join("");
 
     assert_eq!(
         result_string,
@@ -176,11 +200,14 @@ fn set_attr_from_attr_of_sibling() -> Result<(), StreamingEditorError> {
         "FOR-EACH{#first-para ↦ SET-ATTR{data-test ↤ QUERY-PARENT{#second-para} | GET-ATTR{id}}} | EXTRACT-ELEMENT{#first-para}";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
-    let mut output = Vec::new();
-    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+    let hse = HtmlStreamingEditor::new(&mut input);
 
-    let _ = hse.run(command)?;
-    let result_string = String::from_utf8(output).unwrap();
+    let result = hse.run(command)?;
+    let result_string = result
+        .iter()
+        .map(|n| n.outer_html())
+        .collect::<Vec<_>>()
+        .join("");
 
     assert_eq!(
         result_string,
@@ -195,11 +222,14 @@ fn set_attr_from_attr_of_head_meta() -> Result<(), StreamingEditorError> {
     let command = "FOR-EACH{#first-para ↦ SET-ATTR{data-test ↤ QUERY-ROOT{meta[name='test']} | GET-ATTR{content}}}";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
-    let mut output = Vec::new();
-    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+    let hse = HtmlStreamingEditor::new(&mut input);
 
-    let _ = hse.run(command)?;
-    let result_string = String::from_utf8(output).unwrap();
+    let result = hse.run(command)?;
+    let result_string = result
+        .iter()
+        .map(|n| n.outer_html())
+        .collect::<Vec<_>>()
+        .join("");
 
     assert_eq!(
         result_string,
@@ -231,11 +261,14 @@ fn set_first_word_lowercased_as_id() -> Result<(), StreamingEditorError> {
     let command = r#"EXTRACT-ELEMENT{#first-para} | SET-ATTR{id ↤ USE-ELEMENT | GET-TEXT-CONTENT | REGEX-REPLACE{"^(\w+).*" ↤ "$1"} | TO-LOWER }"#;
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
-    let mut output = Vec::new();
-    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+    let hse = HtmlStreamingEditor::new(&mut input);
 
-    let _ = hse.run(command)?;
-    let result_string = String::from_utf8(output).unwrap();
+    let result = hse.run(command)?;
+    let result_string = result
+        .iter()
+        .map(|n| n.outer_html())
+        .collect::<Vec<_>>()
+        .join("");
 
     assert_eq!(
         result_string,
@@ -250,11 +283,14 @@ fn set_attr_to_value_of_attr() -> Result<(), StreamingEditorError> {
     let command = r#"EXTRACT-ELEMENT{#first-para} | SET-ATTR{id ↤ USE-ELEMENT | GET-ATTR{id}}"#;
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
-    let mut output = Vec::new();
-    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+    let hse = HtmlStreamingEditor::new(&mut input);
 
-    let _ = hse.run(command)?;
-    let result_string = String::from_utf8(output).unwrap();
+    let result = hse.run(command)?;
+    let result_string = result
+        .iter()
+        .map(|n| n.outer_html())
+        .collect::<Vec<_>>()
+        .join("");
 
     assert_eq!(
         result_string,
@@ -269,11 +305,14 @@ fn set_attr_to_adjusted_value_of_attr() -> Result<(), StreamingEditorError> {
     let command = r#"EXTRACT-ELEMENT{#first-para} | SET-ATTR{id ↤ USE-ELEMENT | GET-ATTR{id} | REGEX-REPLACE{ '-' ↤ '_'}}"#;
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
-    let mut output = Vec::new();
-    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+    let hse = HtmlStreamingEditor::new(&mut input);
 
-    let _ = hse.run(command)?;
-    let result_string = String::from_utf8(output).unwrap();
+    let result = hse.run(command)?;
+    let result_string = result
+        .iter()
+        .map(|n| n.outer_html())
+        .collect::<Vec<_>>()
+        .join("");
 
     assert_eq!(
         result_string,

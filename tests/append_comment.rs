@@ -20,11 +20,14 @@ fn append_to_first_p_content() -> Result<(), StreamingEditorError> {
     let command = "EXTRACT-ELEMENT{#first-para} | APPEND-COMMENT{'followed by a comment'}";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
-    let mut output = Vec::new();
-    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+    let hse = HtmlStreamingEditor::new(&mut input);
 
-    let _ = hse.run(command)?;
-    let result_string = String::from_utf8(output).unwrap();
+    let result = hse.run(command)?;
+    let result_string = result
+        .iter()
+        .map(|n| n.outer_html())
+        .collect::<Vec<_>>()
+        .join("");
 
     assert_eq!(
         result_string,
@@ -39,11 +42,14 @@ fn append_to_ul() -> Result<(), StreamingEditorError> {
     let command = "EXTRACT-ELEMENT{ul} | APPEND-COMMENT{'Foo'}";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
-    let mut output = Vec::new();
-    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+    let hse = HtmlStreamingEditor::new(&mut input);
 
-    let _ = hse.run(command)?;
-    let result_string = String::from_utf8(output).unwrap();
+    let result = hse.run(command)?;
+    let result_string = result
+        .iter()
+        .map(|n| n.outer_html())
+        .collect::<Vec<_>>()
+        .join("");
 
     assert_eq!(
         result_string,
@@ -65,11 +71,14 @@ fn append_double_dash_will_be_escaped() -> Result<(), StreamingEditorError> {
         "EXTRACT-ELEMENT{#first-para} | APPEND-COMMENT{'Actually -- is illegal in comments'}";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
-    let mut output = Vec::new();
-    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+    let hse = HtmlStreamingEditor::new(&mut input);
 
-    let _ = hse.run(command)?;
-    let result_string = String::from_utf8(output).unwrap();
+    let result = hse.run(command)?;
+    let result_string = result
+        .iter()
+        .map(|n| n.outer_html())
+        .collect::<Vec<_>>()
+        .join("");
 
     assert_eq!(
         result_string,
@@ -86,11 +95,14 @@ fn append_ul_id_as_comment_to_first_para() -> Result<(), StreamingEditorError> {
     let command = "FOR-EACH{#first-para ↦ APPEND-COMMENT{ QUERY-PARENT{ul} | GET-ATTR{id} } }";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
-    let mut output = Vec::new();
-    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+    let hse = HtmlStreamingEditor::new(&mut input);
 
-    let _ = hse.run(command)?;
-    let result_string = String::from_utf8(output).unwrap();
+    let result = hse.run(command)?;
+    let result_string = result
+        .iter()
+        .map(|n| n.outer_html())
+        .collect::<Vec<_>>()
+        .join("");
 
     assert_eq!(
         result_string,

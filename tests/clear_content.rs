@@ -20,11 +20,14 @@ fn clear_first_p_content() -> Result<(), StreamingEditorError> {
     let command = "EXTRACT-ELEMENT{#first-para} | CLEAR-CONTENT";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
-    let mut output = Vec::new();
-    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+    let hse = HtmlStreamingEditor::new(&mut input);
 
-    let _ = hse.run(command)?;
-    let result_string = String::from_utf8(output).unwrap();
+    let result = hse.run(command)?;
+    let result_string = result
+        .iter()
+        .map(|n| n.outer_html())
+        .collect::<Vec<_>>()
+        .join("");
 
     assert_eq!(result_string, String::from(r#"<p id="first-para"></p>"#));
 

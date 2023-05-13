@@ -20,11 +20,14 @@ fn replace_ul_with_created_div() -> Result<(), StreamingEditorError> {
     let command = "REPLACE-ELEMENT{ul ↤ CREATE-ELEMENT{div} | SET-TEXT-CONTENT{'this was an UL'} | SET-ATTR{id ↤ 'new'}}";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
-    let mut output = Vec::new();
-    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+    let hse = HtmlStreamingEditor::new(&mut input);
 
-    let _ = hse.run(command)?;
-    let result_string = String::from_utf8(output).unwrap();
+    let result = hse.run(command)?;
+    let result_string = result
+        .iter()
+        .map(|n| n.outer_html())
+        .collect::<Vec<_>>()
+        .join("");
 
     assert_eq!(
         result_string,
@@ -50,11 +53,14 @@ fn replace_ul_with_sourced_html() -> Result<(), StreamingEditorError> {
     let command = "REPLACE-ELEMENT{ul ↤ LOAD-FILE{'tests/source.html'} | EXTRACT-ELEMENT{ul}}";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
-    let mut output = Vec::new();
-    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+    let hse = HtmlStreamingEditor::new(&mut input);
 
-    let _ = hse.run(command)?;
-    let result_string = String::from_utf8(output).unwrap();
+    let result = hse.run(command)?;
+    let result_string = result
+        .iter()
+        .map(|n| n.outer_html())
+        .collect::<Vec<_>>()
+        .join("");
 
     assert_eq!(
         result_string,
@@ -88,11 +94,14 @@ fn replace_third_para_with_child_abbr() -> Result<(), StreamingEditorError> {
     let command = "REPLACE-ELEMENT{#third-para ↤ QUERY-REPLACED{abbr}}";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
-    let mut output = Vec::new();
-    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+    let hse = HtmlStreamingEditor::new(&mut input);
 
-    let _ = hse.run(command)?;
-    let result_string = String::from_utf8(output).unwrap();
+    let result = hse.run(command)?;
+    let result_string = result
+        .iter()
+        .map(|n| n.outer_html())
+        .collect::<Vec<_>>()
+        .join("");
 
     assert_eq!(
         result_string,

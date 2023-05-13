@@ -2,10 +2,10 @@ extern crate clap;
 
 use clap::Parser;
 use std::fs::File;
-use std::io::{BufRead, BufReader, BufWriter, Read, Write};
+use std::io::{BufRead, BufReader, BufWriter, Error, Read, Write};
 use std::path::PathBuf;
 
-use html_streaming_editor::{report, HtmlStreamingEditor};
+use html_streaming_editor::{report, HtmlRenderable, HtmlStreamingEditor};
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -34,33 +34,46 @@ fn main() {
     let mut pipeline_definition = cli.pipeline;
 
     if pipeline_definition.starts_with('@') {
-        let filename = pipeline_definition.get(1..).unwrap().to_owned();
-        pipeline_definition = String::new();
-        if let Ok(mut file) = File::open(filename) {
-            if let Err(e) = file.read_to_string(&mut pipeline_definition) {
-                eprintln!("[ERROR] Could not read pipeline definition: {}", e);
-                std::process::exit(exitcode::NOINPUT);
-            }
-        } else {
-            eprintln!("[ERROR] Could not open pipeline definition");
-            std::process::exit(exitcode::NOINPUT);
-        };
+        pipeline_definition = read_pipeline_from_file(&pipeline_definition);
     }
 
-    let mut input_reader: Box<dyn BufRead> = if input_path.to_str() == Some("-") {
-        Box::new(std::io::stdin().lock())
-    } else {
-        let input_file = if let Ok(file) = File::open(input_path) {
-            file
-        } else {
-            eprintln!("[ERROR] Could not open input file");
-            std::process::exit(exitcode::NOINPUT);
-        };
+    let mut input_reader = open_input(input_path);
+    let editor = HtmlStreamingEditor::new(&mut input_reader);
+    match editor.run(&pipeline_definition) {
+        Ok(result) => {
+            let mut output_writer = open_output(output_path);
+            if let Err(e) = render_result(&result, &mut output_writer) {
+                eprintln!("[ERROR] {}", e);
+            }
+        }
+        Err(e) => report(&e),
+    }
+}
 
-        Box::new(BufReader::new(input_file))
-    };
+fn render_result(
+    result: &Vec<Box<dyn HtmlRenderable>>,
+    output_writer: &mut Box<dyn Write>,
+) -> Result<(), Error> {
+    for node in result {
+        let html = node.outer_html();
+        match output_writer.write((*html).as_bytes()) {
+            Ok(_) => {}
+            Err(e) => return Err(e),
+        }
 
-    let mut output_writer: Box<dyn Write> = if output_path.to_str() == Some("-") {
+        match output_writer.write(b"\n") {
+            Ok(_) => {}
+            Err(e) => return Err(e),
+        }
+    }
+
+    output_writer.flush()?;
+
+    Ok(())
+}
+
+fn open_output(output_path: PathBuf) -> Box<dyn Write> {
+    let output_writer: Box<dyn Write> = if output_path.to_str() == Some("-") {
         Box::new(std::io::stdout().lock())
     } else {
         let output_file = if let Ok(file) = File::create(output_path) {
@@ -72,10 +85,37 @@ fn main() {
 
         Box::new(BufWriter::new(output_file))
     };
+    output_writer
+}
 
-    let editor = HtmlStreamingEditor::new(&mut input_reader, &mut output_writer);
-    match editor.run(&pipeline_definition) {
-        Ok(_) => (),
-        Err(e) => report(&e),
-    }
+fn open_input(input_path: PathBuf) -> Box<dyn BufRead> {
+    let input_reader: Box<dyn BufRead> = if input_path.to_str() == Some("-") {
+        Box::new(std::io::stdin().lock())
+    } else {
+        let input_file = if let Ok(file) = File::open(input_path) {
+            file
+        } else {
+            eprintln!("[ERROR] Could not open input file");
+            std::process::exit(exitcode::NOINPUT);
+        };
+
+        Box::new(BufReader::new(input_file))
+    };
+    input_reader
+}
+
+fn read_pipeline_from_file(file_definition: &String) -> String {
+    let filename = file_definition.get(1..).unwrap().to_owned();
+    let mut pipeline_definition = String::new();
+    if let Ok(mut file) = File::open(filename) {
+        if let Err(e) = file.read_to_string(&mut pipeline_definition) {
+            eprintln!("[ERROR] Could not read pipeline definition: {}", e);
+            std::process::exit(exitcode::NOINPUT);
+        }
+    } else {
+        eprintln!("[ERROR] Could not open pipeline definition");
+        std::process::exit(exitcode::NOINPUT);
+    };
+
+    return pipeline_definition;
 }

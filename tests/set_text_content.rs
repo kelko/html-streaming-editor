@@ -20,11 +20,14 @@ fn overwrite_first_p_content() -> Result<(), StreamingEditorError> {
     let command = "EXTRACT-ELEMENT{#first-para} | SET-TEXT-CONTENT{'Some new, boring text'}";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
-    let mut output = Vec::new();
-    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+    let hse = HtmlStreamingEditor::new(&mut input);
 
-    let _ = hse.run(command)?;
-    let result_string = String::from_utf8(output).unwrap();
+    let result = hse.run(command)?;
+    let result_string = result
+        .iter()
+        .map(|n| n.outer_html())
+        .collect::<Vec<_>>()
+        .join("");
 
     assert_eq!(
         result_string,
@@ -39,11 +42,14 @@ fn overwrite_third_p_content() -> Result<(), StreamingEditorError> {
     let command = "EXTRACT-ELEMENT{#third-para} | SET-TEXT-CONTENT{'Simple Text'}";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
-    let mut output = Vec::new();
-    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+    let hse = HtmlStreamingEditor::new(&mut input);
 
-    let _ = hse.run(command)?;
-    let result_string = String::from_utf8(output).unwrap();
+    let result = hse.run(command)?;
+    let result_string = result
+        .iter()
+        .map(|n| n.outer_html())
+        .collect::<Vec<_>>()
+        .join("");
 
     assert_eq!(
         result_string,
@@ -59,11 +65,14 @@ fn set_escape_needing_content() -> Result<(), StreamingEditorError> {
         "EXTRACT-ELEMENT{#first-para} | SET-TEXT-CONTENT{'Some is > others < & you never know which'}";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
-    let mut output = Vec::new();
-    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+    let hse = HtmlStreamingEditor::new(&mut input);
 
-    let _ = hse.run(command)?;
-    let result_string = String::from_utf8(output).unwrap();
+    let result = hse.run(command)?;
+    let result_string = result
+        .iter()
+        .map(|n| n.outer_html())
+        .collect::<Vec<_>>()
+        .join("");
 
     assert_eq!(
         result_string,
@@ -80,11 +89,14 @@ fn set_ul_id_as_text_to_first_para() -> Result<(), StreamingEditorError> {
     let command = "FOR-EACH{#first-para ↦ SET-TEXT-CONTENT{ QUERY-PARENT{ul} | GET-ATTR{id} } }";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
-    let mut output = Vec::new();
-    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+    let hse = HtmlStreamingEditor::new(&mut input);
 
-    let _ = hse.run(command)?;
-    let result_string = String::from_utf8(output).unwrap();
+    let result = hse.run(command)?;
+    let result_string = result
+        .iter()
+        .map(|n| n.outer_html())
+        .collect::<Vec<_>>()
+        .join("");
 
     assert_eq!(
         result_string,
@@ -114,11 +126,14 @@ fn set_second_para_content_as_text_to_first_para() -> Result<(), StreamingEditor
     let command = "FOR-EACH{#first-para ↦ SET-TEXT-CONTENT{ QUERY-PARENT{#second-para} | GET-TEXT-CONTENT } }";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
-    let mut output = Vec::new();
-    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+    let hse = HtmlStreamingEditor::new(&mut input);
 
-    let _ = hse.run(command)?;
-    let result_string = String::from_utf8(output).unwrap();
+    let result = hse.run(command)?;
+    let result_string = result
+        .iter()
+        .map(|n| n.outer_html())
+        .collect::<Vec<_>>()
+        .join("");
 
     assert_eq!(
         result_string,
@@ -149,11 +164,14 @@ fn set_text_content_to_value_of_text_content() -> Result<(), StreamingEditorErro
         r#"EXTRACT-ELEMENT{#first-para} | SET-TEXT-CONTENT{ USE-ELEMENT | GET-TEXT-CONTENT }"#;
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
-    let mut output = Vec::new();
-    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+    let hse = HtmlStreamingEditor::new(&mut input);
 
-    let _ = hse.run(command)?;
-    let result_string = String::from_utf8(output).unwrap();
+    let result = hse.run(command)?;
+    let result_string = result
+        .iter()
+        .map(|n| n.outer_html())
+        .collect::<Vec<_>>()
+        .join("");
 
     assert_eq!(
         result_string,
@@ -168,11 +186,14 @@ fn set_text_content_to_adjusted_value_of_text_content() -> Result<(), StreamingE
     let command = r#"EXTRACT-ELEMENT{#first-para} | SET-TEXT-CONTENT{USE-ELEMENT | GET-TEXT-CONTENT | REGEX-REPLACE{ '\s' ↤ '_'}}"#;
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
-    let mut output = Vec::new();
-    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+    let hse = HtmlStreamingEditor::new(&mut input);
 
-    let _ = hse.run(command)?;
-    let result_string = String::from_utf8(output).unwrap();
+    let result = hse.run(command)?;
+    let result_string = result
+        .iter()
+        .map(|n| n.outer_html())
+        .collect::<Vec<_>>()
+        .join("");
 
     assert_eq!(
         result_string,

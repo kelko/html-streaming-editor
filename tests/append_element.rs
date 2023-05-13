@@ -20,11 +20,14 @@ fn append_simple_div_to_first_p_content() -> Result<(), StreamingEditorError> {
     let command = "EXTRACT-ELEMENT{#first-para} | APPEND-ELEMENT{ CREATE-ELEMENT{div} }";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
-    let mut output = Vec::new();
-    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+    let hse = HtmlStreamingEditor::new(&mut input);
 
-    let _ = hse.run(command)?;
-    let result_string = String::from_utf8(output).unwrap();
+    let result = hse.run(command)?;
+    let result_string = result
+        .iter()
+        .map(|n| n.outer_html())
+        .collect::<Vec<_>>()
+        .join("");
 
     assert_eq!(
         result_string,
@@ -39,11 +42,14 @@ fn append_two_divs_to_first_p_content() -> Result<(), StreamingEditorError> {
     let command = "EXTRACT-ELEMENT{#first-para} | APPEND-ELEMENT{ CREATE-ELEMENT{div} } | APPEND-ELEMENT{ CREATE-ELEMENT{div} }";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
-    let mut output = Vec::new();
-    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+    let hse = HtmlStreamingEditor::new(&mut input);
 
-    let _ = hse.run(command)?;
-    let result_string = String::from_utf8(output).unwrap();
+    let result = hse.run(command)?;
+    let result_string = result
+        .iter()
+        .map(|n| n.outer_html())
+        .collect::<Vec<_>>()
+        .join("");
 
     assert_eq!(
         result_string,
@@ -59,11 +65,14 @@ fn append_div_with_attr_to_first_p_content() -> Result<(), StreamingEditorError>
         "EXTRACT-ELEMENT{#first-para} | APPEND-ELEMENT{ CREATE-ELEMENT{div} | SET-ATTR{id ↤ 'new'} }";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
-    let mut output = Vec::new();
-    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+    let hse = HtmlStreamingEditor::new(&mut input);
 
-    let _ = hse.run(command)?;
-    let result_string = String::from_utf8(output).unwrap();
+    let result = hse.run(command)?;
+    let result_string = result
+        .iter()
+        .map(|n| n.outer_html())
+        .collect::<Vec<_>>()
+        .join("");
 
     assert_eq!(
         result_string,
@@ -88,11 +97,14 @@ fn copy_title_to_meta_tag() -> Result<(), StreamingEditorError> {
 </html>"#
             .as_bytes(),
     );
-    let mut output = Vec::new();
-    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+    let hse = HtmlStreamingEditor::new(&mut input);
 
-    let _ = hse.run(command)?;
-    let result_string = String::from_utf8(output).unwrap();
+    let result = hse.run(command)?;
+    let result_string = result
+        .iter()
+        .map(|n| n.outer_html())
+        .collect::<Vec<_>>()
+        .join("");
 
     assert_eq!(
         result_string,

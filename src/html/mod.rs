@@ -301,7 +301,7 @@ impl HtmlContent {
     }
 }
 
-pub(crate) trait HtmlRenderable {
+pub trait HtmlRenderable {
     /// Returns the markup of all child elements
     ///
     /// ## Limitations

@@ -21,11 +21,14 @@ fn prepend_to_first_p_content() -> Result<(), StreamingEditorError> {
         "EXTRACT-ELEMENT{#first-para} | PREPEND-TEXT-CONTENT{'... expanded by other text'}";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
-    let mut output = Vec::new();
-    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+    let hse = HtmlStreamingEditor::new(&mut input);
 
-    let _ = hse.run(command)?;
-    let result_string = String::from_utf8(output).unwrap();
+    let result = hse.run(command)?;
+    let result_string = result
+        .iter()
+        .map(|n| n.outer_html())
+        .collect::<Vec<_>>()
+        .join("");
 
     assert_eq!(
         result_string,
@@ -41,11 +44,14 @@ fn prepend_escape_needing_content() -> Result<(), StreamingEditorError> {
         "EXTRACT-ELEMENT{#first-para} | PREPEND-TEXT-CONTENT{' is > others < & you never know which'}";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
-    let mut output = Vec::new();
-    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+    let hse = HtmlStreamingEditor::new(&mut input);
 
-    let _ = hse.run(command)?;
-    let result_string = String::from_utf8(output).unwrap();
+    let result = hse.run(command)?;
+    let result_string = result
+        .iter()
+        .map(|n| n.outer_html())
+        .collect::<Vec<_>>()
+        .join("");
 
     assert_eq!(
         result_string,
@@ -62,11 +68,14 @@ fn prepend_ul_id_as_text_to_first_para() -> Result<(), StreamingEditorError> {
     let command = "FOR-EACH{#first-para ↦ PREPEND-TEXT-CONTENT{' and ul-id is: '} | PREPEND-TEXT-CONTENT{ QUERY-PARENT{ul} | GET-ATTR{id} } }";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
-    let mut output = Vec::new();
-    let hse = HtmlStreamingEditor::new(&mut input, &mut output);
+    let hse = HtmlStreamingEditor::new(&mut input);
 
-    let _ = hse.run(command)?;
-    let result_string = String::from_utf8(output).unwrap();
+    let result = hse.run(command)?;
+    let result_string = result
+        .iter()
+        .map(|n| n.outer_html())
+        .collect::<Vec<_>>()
+        .join("");
 
     assert_eq!(
         result_string,

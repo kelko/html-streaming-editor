@@ -2,14 +2,16 @@ use log::debug;
 use peg::str::LineCol;
 use snafu::{Backtrace, ResultExt, Snafu};
 use std::fs::File;
-use std::io::{BufRead, BufReader, Read, Write};
+use std::io::{BufRead, BufReader, Read};
 
 pub(crate) use crate::css::{
     CssAttributeComparison, CssAttributeSelector, CssPseudoClass, CssSelector, CssSelectorList,
     CssSelectorPath, CssSelectorStep,
 };
-use crate::html::{HtmlContent, HtmlRenderable};
+use crate::html::HtmlContent;
 use crate::string_creating::StringValueCreatingPipeline;
+
+pub use crate::html::HtmlRenderable;
 
 mod css;
 mod element_creating;
@@ -26,10 +28,7 @@ pub enum StreamingEditorError {
         backtrace: Backtrace,
     },
     #[snafu(display("Failed to write output into"))]
-    WritingOutputFailed {
-        source: std::io::Error,
-        backtrace: Backtrace,
-    },
+    WritingOutputFailed { source: std::io::Error },
     #[snafu(display("Failed to parse input HTML"))]
     ParsingInputFailed {
         source: tl::ParseError,
@@ -96,15 +95,17 @@ pub enum CommandError {
 
 pub struct HtmlStreamingEditor<'a> {
     input: &'a mut dyn BufRead,
-    output: &'a mut dyn Write,
 }
 
 impl<'a> HtmlStreamingEditor<'a> {
-    pub fn new(input: &'a mut dyn BufRead, output: &'a mut dyn Write) -> Self {
-        HtmlStreamingEditor { input, output }
+    pub fn new(input: &'a mut dyn BufRead) -> Self {
+        HtmlStreamingEditor { input }
     }
 
-    pub fn run(self, pipeline_definition: &str) -> Result<(), StreamingEditorError> {
+    pub fn run(
+        self,
+        pipeline_definition: &str,
+    ) -> Result<Vec<Box<dyn HtmlRenderable>>, StreamingEditorError> {
         let pipeline =
             parsing::grammar::pipeline(pipeline_definition).context(ParsingPipelineFailedSnafu)?;
         debug!("Parsed Pipeline: {:#?}", &pipeline);
@@ -122,16 +123,10 @@ impl<'a> HtmlStreamingEditor<'a> {
             .context(RunningPipelineFailedSnafu)?;
 
         debug!("Final Result: {:#?}", &result);
-        for node in &result {
-            let html = node.outer_html();
-            self.output
-                .write((*html).as_bytes())
-                .context(WritingOutputFailedSnafu)?;
-        }
-
-        self.output.flush().context(WritingOutputFailedSnafu)?;
-
-        Ok(())
+        Ok(result
+            .iter()
+            .map(|n| Box::new(n.clone()) as Box<dyn HtmlRenderable>)
+            .collect::<Vec<_>>())
     }
 }
 
