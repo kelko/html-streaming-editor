@@ -151,8 +151,8 @@ impl<'a> ValueProcessingCommand<'a> {
             ValueProcessingCommand::RegexReplace(regex, replace) => {
                 Self::regex_replace(input, regex, replace)
             }
-            ValueProcessingCommand::ToLower => Self::to_lower(input),
-            ValueProcessingCommand::ToUpper => Self::to_upper(input),
+            ValueProcessingCommand::ToLower => Self::convert_to_lower(input),
+            ValueProcessingCommand::ToUpper => Self::convert_to_upper(input),
             ValueProcessingCommand::AddPrefix(prefix) => Self::add_prefix(input, prefix),
             ValueProcessingCommand::AddSuffix(suffix) => Self::add_suffix(input, suffix),
         }
@@ -172,11 +172,11 @@ impl<'a> ValueProcessingCommand<'a> {
             .collect::<Vec<_>>())
     }
 
-    fn to_lower(input: &[String]) -> Result<Vec<String>, CommandError> {
+    fn convert_to_lower(input: &[String]) -> Result<Vec<String>, CommandError> {
         Ok(input.iter().map(|v| v.to_lowercase()).collect::<Vec<_>>())
     }
 
-    fn to_upper(input: &[String]) -> Result<Vec<String>, CommandError> {
+    fn convert_to_upper(input: &[String]) -> Result<Vec<String>, CommandError> {
         Ok(input.iter().map(|v| v.to_uppercase()).collect::<Vec<_>>())
     }
 
