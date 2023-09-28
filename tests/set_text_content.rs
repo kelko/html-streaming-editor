@@ -183,7 +183,7 @@ fn set_text_content_to_value_of_text_content() -> Result<(), StreamingEditorErro
 
 #[test]
 fn set_text_content_to_adjusted_value_of_text_content() -> Result<(), StreamingEditorError> {
-    let command = r#"EXTRACT-ELEMENT{#first-para} | SET-TEXT-CONTENT{USE-ELEMENT | GET-TEXT-CONTENT | REGEX-REPLACE{ '\s' ↤ '_'}}"#;
+    let command = r"EXTRACT-ELEMENT{#first-para} | SET-TEXT-CONTENT{USE-ELEMENT | GET-TEXT-CONTENT | REGEX-REPLACE{ '\s' ↤ '_'}}";
 
     let mut input = Box::new(HTML_INPUT.as_bytes());
     let hse = HtmlStreamingEditor::new(&mut input);

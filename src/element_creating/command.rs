@@ -75,7 +75,7 @@ mod tests {
     fn create_element_builds_new_element_on_empty_input() {
         let command = ElementCreatingCommand::CreateElement("div");
 
-        let mut result = command.execute(&vec![]).unwrap();
+        let mut result = command.execute(&[]).unwrap();
 
         assert_eq!(result.len(), 1);
 
@@ -90,7 +90,7 @@ mod tests {
 
         let root = rctree::Node::new(HtmlContent::Tag(HtmlTag::of_name("html")));
 
-        let mut result = command.execute(&vec![root]).unwrap();
+        let mut result = command.execute(&[root]).unwrap();
 
         assert_eq!(result.len(), 1);
 
@@ -102,7 +102,7 @@ mod tests {
     #[test]
     fn load_file_read_file_content() {
         let command = ElementCreatingCommand::FromFile("tests/source.html");
-        let mut result = command.execute(&vec![]).unwrap();
+        let mut result = command.execute(&[]).unwrap();
 
         assert_eq!(result.len(), 1);
 
@@ -142,7 +142,7 @@ mod tests {
             r#"<div id="replaced"><p class="first"></p><aside class="test-source"></aside></div>"#,
         );
 
-        let mut result = command.execute(&vec![root]).unwrap();
+        let mut result = command.execute(&[root]).unwrap();
 
         assert_eq!(result.len(), 1);
 
@@ -179,7 +179,7 @@ mod tests {
 </div>"#,
         );
 
-        let result = command.execute(&vec![root]).unwrap();
+        let result = command.execute(&[root]).unwrap();
         let result = result.iter().map(|n| n.outer_html()).collect::<Vec<_>>();
 
         assert_eq!(result.len(), 3);
@@ -198,7 +198,7 @@ mod tests {
         let root =
             load_inline_html(r#"<div id="replaced"><p class="first"></p><aside></aside></div>"#);
 
-        let result = command.execute(&vec![root]).unwrap();
+        let result = command.execute(&[root]).unwrap();
 
         assert_eq!(result.len(), 0);
     }
@@ -209,7 +209,7 @@ mod tests {
             CssSelectorPath::single(CssSelector::for_class("test-source")),
         ]));
 
-        let result = command.execute(&vec![]).unwrap();
+        let result = command.execute(&[]).unwrap();
 
         assert_eq!(result.len(), 0);
     }

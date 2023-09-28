@@ -104,7 +104,7 @@ fn open_input(input_path: PathBuf) -> Box<dyn BufRead> {
     input_reader
 }
 
-fn read_pipeline_from_file(file_definition: &String) -> String {
+fn read_pipeline_from_file(file_definition: &str) -> String {
     let filename = file_definition.get(1..).unwrap().to_owned();
     let mut pipeline_definition = String::new();
     if let Ok(mut file) = File::open(filename) {
@@ -117,5 +117,5 @@ fn read_pipeline_from_file(file_definition: &String) -> String {
         std::process::exit(exitcode::NOINPUT);
     };
 
-    return pipeline_definition;
+    pipeline_definition
 }

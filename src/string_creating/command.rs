@@ -452,7 +452,7 @@ mod test {
         let root = load_inline_html(r#"<div data-test="foo" class="bar"></div>"#);
         let command = ValueExtractingCommand::GetAttribute("data-test");
 
-        let mut result = command.execute(&vec![root]).unwrap();
+        let mut result = command.execute(&[root]).unwrap();
 
         assert_eq!(result.len(), 1);
         let first_result = result.pop().unwrap();
@@ -464,7 +464,7 @@ mod test {
         let root = load_inline_html(r#"<div class="bar"></div>"#);
         let command = ValueExtractingCommand::GetAttribute("data-test");
 
-        let result = command.execute(&vec![root]).unwrap();
+        let result = command.execute(&[root]).unwrap();
 
         assert_eq!(result.len(), 0);
     }
@@ -473,7 +473,7 @@ mod test {
     fn get_attr_returns_empty_on_empty_input() {
         let command = ValueExtractingCommand::GetAttribute("data-test");
 
-        let result = command.execute(&vec![]).unwrap();
+        let result = command.execute(&[]).unwrap();
 
         assert_eq!(result.len(), 0);
     }
@@ -483,7 +483,7 @@ mod test {
         let root = load_inline_html(r#"<div>The content</div>"#);
         let command = ValueExtractingCommand::GetTextContent;
 
-        let mut result = command.execute(&vec![root]).unwrap();
+        let mut result = command.execute(&[root]).unwrap();
 
         assert_eq!(result.len(), 1);
 
@@ -496,7 +496,7 @@ mod test {
         let root = load_inline_html(r#"<div></div>"#);
         let command = ValueExtractingCommand::GetTextContent;
 
-        let result = command.execute(&vec![root]).unwrap();
+        let result = command.execute(&[root]).unwrap();
 
         assert_eq!(result.len(), 0);
     }
@@ -505,7 +505,7 @@ mod test {
     fn get_text_content_returns_empty_string_on_empty_input() {
         let command = ValueExtractingCommand::GetTextContent;
 
-        let result = command.execute(&vec![]).unwrap();
+        let result = command.execute(&[]).unwrap();
 
         assert_eq!(result.len(), 0);
     }
@@ -632,7 +632,7 @@ mod test {
     fn regex_replaces_returns_empty_string_on_empty_input() {
         let command = ValueProcessingCommand::RegexReplace("a", "e");
 
-        let result = command.execute(&vec![]).unwrap();
+        let result = command.execute(&[]).unwrap();
 
         assert_eq!(result.len(), 0);
     }
@@ -667,7 +667,7 @@ mod test {
     fn to_lower_returns_empty_on_empty_input() {
         let command = ValueProcessingCommand::ToLower;
 
-        let result = command.execute(&vec![]).unwrap();
+        let result = command.execute(&[]).unwrap();
 
         assert_eq!(result.len(), 0);
     }
@@ -702,7 +702,7 @@ mod test {
     fn to_upper_returns_empty_on_empty_input() {
         let command = ValueProcessingCommand::ToUpper;
 
-        let result = command.execute(&vec![]).unwrap();
+        let result = command.execute(&[]).unwrap();
 
         assert_eq!(result.len(), 0);
     }
@@ -723,7 +723,7 @@ mod test {
     fn add_prefix_returns_empty_on_empty_input() {
         let command = ValueProcessingCommand::AddPrefix("a");
 
-        let result = command.execute(&vec![]).unwrap();
+        let result = command.execute(&[]).unwrap();
 
         assert_eq!(result.len(), 0);
     }
@@ -744,7 +744,7 @@ mod test {
     fn add_suffix_returns_empty_on_empty_input() {
         let command = ValueProcessingCommand::AddSuffix("z");
 
-        let result = command.execute(&vec![]).unwrap();
+        let result = command.execute(&[]).unwrap();
 
         assert_eq!(result.len(), 0);
     }
