@@ -1,6 +1,7 @@
 use log::debug;
 use peg::str::LineCol;
-use snafu::{Backtrace, ResultExt, Snafu};
+use snafu::{ResultExt, Snafu};
+use std::backtrace::Backtrace;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 

@@ -1,5 +1,6 @@
 use rctree::{Children, Node};
-use snafu::{Backtrace, Snafu};
+use snafu::Snafu;
+use std::backtrace::Backtrace;
 use std::collections::BTreeMap;
 
 use crate::CssSelector;
