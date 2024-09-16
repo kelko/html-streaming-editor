@@ -131,8 +131,9 @@ impl<'a> HtmlStreamingEditor<'a> {
     }
 }
 
-pub fn report<E: 'static>(err: &E)
+pub fn report<E>(err: &E)
 where
+    E: 'static,
     E: std::error::Error,
     E: snafu::ErrorCompat,
     E: Send + Sync,

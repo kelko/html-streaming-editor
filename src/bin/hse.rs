@@ -61,7 +61,7 @@ fn render_result(
             Err(e) => return Err(e),
         }
 
-        match output_writer.write(b"\n") {
+        match output_writer.write_all(b"\n") {
             Ok(_) => {}
             Err(e) => return Err(e),
         }
