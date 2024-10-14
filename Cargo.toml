@@ -16,7 +16,7 @@ keywords = ["html"]
 [dependencies]
 peg = "0.8.4"
 tl = "0.7.8"
-snafu = { version = "0.8.4" }
+snafu = { version = "0.8.5" }
 clap = { version = "4.4", features = ["derive"] }
 exitcode = "1.1.2"
 log = "0.4"
