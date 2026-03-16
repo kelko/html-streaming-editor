@@ -17,7 +17,7 @@ keywords = ["html"]
 peg = "0.8.5"
 tl = "0.7.8"
 snafu = { version = "0.9.0" }
-clap = { version = "4.5", features = ["derive"] }
+clap = { version = "4.6", features = ["derive"] }
 exitcode = "1.1.2"
 log = "0.4"
 pretty_env_logger = "0.5.0"
